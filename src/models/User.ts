@@ -14,6 +14,7 @@ import Item, { ItemCreationAttribute } from "./Item";
 import Cart from "./Cart";
 
 export interface UserCreationAttribute {
+  id?: string;
   name: string;
   email: string;
   hash: string;
@@ -54,6 +55,19 @@ class User extends Model<UserCreationAttribute> {
 
   @BelongsToMany(() => Item, () => Cart)
   itemsInCart!: Item[];
+
+  toJSON() {
+    // Use super.toJSON() to get the default serialization
+    const json = super.toJSON() as any;
+
+    // Exclude sensitive fields
+    delete json.hash;
+    delete json.createdAt;
+    delete json.updatedAt;
+    // Add more fields to exclude as needed
+
+    return json;
+  }
 }
 
 export default User;

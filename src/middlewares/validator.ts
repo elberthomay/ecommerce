@@ -1,32 +1,40 @@
 import { Request, Response, NextFunction } from "express";
-import { ObjectSchema } from "joi";
+import Joi from "joi";
 import ValidationError from "../errors/ValidationError";
 
+export type ValidationErrorType = {
+  [key in "body" | "params" | "query"]?: Joi.ValidationError;
+};
+
+/**
+ * Validate input request data using input schema
+ * @param schemas object containing 0~3 schema
+ * @returns none
+ * @throws ValidationError
+ */
 const validator =
-  (schemas: { [key in "body" | "params" | "query"]?: ObjectSchema }) =>
+  (schemas: { [key in "body" | "params" | "query"]?: Joi.ObjectSchema }) =>
   (req: Request, res: Response, next: NextFunction) => {
     let validationErrors:
-      | { [key in "body" | "params" | "query"]?: any }
+      | { [key in "body" | "params" | "query"]?: Joi.ValidationError }
       | null = null;
+
+    // run validator for each key("body" | "params" | "query")
     for (const [key, schema] of Object.entries(schemas) as [
       keyof typeof schemas,
-      ObjectSchema
+      Joi.ObjectSchema
     ][]) {
-      const data = req[key];
-      const { error, value } = schema.validate(data, {
+      const { error, value } = schema.validate(req[key], {
         abortEarly: false,
         errors: {
           wrap: { label: false },
         },
       });
 
+      //add to validationErrors if there's a error
       if (error) {
-        const errorObject = error.details.map((detail) => ({
-          label: detail.context?.label,
-          message: detail.message,
-        }));
         validationErrors ??= {};
-        validationErrors[key] = errorObject;
+        validationErrors[key] = error;
       } else req[key] = value;
     }
     if (validationErrors) {

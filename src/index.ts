@@ -3,8 +3,9 @@ import sequelize from "./models/sequelize";
 
 (async () => {
   try {
-    await sequelize.sync({ force: true });
+    await sequelize.sync();
     console.log("Database connection established");
+    process.env.JWT_SECRET ??= "secret";
     app.listen(3000, () => {
       console.log("listening to port 3000");
     });

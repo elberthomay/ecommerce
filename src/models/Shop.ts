@@ -11,6 +11,7 @@ import User, { UserCreationAttribute } from "./User";
 import Item, { ItemCreationAttribute } from "./Item";
 
 export interface ShopCreationAttribute {
+  id?: string;
   name: string;
   userId?: string;
   user?: UserCreationAttribute;

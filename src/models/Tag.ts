@@ -9,6 +9,7 @@ import Item, { ItemCreationAttribute } from "./Item";
 import ItemTag from "./ItemTag";
 
 export interface TagCreationAttribute {
+  id?: number;
   name: string;
   Items?: ItemCreationAttribute[];
 }
