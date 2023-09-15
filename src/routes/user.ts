@@ -57,7 +57,7 @@ router.post(
         const tokenData: TokenTypes = { id: user.id };
         const maxAge = data.rememberMe ? 2592000000 : 86400000; //one month or 1 day
         const token = jwt.sign(tokenData, process.env.JWT_SECRET!, {
-          expiresIn: maxAge,
+          expiresIn: maxAge.toString(),
         });
         res
           .cookie("jwt", token, { httpOnly: true, maxAge })

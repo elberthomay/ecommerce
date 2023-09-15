@@ -12,6 +12,7 @@ const errorHandler = (
     //     // Handle JSON parsing errors (e.g., invalid JSON format)
     //     return res.status(400).json({ error: 'Invalid JSON format' });
   } else {
+    console.error(err);
     res.status(500).json({ status: "error", message: "Unknown Error Occured" });
   }
 };

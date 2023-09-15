@@ -21,7 +21,7 @@ const sequelize = new Sequelize({
   username: "root",
   password: "123456",
   host: "localhost",
-  models: [User, Shop, Item, Tag, ItemTag, Cart], // or [Player, Team],
+  models: [User, Shop, Item, Tag, ItemTag, Cart],
 });
 
 export default sequelize;

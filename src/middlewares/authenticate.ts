@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import catchAsync from "./catchAsync";
 import jwt from "jsonwebtoken";
 import { TokenTypes } from "../types/TokenTypes";
-import InvalidTokenError from "../errors/InvalidTokenError";
+import AuthenticationError from "../errors/AuthenticationError";
 import sequelize from "sequelize";
 import DatabaseError from "../errors/DatabaseError";
 import User from "../models/User";
@@ -19,7 +19,7 @@ const authenticate = (force: boolean) =>
         throw new DatabaseError(err);
       } else {
         res.clearCookie("jwt");
-        if (force) throw new InvalidTokenError();
+        if (force) throw new AuthenticationError();
         else next();
       }
     }
