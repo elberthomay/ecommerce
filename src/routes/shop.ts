@@ -38,7 +38,11 @@ router.post(
     if (existingShop) throw new DuplicateDataError("Shop");
     next();
   }),
-  fetch<ShopCreationAttribute, ShopActivateType>(Shop, "name", "body"),
+  fetch<ShopCreationAttribute, ShopActivateType>({
+    model: Shop,
+    key: "name",
+    location: "body",
+  }),
   catchAsync(async (req: Request, res: Response, next: NextFunction) => {
     const shop = (req as any)[Shop.name];
     const shopData = req.body as ShopActivateType;
@@ -79,12 +83,12 @@ router.patch(
   }),
   authenticate(true),
   validator({ params: itemIdSchema, body: editItemSchema }),
-  fetch<ItemCreationAttribute, { itemId: string }>(
-    Item,
-    ["id", "itemId"],
-    "params",
-    true
-  ),
+  fetch<ItemCreationAttribute, { itemId: string }>({
+    model: Item,
+    key: ["id", "itemId"],
+    location: "params",
+    force: true,
+  }),
   catchAsync(async (req: Request, res: Response, next: NextFunction) => {
     const currentUser: User = (req as any).currentUser;
     const changes: editItemType = (req as any).body;
@@ -103,12 +107,12 @@ router.delete(
   "/item/:itemId",
   authenticate(true),
   validator({ params: itemIdSchema }),
-  fetch<ItemCreationAttribute, { itemId: string }>(
-    Item,
-    ["id", "itemId"],
-    "params",
-    true
-  ),
+  fetch<ItemCreationAttribute, { itemId: string }>({
+    model: Item,
+    key: ["id", "itemId"],
+    location: "params",
+    force: true,
+  }),
   catchAsync(async (req: Request, res: Response, next: NextFunction) => {
     const currentUser: User = (req as any).currentUser;
     const item: Item = (req as any)[Item.name];

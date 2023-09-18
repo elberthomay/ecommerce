@@ -22,7 +22,11 @@ const router = Router();
 router.post(
   "/register",
   validator({ body: registerSchema }),
-  fetch<UserCreationAttribute, RegisterType>(User, "email", "body"),
+  fetch<UserCreationAttribute, RegisterType>({
+    model: User,
+    key: "email",
+    location: "body",
+  }),
   catchAsync(async (req: Request, res: Response) => {
     const data: RegisterType = req.body;
 
@@ -46,7 +50,11 @@ router.post(
 router.post(
   "/login",
   validator({ body: loginSchema }),
-  fetch<UserCreationAttribute, LoginType>(User, "email", "body"),
+  fetch<UserCreationAttribute, LoginType>({
+    model: User,
+    key: "email",
+    location: "body",
+  }),
   catchAsync(async (req: Request, res: Response) => {
     const user: User = (req as any)[User.name];
     const data: LoginType = req.body;

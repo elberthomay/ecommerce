@@ -13,12 +13,17 @@ import sequelize from "sequelize";
  * @param location location of property on Request object
  * @returns none
  */
-export default function fetch<M extends any, I extends any>(
-  model: ModelCtor,
-  key: Extract<keyof M, keyof I> | [keyof M, keyof I],
-  location: "body" | "params" | "query",
-  force: boolean = false
-) {
+export default function fetch<M extends any, I extends any>({
+  model,
+  key,
+  location,
+  force = false,
+}: {
+  model: ModelCtor;
+  key: Extract<keyof M, keyof I> | [keyof M, keyof I];
+  location: "body" | "params" | "query";
+  force?: boolean;
+}) {
   return catchAsync(async (req: Request, res: Response, next: NextFunction) => {
     try {
       const searchCondition =
