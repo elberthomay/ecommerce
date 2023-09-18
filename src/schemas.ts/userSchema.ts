@@ -16,13 +16,13 @@ const passwordSchema = Joi.string()
     "any.required": "{#label} is required",
   });
 
-export interface RegisterData {
+export interface RegisterType {
   name: string;
   email: string;
   password: string;
 }
 
-export const registerSchema = Joi.object<RegisterData>({
+export const registerSchema = Joi.object<RegisterType>({
   name: Joi.string()
     .required()
     .label("Name")
@@ -33,13 +33,13 @@ export const registerSchema = Joi.object<RegisterData>({
   .unknown(false)
   .required();
 
-export interface LoginData {
+export interface LoginType {
   email: string;
   password: string;
   rememberMe: boolean;
 }
 
-export const loginSchema = Joi.object<LoginData>({
+export const loginSchema = Joi.object<LoginType>({
   email: emailSchema,
   password: passwordSchema,
   rememberMe: Joi.boolean().default(false),

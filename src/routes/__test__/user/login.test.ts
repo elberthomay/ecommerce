@@ -1,26 +1,9 @@
-import { forgeCookie } from "../../../test/forgeCookie";
+import { defaultUser, forgeCookie } from "../../../test/forgeCookie";
 import request from "supertest";
 import app from "../../../app";
 import User from "../../../models/User";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-
-const defaultUser = {
-  id: "3ad3bf2c-6a47-4ce3-ba64-afed197160e0",
-  email: "test@example.com",
-  name: "Test Name",
-  hash: "$2b$10$xAUHKDvjpyGgSOO8HARfZOdQZj7xwd/4hIiTjjBPsYOtvUhsZ6EtO", //password123
-};
-
-const defaultCookie = () => [
-  forgeCookie(
-    {
-      id: defaultUser.id,
-    },
-    process.env.JWT_SECRET!,
-    "jwt"
-  ),
-];
 
 const insertDefaultUser = async () => {
   await User.create(defaultUser);
@@ -183,8 +166,8 @@ it("should return 200 if email and password match and correct expiration period"
 
       // Check if the cookie name and value match your expectations
       if (cookieName === "jwt") {
-        expect(cookieValue).toBe(
-          jwt.sign({ id: user.id }, process.env.JWT_SECRET!, {
+        expect(cookie).toEqual(
+          forgeCookie({ id: user.id }, process.env.JWT_SECRET!, "jwt", {
             expiresIn: "86400000",
           })
         );
@@ -211,8 +194,8 @@ it("should return 200 if email and password match and correct expiration period"
 
       // Check if the cookie name and value match your expectations
       if (cookieName === "jwt") {
-        expect(cookieValue).toBe(
-          jwt.sign({ id: user.id }, process.env.JWT_SECRET!, {
+        expect(cookie).toBe(
+          forgeCookie({ id: user.id }, process.env.JWT_SECRET!, "jwt", {
             expiresIn: "2592000000",
           })
         );

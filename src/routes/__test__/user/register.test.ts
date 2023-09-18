@@ -4,16 +4,6 @@ import app from "../../../app";
 import User from "../../../models/User";
 import bcrypt from "bcrypt";
 
-const defaultCookie = () => [
-  forgeCookie(
-    {
-      id: "3ad3bf2c-6a47-4ce3-ba64-afed197160e0",
-    },
-    process.env.JWT_SECRET!,
-    "jwt"
-  ),
-];
-
 // Define test data
 
 const userEmpty = async (): Promise<boolean> => {

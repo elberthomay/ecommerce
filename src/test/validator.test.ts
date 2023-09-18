@@ -1,11 +1,11 @@
-import validator from "../validator"; // Import your validator function
-import ValidationError from "../../errors/ValidationError"; // Import the ValidationError class from Joi
+import validator from "../middlewares/validator"; // Import your validator function
+import ValidationError from "../errors/ValidationError"; // Import the ValidationError class from Joi
 import { ObjectSchema } from "joi";
 import { NextFunction, Request, Response } from "express";
 
 // Define the reusable test function
 
-const validatorTest = (
+export const validatorTestFunction = (
   schemas: { [key in "body" | "params" | "query"]?: ObjectSchema },
   inputData: { [key in "body" | "params" | "query"]?: any },
   expectedResult:

@@ -20,10 +20,10 @@ const validator =
       | null = null;
 
     // run validator for each key("body" | "params" | "query")
-    for (const [key, schema] of Object.entries(schemas) as [
-      keyof typeof schemas,
-      Joi.ObjectSchema
-    ][]) {
+
+    (
+      Object.entries(schemas) as [keyof typeof schemas, Joi.ObjectSchema][]
+    ).forEach(([key, schema]) => {
       const { error, value } = schema.validate(req[key], {
         abortEarly: false,
         errors: {
@@ -31,12 +31,29 @@ const validator =
         },
       });
 
-      //add to validationErrors if there's a error
       if (error) {
         validationErrors ??= {};
         validationErrors[key] = error;
-      } else req[key] = value;
-    }
+      } else req[key] = value; //replace request data with validated data otherwise
+    });
+
+    // for (const [key, schema] of Object.entries(schemas) as [
+    //   keyof typeof schemas,
+    //   Joi.ObjectSchema
+    // ][]) {
+    //   const { error, value } = schema.validate(req[key], {
+    //     abortEarly: false,
+    //     errors: {
+    //       wrap: { label: false },
+    //     },
+    //   });
+
+    //   //add to validationErrors if there's a error
+    //   if (error) {
+    //     validationErrors ??= {};
+    //     validationErrors[key] = error;
+    //   } else req[key] = value; //replace request data with validated data otherwise
+    // }
     if (validationErrors) {
       next(new ValidationError(validationErrors));
     } else next();

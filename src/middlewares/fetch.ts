@@ -3,12 +3,13 @@ import catchAsync from "./catchAsync";
 import { Model, ModelCtor } from "sequelize-typescript";
 import DatabaseError from "../errors/DatabaseError";
 import NotFoundError from "../errors/NotFoundError";
+import sequelize from "sequelize";
 
 /**
  * Fetch data from provided model using property from Request object
  * store record on Request[modelName]
  * @param model model to fetch data from
- * @param key property used to fetch data
+ * @param key property used to fetch data, accepts string property for both model and data, or a pair
  * @param location location of property on Request object
  * @returns none
  */
@@ -20,21 +21,26 @@ export default function fetch<M extends any, I extends any>(
 ) {
   return catchAsync(async (req: Request, res: Response, next: NextFunction) => {
     try {
+      const searchCondition =
+        key instanceof Array
+          ? {
+              [key[0]]: req[location][key[1]],
+            }
+          : {
+              [key]: req[location][key],
+            };
+      console.log(searchCondition);
       const existingData = await model.findOne({
-        where:
-          key instanceof Array
-            ? {
-                [key[0]]: req[location][key[1]],
-              }
-            : {
-                [key]: req[location][key],
-              },
+        where: searchCondition,
       });
       (req as any)[model.name] = existingData;
+      console.log((req as any)[model.name]);
       if (force && !existingData) throw new NotFoundError(model.name);
       next();
     } catch (error: any) {
-      throw new DatabaseError(error);
+      if (error instanceof sequelize.DatabaseError)
+        throw new DatabaseError(error);
+      else throw error;
     }
   });
 }

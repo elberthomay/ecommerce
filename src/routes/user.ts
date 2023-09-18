@@ -1,7 +1,7 @@
 import { Router, Request, Response, NextFunction } from "express";
 import {
-  LoginData,
-  RegisterData,
+  LoginType,
+  RegisterType,
   loginSchema,
   registerSchema,
 } from "../schemas.ts/userSchema";
@@ -22,9 +22,9 @@ const router = Router();
 router.post(
   "/register",
   validator({ body: registerSchema }),
-  fetch<UserCreationAttribute, RegisterData>(User, "email", "body"),
+  fetch<UserCreationAttribute, RegisterType>(User, "email", "body"),
   catchAsync(async (req: Request, res: Response) => {
-    const data: RegisterData = req.body;
+    const data: RegisterType = req.body;
 
     if (!(req as any)[User.name]) {
       //if user doesn't exist
@@ -46,10 +46,10 @@ router.post(
 router.post(
   "/login",
   validator({ body: loginSchema }),
-  fetch<UserCreationAttribute, LoginData>(User, "email", "body"),
+  fetch<UserCreationAttribute, LoginType>(User, "email", "body"),
   catchAsync(async (req: Request, res: Response) => {
     const user: User = (req as any)[User.name];
-    const data: LoginData = req.body;
+    const data: LoginType = req.body;
     if (user) {
       //if user exist
       const result = await bcrypt.compare(data.password, user.hash);

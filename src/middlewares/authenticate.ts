@@ -7,12 +7,20 @@ import sequelize from "sequelize";
 import DatabaseError from "../errors/DatabaseError";
 import User from "../models/User";
 
+/**
+ *
+ * @param force
+ * @returns
+ */
 const authenticate = (force: boolean) =>
   catchAsync(async (req: Request, res: Response, next: NextFunction) => {
     try {
       const token: string = req.cookies["jwt"] ?? "";
       const result = jwt.verify(token, process.env.JWT_SECRET!) as TokenTypes;
-      (req as any).currentUser = await User.findByPk(result.id);
+      const loggedInUser = await User.findByPk(result.id);
+      if (!loggedInUser)
+        throw new Error("Tokenized user id doesn't exist in db");
+      (req as any).currentUser = loggedInUser;
       next();
     } catch (err) {
       if (err instanceof sequelize.DatabaseError) {
