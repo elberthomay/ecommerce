@@ -26,22 +26,13 @@ router.post(
     model: User,
     key: "email",
     location: "body",
+    force: "absent",
   }),
   catchAsync(async (req: Request, res: Response) => {
-    const data: RegisterType = req.body;
-
-    if (!(req as any)[User.name]) {
-      //if user doesn't exist
-      const hash = await bcrypt.hash(data.password, 10);
-      try {
-        const newUser = await User.create({ ...data, hash });
-        res.json({ status: "success", email: newUser.email });
-      } catch (error: any) {
-        throw new DatabaseError(error);
-      }
-    } else {
-      throw new DuplicateDataError("email");
-    }
+    const newUserData: RegisterType = req.body;
+    const hash = await bcrypt.hash(newUserData.password, 10);
+    const newUser = await User.create({ ...newUserData, hash });
+    res.json({ status: "success", email: newUser.email });
   })
 );
 
@@ -54,26 +45,27 @@ router.post(
     model: User,
     key: "email",
     location: "body",
+    transformer: (user) => {
+      if (!user) throw new InvalidLoginError();
+      return user;
+    },
   }),
   catchAsync(async (req: Request, res: Response) => {
     const user: User = (req as any)[User.name];
     const data: LoginType = req.body;
-    if (user) {
-      //if user exist
-      const result = await bcrypt.compare(data.password, user.hash);
-      if (result) {
-        const tokenData: TokenTypes = { id: user.id };
-        const maxAge = data.rememberMe ? 2592000000 : 86400000; //one month or 1 day
-        const token = jwt.sign(tokenData, process.env.JWT_SECRET!, {
-          expiresIn: maxAge.toString(),
-        });
-        res
-          .cookie("jwt", token, { httpOnly: true, maxAge })
-          .json({ status: "success" });
-      } else {
-        throw new InvalidLoginError();
-      }
-    } else throw new InvalidLoginError();
+    const result = await bcrypt.compare(data.password, user.hash);
+    if (result) {
+      const tokenData: TokenTypes = { id: user.id };
+      const maxAge = data.rememberMe ? 2592000000 : 86400000; //one month or 1 day
+      const token = jwt.sign(tokenData, process.env.JWT_SECRET!, {
+        expiresIn: maxAge.toString(),
+      });
+      res
+        .cookie("jwt", token, { httpOnly: true, maxAge })
+        .json({ status: "success" });
+    } else {
+      throw new InvalidLoginError();
+    }
   })
 );
 
@@ -84,11 +76,13 @@ router.post("/logout", (req: Request, res: Response, next: NextFunction) => {
 router.get(
   "/",
   authenticate(false),
-  (req: Request, res: Response, next: NextFunction) => {
-    const currentUser: User | undefined = (req as any).currentUser;
-    if (currentUser) res.json(currentUser);
-    else res.json({});
-  }
+  catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+    const tokenData = (req as any).tokenData as TokenTypes | null;
+    if (tokenData) {
+      const user = await User.findByPk(tokenData.id);
+      res.json(user);
+    } else res.json({});
+  })
 );
 
 export default router;

@@ -17,11 +17,11 @@ describe("should return 401 with failed authentication", () => {
   authenticationTests(app, url, "post");
 });
 
-it("should return 409 when shop is unactivated", async () => {
+it("should return 404 when shop is unactivated", async () => {
   await User.create(defaultUser);
-  request(app)
+  await request(app)
     .post(url)
     .set("Cookie", defaultCookie())
     .send(defaultItemData)
-    .expect(409);
+    .expect(404);
 });

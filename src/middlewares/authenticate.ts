@@ -1,36 +1,28 @@
 import { Request, Response, NextFunction } from "express";
-import catchAsync from "./catchAsync";
 import jwt from "jsonwebtoken";
 import { TokenTypes } from "../types/TokenTypes";
 import AuthenticationError from "../errors/AuthenticationError";
-import sequelize from "sequelize";
-import DatabaseError from "../errors/DatabaseError";
-import User from "../models/User";
 
 /**
- *
- * @param force
- * @returns
+ * produce handler that parse token data from cookie "jwt", stores result as Request.tokenData
+ * if token is invalid and force is false, Request.tokenData would be null
+ * @param force if true, AuthenticationError would be thrown if token is invalid, defaults true
+ * @returns express request handler
  */
-const authenticate = (force: boolean) =>
-  catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+const authenticate =
+  (force: boolean = true) =>
+  (req: Request, res: Response, next: NextFunction) => {
     try {
-      const token: string = req.cookies["jwt"] ?? "";
+      const token = (req.cookies["jwt"] ?? "") as string;
       const result = jwt.verify(token, process.env.JWT_SECRET!) as TokenTypes;
-      const loggedInUser = await User.findByPk(result.id);
-      if (!loggedInUser)
-        throw new Error("Tokenized user id doesn't exist in db");
-      (req as any).currentUser = loggedInUser;
+      (req as any).tokenData = result;
       next();
     } catch (err) {
-      if (err instanceof sequelize.DatabaseError) {
-        throw new DatabaseError(err);
-      } else {
-        res.clearCookie("jwt");
-        if (force) throw new AuthenticationError();
-        else next();
-      }
+      res.clearCookie("jwt");
+      if (force) throw new AuthenticationError();
+      else (req as any).tokenData = null;
+      next();
     }
-  });
+  };
 
 export default authenticate;

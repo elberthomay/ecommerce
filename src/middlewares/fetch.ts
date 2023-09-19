@@ -3,49 +3,69 @@ import catchAsync from "./catchAsync";
 import { Model, ModelCtor } from "sequelize-typescript";
 import DatabaseError from "../errors/DatabaseError";
 import NotFoundError from "../errors/NotFoundError";
-import sequelize from "sequelize";
+import sequelize, { Includeable, FindAttributeOptions } from "sequelize";
+import DuplicateDataError from "../errors/DuplicateDataError";
 
 /**
  * Fetch data from provided model using property from Request object
  * store record on Request[modelName]
- * @param model model to fetch data from
+ * @param model to fetch data from
  * @param key property used to fetch data, accepts string property for both model and data, or a pair
  * @param location location of property on Request object
+ * @param destination key on request object used to store fetch result, uses model.name if undefined
+ * @param attributes column to select in query
+ * @param include models to left join with
+ * @param force set forcing condition,
+ *   throw NotFoundError if force is "exist" and data is null
+ *   throw DuplicateDataError if force is "absent" and data is not null
+ * @param transformer transform the result or query before assignment, defaults to passthrough function
  * @returns none
+ * @throws NotFoundError if query is null and force is "exist"
+ * @throws DuplicateDataError if query is not null and force is "absent"
  */
 export default function fetch<M extends any, I extends any>({
   model,
   key,
   location,
+  destination,
+  attributes,
+  include,
   force = false,
+  transformer = (data) => data,
 }: {
   model: ModelCtor;
   key: Extract<keyof M, keyof I> | [keyof M, keyof I];
-  location: "body" | "params" | "query";
-  force?: boolean;
+  location: "body" | "params" | "query" | "tokenData";
+  destination?: string;
+  attributes?: FindAttributeOptions;
+  include?: Includeable | Includeable[];
+  force?: false | "exist" | "absent";
+  transformer?: (data: Model | null) => any;
 }) {
   return catchAsync(async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const searchCondition =
-        key instanceof Array
-          ? {
-              [key[0]]: req[location][key[1]],
-            }
-          : {
-              [key]: req[location][key],
-            };
-      console.log(searchCondition);
-      const existingData = await model.findOne({
-        where: searchCondition,
-      });
-      (req as any)[model.name] = existingData;
-      console.log((req as any)[model.name]);
-      if (force && !existingData) throw new NotFoundError(model.name);
-      next();
-    } catch (error: any) {
-      if (error instanceof sequelize.DatabaseError)
-        throw new DatabaseError(error);
-      else throw error;
-    }
+    //use different search key and location key if Array key is provided
+    const searchCondition =
+      key instanceof Array
+        ? { [key[0]]: (req as any)[location][key[1]] }
+        : { [key]: (req as any)[location][key] };
+
+    // use destination as Request attribute if defined
+    const destinationKey = destination ?? model.name;
+
+    //run query
+    const existingData = await model.findOne({
+      where: searchCondition,
+      attributes: attributes,
+      include: include,
+    });
+
+    //transform data
+    (req as any)[destinationKey] = transformer(existingData);
+
+    //throw error if force condition is not fulfilled
+    if (force === "exist" && !existingData) throw new NotFoundError(model.name);
+    if (force === "absent" && existingData)
+      throw new DuplicateDataError(Object.keys(searchCondition)[0]);
+    next();
   });
 }

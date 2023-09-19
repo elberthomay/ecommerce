@@ -1,5 +1,4 @@
 import { Model, ModelCtor } from "sequelize-typescript";
-import app from "../app";
 import sequelizeTest from "./sequelizeTest";
 
 beforeAll(async () => {
@@ -11,8 +10,8 @@ beforeAll(async () => {
 
 beforeEach(async () => {
   jest.clearAllMocks();
-  const models = Object.values(sequelizeTest.models);
-  await Promise.all(models.map((model) => model.truncate({ cascade: true })));
+  const models = Object.values(sequelizeTest.models); //get all models in db
+  await Promise.all(models.map((model) => model.truncate({ cascade: true }))); //truncate them all
 });
 
 afterAll(async () => {
