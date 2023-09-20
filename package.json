@@ -17,7 +17,8 @@
       "./src/test/setup.ts"
     ],
     "testPathIgnorePatterns": [
-      "<rootDir>/src/test"
+      "<rootDir>/src/test",
+      "<rootDir>/node_modules"
     ]
   },
   "dependencies": {
