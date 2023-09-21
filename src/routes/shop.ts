@@ -10,6 +10,8 @@ import {
   itemIdSchema,
   shopActivateSchema,
   shopActivateType as ShopActivateType,
+  shopIdSchema,
+  shopItemQuerySchema,
 } from "../schemas.ts/shopSchema";
 import User, { UserCreationAttribute } from "../models/User";
 import Shop, { ShopCreationAttribute } from "../models/Shop";
@@ -32,6 +34,27 @@ const compareUserIdToShopUserId = (
   authorize(value, target);
   next();
 };
+
+/**
+ * GET list of item from provided shopId
+ * Param: shopId
+ * Query:
+ *   limit: max number of item returned
+ *   page: page of item
+ * Authorization: not required
+ */
+router.get(
+  "/:shopId/item",
+  validator({ params: shopIdSchema, query: shopItemQuerySchema }),
+  catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+    const options: { limit?: number; page?: number } = req.query;
+    const limit = options.limit ?? 80;
+    const offset = options.page ? (options.page - 1) * limit : 0;
+    const shopId = req.params.shopId;
+    const items = await Item.findAll({ where: { shopId }, limit, offset });
+    res.json(items);
+  })
+);
 
 router.post(
   "/",

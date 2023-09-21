@@ -37,6 +37,7 @@
     "ts-jest": "^29.1.1"
   },
   "devDependencies": {
+    "@faker-js/faker": "^8.1.0",
     "@types/cookie-parser": "^1.4.4",
     "@types/jest": "^29.5.4",
     "@types/jsonwebtoken": "^9.0.2",

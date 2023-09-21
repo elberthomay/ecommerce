@@ -48,8 +48,25 @@ export const addItemSchema = Joi.object<addItemType>({
   .required()
   .unknown(false);
 
+const idSchema = Joi.string()
+  .uuid({ version: "uuidv4", separator: "-" })
+  .required();
+
 export const itemIdSchema = Joi.object({
-  itemId: Joi.string().uuid({ version: "uuidv4", separator: "-" }).required(),
+  itemId: idSchema,
+})
+  .required()
+  .unknown(false);
+
+export const shopIdSchema = Joi.object({
+  shopId: idSchema,
+})
+  .required()
+  .unknown(false);
+
+export const shopItemQuerySchema = Joi.object({
+  limit: Joi.number().min(1).max(200).optional(),
+  page: Joi.number().min(1).max(5000).optional(),
 })
   .required()
   .unknown(false);
