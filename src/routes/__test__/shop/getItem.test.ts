@@ -28,8 +28,8 @@ const createInsertFunction = (shopId: string) => async (count: number) => {
     shopId,
   });
   const records = faker.helpers.multiple(createItemData, { count });
-  await Item.bulkCreate(records);
-  return records;
+  const items = await Item.bulkCreate(records);
+  return items;
 };
 
 describe("Test limit and paging", () => {

@@ -8,6 +8,7 @@ import {
   paginationQuerySchema,
 } from "../schemas.ts/shopSchema";
 import catchAsync from "../middlewares/catchAsync";
+import Tag from "../models/Tag";
 
 const router = Router();
 
@@ -39,8 +40,11 @@ router.get(
     const queryOption = {
       limit,
       offset,
-      where: queryData.tagId ? { tagId: queryData.tagId } : undefined,
+      include: queryData.tagId
+        ? [{ model: Tag, where: { id: queryData.tagId } }]
+        : undefined,
     };
+    console.log(queryOption);
     const items = await Item.findAll(queryOption);
     res.json(items);
   })
