@@ -6,7 +6,7 @@ import { defaultCookie, defaultUser } from "../../../test/forgeCookie";
 import { ItemCreationAttribute } from "../../../models/Item";
 import Shop from "../../../models/Shop";
 
-const url = "/api/shop/item";
+const url = "/api/item";
 const defaultItemData: ItemCreationAttribute = {
   name: "Blue Pencil",
   description: "I'ts a blue pencil with a good",

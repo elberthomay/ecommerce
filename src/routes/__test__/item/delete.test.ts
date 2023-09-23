@@ -12,7 +12,7 @@ import Shop from "../../../models/Shop";
 import Item, { ItemCreationAttribute } from "../../../models/Item";
 import { v4 as uuid } from "uuid";
 
-const url = "/api/shop/item/";
+const url = "/api/item/";
 const method = "delete";
 
 const defaultShopData: ItemCreationAttribute = {

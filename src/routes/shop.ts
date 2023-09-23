@@ -23,18 +23,6 @@ import authorize from "../middlewares/authorize";
 
 const router = Router();
 
-const compareUserIdToShopUserId = (
-  req: Request,
-  res: Response,
-  next: NextFunction
-) => {
-  const value = ((req as any).tokenData as TokenTypes).id;
-  const target = ((req as any)[Item.name] as Item).shop?.userId;
-  if (!target) throw new Error("item has no Shop!");
-  authorize(value, target);
-  next();
-};
-
 /**
  * GET list of item from provided shopId
  * Param: shopId
@@ -56,6 +44,7 @@ router.get(
   })
 );
 
+/** activate shop */
 router.post(
   "/",
   authenticate(true),
@@ -83,63 +72,6 @@ router.post(
     const shopData = req.body as ShopActivateType;
     const userId = ((req as any).currentUser as User).id;
     await Shop.create({ ...shopData, userId });
-    res.json({ status: "success" });
-  })
-);
-
-router.post(
-  "/item",
-  authenticate(true),
-  fetch<ShopCreationAttribute, TokenTypes>({
-    model: Shop,
-    key: ["userId", "id"],
-    location: "tokenData",
-    force: "exist",
-  }),
-  validator({ body: addItemSchema }),
-  catchAsync(async (req: Request, res: Response, next: NextFunction) => {
-    const shop = (req as any)[Shop.name];
-    const newItemData = req.body as AddItemType;
-    const newItem = await Item.create({ ...newItemData, shopId: shop.id });
-    res.json(newItem);
-  })
-);
-
-router.patch(
-  "/item/:itemId",
-  authenticate(true),
-  validator({ params: itemIdSchema, body: editItemSchema }),
-  fetch<ItemCreationAttribute, { itemId: string }>({
-    model: Item,
-    key: ["id", "itemId"],
-    location: "params",
-    force: "exist",
-    include: [Shop],
-  }),
-  compareUserIdToShopUserId,
-  catchAsync(async (req: Request, res: Response, next: NextFunction) => {
-    const changes: editItemType = (req as any).body;
-    const item: Item = (req as any)[Item.name];
-    await item.set(changes).save();
-    res.json({ status: "success" });
-  })
-);
-
-router.delete(
-  "/item/:itemId",
-  authenticate(true),
-  validator({ params: itemIdSchema }),
-  fetch<ItemCreationAttribute, { itemId: string }>({
-    model: Item,
-    key: ["id", "itemId"],
-    location: "params",
-    force: "exist",
-    include: [Shop],
-  }),
-  compareUserIdToShopUserId,
-  catchAsync(async (req: Request, res: Response, next: NextFunction) => {
-    const item: Item = (req as any)[Item.name];
-    await item.destroy();
     res.json({ status: "success" });
   })
 );

@@ -22,7 +22,7 @@ const defaultShopData: ItemCreationAttribute = {
 
 const defaultItem = { ...defaultShopData, id: uuid() };
 
-const url = "/api/shop/item/";
+const url = "/api/item/";
 
 const changesItemData: editItemType = {
   name: "Green Tree",
