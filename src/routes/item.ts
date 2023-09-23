@@ -44,7 +44,6 @@ router.get(
         ? [{ model: Tag, where: { id: queryData.tagId } }]
         : undefined,
     };
-    console.log(queryOption);
     const items = await Item.findAll(queryOption);
     res.json(items);
   })

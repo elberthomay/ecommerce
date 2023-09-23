@@ -68,6 +68,8 @@ router.delete(
   catchAsync(async (req, res) => {
     const tag: Tag = (req as any)[Tag.name];
     await tag.destroy();
-    res.json({ status: "success" });
+    res.json(tag);
   })
 );
+
+export default router;

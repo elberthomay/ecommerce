@@ -3,7 +3,7 @@ import Joi from "joi";
 const idSchema = Joi.string().uuid();
 
 const tagSchema = {
-  id: Joi.number().integer().min(0).max(1000),
+  id: Joi.number().integer().min(1).max(1000),
   name: Joi.string().max(50),
 };
 
