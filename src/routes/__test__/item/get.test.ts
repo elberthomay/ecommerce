@@ -1,13 +1,14 @@
 import request from "supertest";
-import User from "../../../models/User";
-import app from "../../../app";
-import Shop from "../../../models/Shop";
-import Item, { ItemCreationAttribute } from "../../../models/Item";
 import { faker } from "@faker-js/faker";
+
+import app from "../../../app";
+import User from "../../../models/User";
+import Item, { ItemCreationAttribute } from "../../../models/Item";
+import Shop from "../../../models/Shop";
 import pagingAndLimitTests from "../../../test/pagingAndLimitTests.test";
+const url = "/api/item";
 
 const defaultShopId = "2e9ecb74-c898-428a-84f4-03f6d827a335";
-const url = "/api/shop/" + defaultShopId + "/item";
 
 const anotherShopId = "f8b64acd-b3aa-4672-b873-c188cd5e2270";
 
@@ -32,13 +33,28 @@ const createInsertFunction = (shopId: string) => async (count: number) => {
   return records;
 };
 
-describe("Test limit and paging", () => {
+describe("test basic paging and limit", () => {
   pagingAndLimitTests(app, url, createInsertFunction(defaultShopId));
 });
 
-describe("Test limit and paging with items from other shop", () => {
-  beforeEach(async () => {
-    await createInsertFunction(anotherShopId)(100);
-  });
-  pagingAndLimitTests(app, url, createInsertFunction(defaultShopId));
+it("should return item from all shop", async () => {
+  await createInsertFunction(defaultShopId)(40);
+  await createInsertFunction(anotherShopId)(40);
+  await createInsertFunction("f8b64acd-b3aa-4672-b823-c188cd5e3270")(40);
+  await request(app)
+    .get(url)
+    .query({ limit: 120 })
+    .send()
+    .expect(200)
+    .expect(({ body }) => {
+      expect(body).toHaveLength(120);
+    });
+  await request(app)
+    .get(url)
+    .query({ limit: 80 })
+    .send()
+    .expect(200)
+    .expect(({ body }) => {
+      expect(body).toHaveLength(80);
+    });
 });

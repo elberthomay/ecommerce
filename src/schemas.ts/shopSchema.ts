@@ -64,9 +64,20 @@ export const shopIdSchema = Joi.object({
   .required()
   .unknown(false);
 
-export const shopItemQuerySchema = Joi.object({
-  limit: Joi.number().min(1).max(200).optional(),
-  page: Joi.number().min(1).max(5000).optional(),
+const paginationLimitSchema = Joi.number().min(1).max(200).optional();
+const paginationPageSchema = Joi.number().min(1).max(5000).optional();
+
+export const paginationQuerySchema = Joi.object({
+  limit: paginationLimitSchema,
+  page: paginationPageSchema,
+})
+  .required()
+  .unknown(false);
+
+export const itemQuerySchema = Joi.object({
+  limit: paginationLimitSchema,
+  page: paginationPageSchema,
+  tagId: Joi.number().integer().min(0).max(100000),
 })
   .required()
   .unknown(false);

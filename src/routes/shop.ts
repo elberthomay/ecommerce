@@ -11,7 +11,7 @@ import {
   shopActivateSchema,
   shopActivateType as ShopActivateType,
   shopIdSchema,
-  shopItemQuerySchema,
+  paginationQuerySchema,
 } from "../schemas.ts/shopSchema";
 import User, { UserCreationAttribute } from "../models/User";
 import Shop, { ShopCreationAttribute } from "../models/Shop";
@@ -45,7 +45,7 @@ const compareUserIdToShopUserId = (
  */
 router.get(
   "/:shopId/item",
-  validator({ params: shopIdSchema, query: shopItemQuerySchema }),
+  validator({ params: shopIdSchema, query: paginationQuerySchema }),
   catchAsync(async (req: Request, res: Response, next: NextFunction) => {
     const options: { limit?: number; page?: number } = req.query;
     const limit = options.limit ?? 80;
