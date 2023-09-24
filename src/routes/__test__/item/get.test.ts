@@ -7,7 +7,6 @@ import Item, { ItemCreationAttribute } from "../../../models/Item";
 import Shop from "../../../models/Shop";
 import pagingAndLimitTests from "../../../test/pagingAndLimitTests.test";
 import Tag from "../../../models/Tag";
-import ItemTag from "../../../models/ItemTag";
 const url = "/api/item";
 
 const defaultShopId = "2e9ecb74-c898-428a-84f4-03f6d827a335";

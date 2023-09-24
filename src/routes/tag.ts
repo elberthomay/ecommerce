@@ -4,7 +4,7 @@ import Tag, { TagCreationAttribute } from "../models/Tag";
 import validator from "../middlewares/validator";
 import {
   tagCreateSchema,
-  tagIdQuerySchema,
+  tagQuerySchema,
   tagPatchSchema,
 } from "../schemas.ts/tagSchema";
 import fetch from "../middlewares/fetch";
@@ -40,7 +40,7 @@ router.post(
 /** edit tag */
 router.patch(
   "/:tagId",
-  validator({ params: tagIdQuerySchema, body: tagPatchSchema }),
+  validator({ params: tagQuerySchema, body: tagPatchSchema }),
   fetch<TagCreationAttribute, { tagId: number }>({
     model: Tag,
     key: ["id", "tagId"],
@@ -58,7 +58,7 @@ router.patch(
 /** delete tag */
 router.delete(
   "/:tagId",
-  validator({ params: tagIdQuerySchema }),
+  validator({ params: tagQuerySchema }),
   fetch<TagCreationAttribute, { tagId: number }>({
     model: Tag,
     key: ["id", "tagId"],

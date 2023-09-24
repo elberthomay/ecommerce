@@ -1,39 +1,35 @@
 import { Router, Request, Response, NextFunction } from "express";
-import {
-  LoginType,
-  RegisterType,
-  loginSchema,
-  registerSchema,
-} from "../schemas.ts/userSchema";
+import { loginSchema, registerSchema } from "../schemas.ts/userSchema";
 import validator from "../middlewares/validator";
 import User, { UserCreationAttribute } from "../models/User";
 import catchAsync from "../middlewares/catchAsync";
-import DuplicateDataError from "../errors/DuplicateDataError";
 import bcrypt from "bcrypt";
-import DatabaseError from "../errors/DatabaseError";
 import fetch from "../middlewares/fetch";
 import InvalidLoginError from "../errors/InvalidLoginError";
 import jwt from "jsonwebtoken";
 import { TokenTypes } from "../types/TokenTypes";
 import authenticate from "../middlewares/authenticate";
+import { UserLoginType, UserRegisterType } from "../types/userTypes";
 
 const router = Router();
 
 router.post(
   "/register",
   validator({ body: registerSchema }),
-  fetch<UserCreationAttribute, RegisterType>({
+  fetch<UserCreationAttribute, UserRegisterType>({
     model: User,
     key: "email",
     location: "body",
     force: "absent",
   }),
-  catchAsync(async (req: Request, res: Response) => {
-    const newUserData: RegisterType = req.body;
-    const hash = await bcrypt.hash(newUserData.password, 10);
-    const newUser = await User.create({ ...newUserData, hash });
-    res.json({ status: "success", email: newUser.email });
-  })
+  catchAsync(
+    async (req: Request<unknown, unknown, UserRegisterType>, res: Response) => {
+      const newUserData = req.body;
+      const hash = await bcrypt.hash(newUserData.password, 10);
+      const newUser = await User.create({ ...newUserData, hash });
+      res.json({ status: "success", email: newUser.email });
+    }
+  )
 );
 
 // router.post("/verify")
@@ -41,32 +37,35 @@ router.post(
 router.post(
   "/login",
   validator({ body: loginSchema }),
-  fetch<UserCreationAttribute, LoginType>({
+  fetch<UserCreationAttribute, UserLoginType>({
     model: User,
     key: "email",
     location: "body",
     transformer: (user) => {
+      //doesn't use force: "exist" to throw custom error type
       if (!user) throw new InvalidLoginError();
       return user;
     },
   }),
-  catchAsync(async (req: Request, res: Response) => {
-    const user: User = (req as any)[User.name];
-    const data: LoginType = req.body;
-    const result = await bcrypt.compare(data.password, user.hash);
-    if (result) {
-      const tokenData: TokenTypes = { id: user.id };
-      const maxAge = data.rememberMe ? 2592000000 : 86400000; //one month or 1 day
-      const token = jwt.sign(tokenData, process.env.JWT_SECRET!, {
-        expiresIn: maxAge.toString(),
-      });
-      res
-        .cookie("jwt", token, { httpOnly: true, maxAge })
-        .json({ status: "success" });
-    } else {
-      throw new InvalidLoginError();
+  catchAsync(
+    async (req: Request<unknown, unknown, UserLoginType>, res: Response) => {
+      const user: User = (req as any)[User.name];
+      const loginData = req.body;
+      const match = await bcrypt.compare(loginData.password, user.hash);
+      if (match) {
+        const tokenData: TokenTypes = { id: user.id };
+        const tokenAge = loginData.rememberMe ? 2592000000 : 86400000; //one month or 1 day
+        const token = jwt.sign(tokenData, process.env.JWT_SECRET!, {
+          expiresIn: tokenAge.toString(),
+        });
+        res
+          .cookie("jwt", token, { httpOnly: true, maxAge: tokenAge })
+          .json({ status: "success" });
+      } else {
+        throw new InvalidLoginError();
+      }
     }
-  })
+  )
 );
 
 router.post("/logout", (req: Request, res: Response, next: NextFunction) => {

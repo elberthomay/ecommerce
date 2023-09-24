@@ -1,6 +1,5 @@
 import app from "../../../app";
 import request from "supertest";
-import authenticationTests from "../../../test/authenticationTests.test";
 import {
   anotherCookie,
   anotherUser,

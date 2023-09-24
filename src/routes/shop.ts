@@ -3,23 +3,21 @@ import authenticate from "../middlewares/authenticate";
 import catchAsync from "../middlewares/catchAsync";
 import validator from "../middlewares/validator";
 import {
-  addItemSchema,
-  addItemType as AddItemType,
-  editItemSchema,
-  editItemType,
-  itemIdSchema,
-  shopActivateSchema,
-  shopActivateType as ShopActivateType,
-  shopIdSchema,
-  paginationQuerySchema,
+  ShopQuerySchema,
+  shopCreateSchema,
+  shopParamSchema,
 } from "../schemas.ts/shopSchema";
 import User, { UserCreationAttribute } from "../models/User";
 import Shop, { ShopCreationAttribute } from "../models/Shop";
 import fetch from "../middlewares/fetch";
-import Item, { ItemCreationAttribute } from "../models/Item";
-import { AuthorizationError } from "../errors/AuthorizationError";
+import Item from "../models/Item";
+import { ParamsDictionary } from "express-serve-static-core";
 import { TokenTypes } from "../types/TokenTypes";
-import authorize from "../middlewares/authorize";
+import {
+  ShopCreateType,
+  ShopParamType,
+  ShopQueryType,
+} from "../types/shopTypes";
 
 const router = Router();
 
@@ -33,29 +31,35 @@ const router = Router();
  */
 router.get(
   "/:shopId/item",
-  validator({ params: shopIdSchema, query: paginationQuerySchema }),
-  catchAsync(async (req: Request, res: Response, next: NextFunction) => {
-    const options: { limit?: number; page?: number } = req.query;
-    const limit = options.limit ?? 80;
-    const offset = options.page ? (options.page - 1) * limit : 0;
-    const shopId = req.params.shopId;
-    const items = await Item.findAll({ where: { shopId }, limit, offset });
-    res.json(items);
-  })
+  validator({ params: shopParamSchema, query: ShopQuerySchema }),
+  catchAsync(
+    async (
+      req: Request<ParamsDictionary, unknown, unknown, ShopQueryType>,
+      res: Response,
+      next: NextFunction
+    ) => {
+      const options = req.query;
+      const limit = options.limit ?? 80;
+      const offset = options.page ? (options.page - 1) * limit : 0;
+      const shopId = req.params.shopId;
+      const items = await Item.findAll({ where: { shopId }, limit, offset });
+      res.json(items);
+    }
+  )
 );
 
 /** activate shop */
 router.post(
   "/",
   authenticate(true),
-  validator({ body: shopActivateSchema }),
+  validator({ body: shopCreateSchema }),
   fetch<ShopCreationAttribute, TokenTypes>({
     model: Shop,
     key: ["userId", "id"],
     location: "tokenData",
     force: "absent",
   }),
-  fetch<ShopCreationAttribute, ShopActivateType>({
+  fetch<ShopCreationAttribute, ShopCreateType>({
     model: Shop,
     key: "name",
     location: "body",
@@ -68,12 +72,18 @@ router.post(
     force: "exist",
     destination: "currentUser",
   }),
-  catchAsync(async (req: Request, res: Response, next: NextFunction) => {
-    const shopData = req.body as ShopActivateType;
-    const userId = ((req as any).currentUser as User).id;
-    await Shop.create({ ...shopData, userId });
-    res.json({ status: "success" });
-  })
+  catchAsync(
+    async (
+      req: Request<ParamsDictionary, unknown, ShopCreateType>,
+      res: Response,
+      next: NextFunction
+    ) => {
+      const shopData = req.body;
+      const userId = ((req as any).currentUser as User).id;
+      await Shop.create({ ...shopData, userId });
+      res.json({ status: "success" });
+    }
+  )
 );
 
 export default router;

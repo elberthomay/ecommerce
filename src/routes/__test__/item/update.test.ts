@@ -11,7 +11,7 @@ import User from "../../../models/User";
 import Item, { ItemCreationAttribute } from "../../../models/Item";
 import { v4 as uuid } from "uuid";
 import Shop from "../../../models/Shop";
-import { editItemType } from "../../../schemas.ts/shopSchema";
+import { ItemUpdateType } from "../../../types/itemTypes";
 
 const defaultShopData: ItemCreationAttribute = {
   name: "Blue Pencil",
@@ -24,7 +24,7 @@ const defaultItem = { ...defaultShopData, id: uuid() };
 
 const url = "/api/item/";
 
-const changesItemData: editItemType = {
+const changesItemData: ItemUpdateType = {
   name: "Green Tree",
   description: "Green Tree with good shades",
   price: 5000,
