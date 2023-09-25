@@ -9,21 +9,28 @@ import {
 import Item from "./Item";
 import User from "./User";
 
+interface CartCreationAttribute {
+  userId: string;
+  itemId: string;
+  quantity?: number;
+  selected?: boolean;
+}
+
 @Table
-class Cart extends Model {
+class Cart extends Model<CartCreationAttribute> {
   @ForeignKey(() => User)
   @Column
   userId!: string;
 
   @ForeignKey(() => Item)
   @Column
-  ItemId!: string;
+  itemId!: string;
 
   @Column({
     type: DataType.INTEGER,
     allowNull: false,
-    defaultValue: 0,
-    validate: { min: 0 },
+    defaultValue: 1,
+    validate: { min: 1 },
   })
   quantity!: number;
 
