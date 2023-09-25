@@ -1,0 +1,148 @@
+import { Router, Request } from "express";
+import authenticate from "../middlewares/authenticate";
+import fetch from "../middlewares/fetch";
+import User, { UserCreationAttribute } from "../models/User";
+import { TokenTypes } from "../types/TokenTypes";
+import catchAsync from "../middlewares/catchAsync";
+import Shop from "../models/Shop";
+import validator from "../middlewares/validator";
+import {
+  cartCreateSchema,
+  cartDeleteSchema,
+  cartUpdateSchema,
+} from "../schemas.ts/cartSchema";
+import {
+  cartCreateType,
+  cartDeleteType,
+  cartUpdateType,
+} from "../types/cartType";
+import Cart from "../models/Cart";
+import NotFoundError from "../errors/NotFoundError";
+import InventoryError from "../errors/InventoryError";
+import Item, { ItemCreationAttribute } from "../models/Item";
+
+const router = Router();
+
+const updateHandler = catchAsync(
+  async (req: Request<unknown, unknown, cartUpdateType>, res, next) => {
+    const currentUser: User = (req as any).currentUser;
+    const updateData = req.body;
+    const cart = await Cart.findOne({
+      where: { userId: currentUser.id, itemId: updateData.itemId },
+    });
+    const item = await Item.findByPk(updateData.itemId);
+    if (cart && item) {
+      if (updateData.quantity !== undefined) {
+        if (updateData.quantity === 0) return next(); // delete
+        else if (item.quantity < updateData.quantity)
+          throw new InventoryError();
+      }
+      await cart.set(updateData).save();
+      res.json(cart);
+    } else throw new NotFoundError("Cart");
+  }
+);
+
+const deleteHandler = catchAsync(
+  async (req: Request<unknown, unknown, cartDeleteType>, res, next) => {
+    const currentUser: User = (req as any).currentUser;
+    const itemId = req.body.itemId;
+    const cart = await Cart.findOne({
+      where: { userId: currentUser.id, itemId: itemId },
+    });
+    if (cart) {
+      await cart.destroy();
+      res.json({ status: "success" });
+    } else throw new NotFoundError("Cart");
+  }
+);
+
+router.get(
+  "/",
+  authenticate(true),
+  fetch<UserCreationAttribute, TokenTypes>({
+    model: User,
+    key: "id",
+    location: "tokenData",
+    destination: "currentUser",
+    force: "exist",
+  }),
+  catchAsync(async (req, res) => {
+    const user: User = (req as any).currentUser;
+    const itemsInCart = await user.$get("itemsInCart", { include: [Shop] });
+    res.json(itemsInCart);
+  })
+);
+router.post(
+  "/",
+  authenticate(true),
+  validator({ body: cartCreateSchema }),
+  fetch<UserCreationAttribute, TokenTypes>({
+    model: User,
+    key: "id",
+    location: "tokenData",
+    force: "exist",
+    destination: "currentUser",
+  }),
+  fetch<ItemCreationAttribute, cartCreateType>({
+    model: Item,
+    key: ["id", "itemId"],
+    location: "body",
+    force: "exist",
+  }),
+  catchAsync(
+    async (req: Request<unknown, unknown, cartCreateType>, res, next) => {
+      const currentUser: User = (req as any).currentUser;
+      const newCartData = req.body;
+      const cart = await Cart.findOne({
+        where: { userId: currentUser.id, itemId: newCartData.itemId },
+      });
+      if (cart) {
+        req.body.quantity += cart.quantity;
+        return next(); //try to add quantity
+      } else {
+        const item: Item = (req as any)[Item.name];
+        if (item.quantity < newCartData.quantity) throw new InventoryError();
+        else {
+          const newCart = await Cart.create({
+            ...newCartData,
+            userId: currentUser.id,
+          });
+          res.json(newCart);
+        }
+      }
+    }
+  ),
+  updateHandler //update
+);
+
+router.patch(
+  "/",
+  authenticate(true),
+  validator({ body: cartUpdateSchema }),
+  fetch<UserCreationAttribute, TokenTypes>({
+    model: User,
+    key: "id",
+    location: "tokenData",
+    destination: "currentUser",
+    force: "exist",
+  }),
+  updateHandler,
+  deleteHandler
+);
+
+router.delete(
+  "/",
+  authenticate(true),
+  validator({ body: cartDeleteSchema }),
+  fetch<UserCreationAttribute, TokenTypes>({
+    model: User,
+    key: "id",
+    location: "tokenData",
+    force: "exist",
+    destination: "currentUser",
+  }),
+  deleteHandler
+);
+
+export default router;

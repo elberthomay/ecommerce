@@ -112,3 +112,22 @@ it("doesn't delete the same item from another user", async () => {
     await Cart.findOne({ where: { userId: anotherUser.id, itemId: item.id } })
   ).not.toBeNull();
 });
+
+it("doesn't delete other cart item", async () => {
+  const items = await insertItems(5, faker.string.uuid(), 5);
+  await insertDefaultUser();
+  const cartDefault = await Cart.bulkCreate(
+    items.map((item) => ({ userId: defaultUser.id, itemId: item.id }))
+  );
+  expect(
+    await Cart.findAll({ where: { userId: defaultUser.id } })
+  ).toHaveLength(5);
+  await request(app)
+    .delete(url)
+    .set("Cookie", defaultCookie())
+    .send({ itemId: items[0].id })
+    .expect(200);
+  expect(
+    await Cart.findAll({ where: { userId: defaultUser.id } })
+  ).toHaveLength(4);
+});

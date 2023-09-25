@@ -58,7 +58,7 @@ it("return 400 for invalid itemId(body)", async () => {
 });
 
 it("return 400 for invalid quantity", async () => {
-  const invalidBodies = [-1, -100, 0, 10000, 99999999].map((quantity) => ({
+  const invalidBodies = [-1, -100, 10000, 99999999].map((quantity) => ({
     itemId: faker.string.uuid(),
     quantity,
   }));
@@ -79,7 +79,7 @@ it("return 404 if item doesn't exist", async () => {
     .send({ itemId: faker.string.uuid(), quantity: 10 })
     .expect(404);
 });
-it("return 409 if quantity to add exceeds item's current inventory", async () => {
+it("return 422 if quantity to add exceeds item's current inventory", async () => {
   const [item] = await insertItems(1, faker.string.uuid(), 5);
   await insertDefaultUser();
   const cart = await Cart.create({ userId: defaultUser.id, itemId: item.id });
@@ -87,7 +87,7 @@ it("return 409 if quantity to add exceeds item's current inventory", async () =>
     .patch(url)
     .set("Cookie", defaultCookie())
     .send({ itemId: item.id, quantity: 6 })
-    .expect(409);
+    .expect(422);
 });
 it("will delete item from cart if quantity is set to 0", async () => {
   const [item] = await insertItems(1, faker.string.uuid(), 5);

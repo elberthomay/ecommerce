@@ -93,13 +93,13 @@ it("return 404 if item doesn't exist", async () => {
     .send({ itemId: faker.string.uuid(), quantity: 10 })
     .expect(404);
 });
-it("return 409 if quantity to add exceeds item's current inventory", async () => {
+it("return 422 if quantity to add exceeds item's current inventory", async () => {
   const items = await insertItems(1, faker.string.uuid(), 5);
   await request(app)
     .post(url)
     .set("Cookie", defaultCookie())
     .send({ itemId: items[0].id, quantity: 10 })
-    .expect(409);
+    .expect(422);
 });
 
 it("successfully added item to cart", async () => {
@@ -126,7 +126,7 @@ it("tries to add quantity if item already exists in cart", async () => {
     .post(url)
     .set("Cookie", defaultCookie())
     .send({ itemId: items[0].id, quantity: 4 })
-    .expect(409);
+    .expect(422);
   await cart.reload();
   expect(cart.quantity).toEqual(2);
   await request(app)
@@ -134,6 +134,7 @@ it("tries to add quantity if item already exists in cart", async () => {
     .set("Cookie", defaultCookie())
     .send({ itemId: items[0].id, quantity: 3 })
     .expect(200);
+  await cart.reload();
   expect(cart.quantity).toEqual(5);
 });
 

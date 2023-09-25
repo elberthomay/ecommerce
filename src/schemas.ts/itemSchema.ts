@@ -8,7 +8,7 @@ import {
 import { paginationSchema, uuidSchema } from "./commonSchema";
 import { tagSchema } from "./tagSchema";
 
-const itemSchema = {
+export const itemSchema = {
   id: uuidSchema,
   name: Joi.string().max(255).messages({
     "string.max": "{#label} must be shorter than {#limit} characters",

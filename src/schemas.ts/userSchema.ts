@@ -1,7 +1,9 @@
 import Joi from "joi";
 import { UserLoginType, UserRegisterType } from "../types/userTypes";
+import { uuidSchema } from "./commonSchema";
 
-const userSchema = {
+export const userSchema = {
+  id: uuidSchema,
   name: Joi.string()
     .required()
     .label("Name")
