@@ -2,25 +2,16 @@ import request from "supertest";
 import app from "../../../app";
 import authenticationTests from "../../../test/authenticationTests.test";
 import {
-  anotherCookie,
-  anotherUser,
+  createUser,
   defaultCookie,
-  defaultUser,
-} from "../../../test/forgeCookie";
-import User from "../../../models/User";
-import Item, { ItemCreationAttribute } from "../../../models/Item";
-import { v4 as uuid } from "uuid";
-import Shop from "../../../models/Shop";
+  forgeCookie,
+} from "../../../test/helpers/user/userHelper";
+import Item from "../../../models/Item";
 import { ItemUpdateType } from "../../../types/itemTypes";
-
-const defaultShopData: ItemCreationAttribute = {
-  name: "Blue Pencil",
-  description: "I'ts a blue pencil with a good",
-  price: 100000,
-  quantity: 10,
-};
-
-const defaultItem = { ...defaultShopData, id: uuid() };
+import { createItem, defaultItem } from "../../../test/helpers/item/itemHelper";
+import { createShop, defaultShop } from "../../../test/helpers/shopHelper";
+import { invalidUuid } from "../../../test/helpers/commonData";
+import _ from "lodash";
 
 const url = "/api/item/";
 
@@ -32,9 +23,7 @@ const changesItemData: ItemUpdateType = {
 };
 
 beforeEach(async () => {
-  const user = await User.create(defaultUser);
-  const shop = await Shop.create({ name: "Test Shop", userId: user.id });
-  await Item.create({ ...defaultItem, shopId: shop.id });
+  await createItem([defaultItem], defaultShop);
 });
 
 describe("should return 401 when unauthenticated", () => {
@@ -42,15 +31,8 @@ describe("should return 401 when unauthenticated", () => {
 });
 
 it("should return 400 validation error when accessed with invalid itemId", async () => {
-  const invalidItemIds: string[] = [
-    "invalidId", //not uuid
-    "80e31d9e-d48f-43a2-b267-b96a490c033", //one character missing
-    "99b454cc-2288-a2f580411e3ff77e", //missing one portion
-    "5f1e4375ef6044c7880aba7b44e183f1", //no dash
-    // "99b454cc-2288-412a-a2f580411e3ff77e" missing up to three dash is not error, damn bug
-  ];
   await Promise.all(
-    invalidItemIds.map((invalidId) =>
+    invalidUuid.map((invalidId) =>
       request(app)
         .patch(url + invalidId)
         .set("Cookie", defaultCookie())
@@ -77,38 +59,53 @@ it("should return 400 validation error when accessed with no update property", a
 
 it("should return 403 unauthorized when user has yet to activate shop", async () => {
   //create another user
-  await User.create(anotherUser);
+  const {
+    users: [user],
+  } = await createUser(1);
   await request(app)
     .patch(url + defaultItem.id)
-    .set("Cookie", anotherCookie())
+    .set("Cookie", forgeCookie(user))
     .send(changesItemData)
     .expect(403);
 });
 
 it("should return 403 unauthorized when item is not associated with user's shop", async () => {
   //create another user
-  await User.create(anotherUser);
-  await Shop.create({ name: "another Shop", userId: anotherUser.id });
+  const [shop] = await createShop(1);
   await request(app)
     .patch(url + defaultItem.id)
-    .set("Cookie", anotherCookie())
+    .set("Cookie", forgeCookie({ id: shop.userId }))
     .send(changesItemData)
     .expect(403);
 });
 
 it("should return 200 success when item is associated with user's shop with correct update data", async () => {
-  const response = await request(app)
+  await request(app)
     .patch(url + defaultItem.id)
     .set("Cookie", defaultCookie())
     .send(changesItemData)
-    .expect(200);
+    .expect(200)
+    .expect(async ({ body }) => {
+      const updatedItem = _.pick(body, [
+        "id",
+        "name",
+        "description",
+        "price",
+        "quantity",
+        "shopId",
+      ]);
+
+      expect(updatedItem).toEqual({ ...defaultItem, ...changesItemData });
+    });
+
   const item = await Item.findByPk(defaultItem.id);
-  if (item === null) throw new Error("default item is undefined!");
-  //expect all changes to correctly applied
-  const resultingItem = { ...defaultItem, ...changesItemData };
-  Object.entries(resultingItem).forEach(([key, value]) => {
-    const correctKey: keyof ItemCreationAttribute =
-      key as keyof ItemCreationAttribute;
-    expect(item[correctKey]).toEqual(value);
-  });
+  const databaseItem = _.pick(item, [
+    "id",
+    "name",
+    "description",
+    "price",
+    "quantity",
+    "shopId",
+  ]);
+  expect(databaseItem).toEqual({ ...defaultItem, ...changesItemData });
 });

@@ -20,6 +20,7 @@ import Cart from "../models/Cart";
 import NotFoundError from "../errors/NotFoundError";
 import InventoryError from "../errors/InventoryError";
 import Item, { ItemCreationAttribute } from "../models/Item";
+import _ from "lodash";
 
 const router = Router();
 
@@ -69,10 +70,21 @@ router.get(
   }),
   catchAsync(async (req, res) => {
     const user: User = (req as any).currentUser;
-    const itemsInCart = await user.$get("itemsInCart", { include: [Shop] });
-    res.json(itemsInCart);
+    const itemsInCart = await user.$get("itemsInCart", {
+      include: [Shop],
+    });
+    const result = itemsInCart.map((item) => ({
+      ...(item as any).Cart.toJSON(),
+      inventory: item.quantity,
+      name: item.name,
+      price: item.price,
+      shopId: item.shopId,
+      shopName: item.shop?.name,
+    }));
+    res.json(result);
   })
 );
+
 router.post(
   "/",
   authenticate(true),

@@ -24,6 +24,8 @@ export interface ItemCreationAttribute {
   shop?: ShopCreationAttribute;
   tags?: TagCreationAttribute[];
   inCartUsers?: UserCreationAttribute[];
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 @Table

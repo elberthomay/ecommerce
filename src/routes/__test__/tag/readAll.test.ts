@@ -1,5 +1,4 @@
 import request from "supertest";
-import { faker } from "@faker-js/faker";
 import app from "../../../app";
 import Tag from "../../../models/Tag";
 const url = "/api/tag";

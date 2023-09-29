@@ -1,13 +1,13 @@
 import request from "supertest";
 import app from "../../../app";
 import User from "../../../models/User";
-import { defaultCookie, defaultUser } from "../../../test/forgeCookie";
+import {
+  createDefaultUser,
+  defaultCookie,
+  defaultUser,
+} from "../../../test/helpers/user/userHelper";
 
 const url = "/api/user";
-
-const insertDefaultUser = async () => {
-  await User.create(defaultUser);
-};
 
 it("should return empty object if not logged in", async () => {
   const response = await request(app).get(url).send().expect(200);
@@ -16,7 +16,7 @@ it("should return empty object if not logged in", async () => {
 });
 
 it("should return user information if user is logged in", async () => {
-  await insertDefaultUser();
+  await createDefaultUser();
   const response = await request(app)
     .get(url)
     .set("Cookie", defaultCookie())

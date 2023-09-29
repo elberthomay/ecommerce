@@ -1,11 +1,10 @@
 import request from "supertest";
-import { faker } from "@faker-js/faker";
 import app from "../../../app";
 import Tag from "../../../models/Tag";
+import { invalidTagIds } from "../../../test/helpers/IdHelper";
 const url = "/api/tag/";
 
 it("should return 400 for invalid tagId", async () => {
-  const invalidTagIds = [0, -1, -100, 1001, "fkheev", "notatag", "gvece cece"];
   await Promise.all(
     invalidTagIds.map((invalidTagId) =>
       request(app)

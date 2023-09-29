@@ -3,58 +3,30 @@ import app from "../../../app";
 import { faker } from "@faker-js/faker";
 import request from "supertest";
 import {
-  anotherUser,
+  createDefaultUser,
+  createUser,
   defaultCookie,
   defaultUser,
-} from "../../../test/forgeCookie";
+} from "../../../test/helpers/user/userHelper";
 import User from "../../../models/User";
 import Item, { ItemCreationAttribute } from "../../../models/Item";
 import Shop from "../../../models/Shop";
 import Cart from "../../../models/Cart";
+import { invalidUuid } from "../../../test/helpers/commonData";
+import { createItem } from "../../../test/helpers/item/itemHelper";
 const url = "/api/cart";
-
-async function insertItems(count: number, shopId: string, quantity: number) {
-  const user = await User.create({
-    name: faker.person.fullName(),
-    email: faker.internet.email(),
-    hash: "blaballab",
-  });
-  await Shop.findOrCreate({
-    where: { id: shopId, name: faker.company.name(), userId: user.id },
-  });
-  const createItemData: () => ItemCreationAttribute = () => ({
-    name: faker.commerce.productName(),
-    description: faker.commerce.productDescription(),
-    price: faker.number.int({ min: 1000, max: 100000000 }),
-    quantity: quantity,
-    shopId,
-  });
-  const creationDatas = faker.helpers.multiple(createItemData, { count });
-  const records = await Item.bulkCreate(creationDatas);
-  return records;
-}
-
-const insertDefaultUser = async () => {
-  await User.create(defaultUser);
-};
 
 describe("require authentication", () => {
   authenticationTests(app, url, "delete");
 });
+
 it("return 400 for invalid itemId(body)", async () => {
-  const invalidBodies = [
-    "",
-    "invaliiid",
-    "12345",
-    "     ",
-    faker.string.uuid().concat("e"),
-  ].map((itemId) => ({ itemId }));
   await Promise.all(
-    invalidBodies.map((invalidBody) =>
+    invalidUuid.map((itemId) =>
       request(app)
         .delete(url)
         .set("Cookie", defaultCookie())
-        .send(invalidBody)
+        .send({ itemId })
         .expect(400)
     )
   );
@@ -67,6 +39,7 @@ it("return 400 for invalid property", async () => {
     .send({ itemId: faker.string.uuid(), property: "sneaky" })
     .expect(400);
 });
+
 it("return 404 if item doesn't exist", async () => {
   await request(app)
     .delete(url)
@@ -74,59 +47,71 @@ it("return 404 if item doesn't exist", async () => {
     .send({ itemId: faker.string.uuid() })
     .expect(404);
 });
+
 it("successfully deleted item from cart", async () => {
-  const [item] = await insertItems(1, faker.string.uuid(), 5);
-  await insertDefaultUser();
+  const [item] = await createItem(5);
+  await createDefaultUser();
   const cart = await Cart.create({ userId: defaultUser.id, itemId: item.id });
+
   await request(app)
     .delete(url)
     .set("Cookie", defaultCookie())
     .send({ itemId: item.id })
     .expect(200);
+
   expect(
     await Cart.findOne({ where: { userId: defaultUser.id, itemId: item.id } })
   ).toBeNull();
 });
 
 it("doesn't delete the same item from another user", async () => {
-  const [item] = await insertItems(1, faker.string.uuid(), 5);
-  await insertDefaultUser();
-  await User.create(anotherUser);
+  const [item] = await createItem(5);
+  const {
+    users: [user, anotherUser],
+  } = await createUser([defaultUser, {}]);
+
   const cartDefault = await Cart.create({
     userId: defaultUser.id,
     itemId: item.id,
   });
+
   const cartAnother = await Cart.create({
     userId: anotherUser.id,
     itemId: item.id,
   });
+
   await request(app)
     .delete(url)
     .set("Cookie", defaultCookie())
     .send({ itemId: item.id })
     .expect(200);
+
   expect(
     await Cart.findOne({ where: { userId: defaultUser.id, itemId: item.id } })
   ).toBeNull();
+
   expect(
     await Cart.findOne({ where: { userId: anotherUser.id, itemId: item.id } })
   ).not.toBeNull();
 });
 
 it("doesn't delete other cart item", async () => {
-  const items = await insertItems(5, faker.string.uuid(), 5);
-  await insertDefaultUser();
+  const items = await createItem(5);
+  await createDefaultUser();
   const cartDefault = await Cart.bulkCreate(
     items.map((item) => ({ userId: defaultUser.id, itemId: item.id }))
   );
+
   expect(
     await Cart.findAll({ where: { userId: defaultUser.id } })
   ).toHaveLength(5);
+
   await request(app)
     .delete(url)
     .set("Cookie", defaultCookie())
     .send({ itemId: items[0].id })
     .expect(200);
+
   expect(
     await Cart.findAll({ where: { userId: defaultUser.id } })
   ).toHaveLength(4);

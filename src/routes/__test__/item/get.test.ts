@@ -1,47 +1,23 @@
 import request from "supertest";
-import { faker } from "@faker-js/faker";
-
 import app from "../../../app";
-import User from "../../../models/User";
-import Item, { ItemCreationAttribute } from "../../../models/Item";
-import Shop from "../../../models/Shop";
 import pagingAndLimitTests from "../../../test/pagingAndLimitTests.test";
 import Tag from "../../../models/Tag";
+import { createItem } from "../../../test/helpers/item/itemHelper";
+import { defaultShop } from "../../../test/helpers/shopHelper";
 const url = "/api/item";
 
-const defaultShopId = "2e9ecb74-c898-428a-84f4-03f6d827a335";
-
-const anotherShopId = "f8b64acd-b3aa-4672-b873-c188cd5e2270";
-
-const createInsertFunction = (shopId: string) => async (count: number) => {
-  const user = await User.create({
-    name: faker.person.fullName(),
-    email: faker.internet.email(),
-    hash: "blaballab",
-  });
-  await Shop.findOrCreate({
-    where: { id: shopId, name: faker.company.name(), userId: user.id },
-  });
-  const createItemData: () => ItemCreationAttribute = () => ({
-    name: faker.commerce.productName(),
-    description: faker.commerce.productDescription(),
-    price: faker.number.int({ min: 1000, max: 100000000 }),
-    quantity: faker.number.int({ min: 1, max: 9999 }),
-    shopId,
-  });
-  const records = faker.helpers.multiple(createItemData, { count });
-  const items = await Item.bulkCreate(records);
-  return items;
-};
-
 describe("test basic paging and limit", () => {
-  pagingAndLimitTests(app, url, createInsertFunction(defaultShopId));
+  pagingAndLimitTests(app, url, (count: number) =>
+    createItem(count, defaultShop)
+  );
 });
 
 it("should return item from all shop", async () => {
-  await createInsertFunction(defaultShopId)(40);
-  await createInsertFunction(anotherShopId)(40);
-  await createInsertFunction("f8b64acd-b3aa-4672-b823-c188cd5e3270")(40);
+  //create 120 items across 3 shops
+  await createItem(40);
+  await createItem(40);
+  await createItem(40);
+
   await request(app)
     .get(url)
     .query({ limit: 120 })
@@ -62,7 +38,7 @@ it("should return item from all shop", async () => {
 
 it("should return items with the correct tag when using tagId query option", async () => {
   //create list of items
-  const items = await createInsertFunction(defaultShopId)(300);
+  const items = await createItem(300);
   //create tags
   const tags = await Tag.bulkCreate(
     ["food", "clothing", "jars"].map((name) => ({ name }))

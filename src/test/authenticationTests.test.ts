@@ -1,6 +1,5 @@
-import User from "../models/User";
 import request from "supertest";
-import { defaultUser, forgeCookie } from "./forgeCookie";
+import { defaultUser, forgeCookie } from "./helpers/user/userHelper";
 import { Express } from "express";
 export default function authenticationTests(
   app: Express,
@@ -13,9 +12,11 @@ export default function authenticationTests(
   });
   it("should return 401(unauthenticated) if digest is invalid", async () => {
     const malformedCookie = [
-      forgeCookie({ id: defaultUser.id }, "invalidKey", "jwt", {
-        expiresIn: 3600 * 24 * 30,
-      }),
+      forgeCookie(
+        { id: defaultUser.id },
+        { expiresIn: 3600 * 24 * 30 },
+        "invalidKey"
+      ),
     ];
     await request(app)
       [method](url)
@@ -26,9 +27,7 @@ export default function authenticationTests(
 
   it("should return 401(unauthenticated) if token has expired", async () => {
     const expiredCookie = [
-      forgeCookie({ id: defaultUser.id }, "invalidKey", "jwt", {
-        expiresIn: -10,
-      }),
+      forgeCookie({ id: defaultUser.id }, { expiresIn: -10 }),
     ];
     await request(app)
       [method](url)
@@ -38,9 +37,7 @@ export default function authenticationTests(
   });
   it("should return 401(unauthenticated) if token is not yet valid", async () => {
     const expiredCookie = [
-      forgeCookie({ id: defaultUser.id }, "invalidKey", "jwt", {
-        notBefore: 10,
-      }),
+      forgeCookie({ id: defaultUser.id }, { notBefore: 10 }),
     ];
     await request(app)
       [method](url)

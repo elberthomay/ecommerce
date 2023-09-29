@@ -1,14 +1,15 @@
 import request from "supertest";
-import User from "../../../models/User";
 import app from "../../../app";
 import {
-  anotherCookie,
-  anotherUser,
+  createDefaultUser,
   defaultCookie,
-  defaultUser,
-} from "../../../test/forgeCookie";
+} from "../../../test/helpers/user/userHelper";
 import Shop from "../../../models/Shop";
 import authenticationTests from "../../../test/authenticationTests.test";
+import {
+  createDefaultShop,
+  createShop,
+} from "../../../test/helpers/shopHelper";
 
 const url = "/api/shop";
 
@@ -17,48 +18,41 @@ describe("should return 401 with failed authentication", () => {
 });
 
 it("should return 400 if name is empty, doesn't exist, or more than 255 character", async () => {
-  await User.create(defaultUser);
-  await request(app)
-    .post(url)
-    .set("Cookie", defaultCookie())
-    .send({})
-    .expect(400);
-  await request(app)
-    .post(url)
-    .set("Cookie", defaultCookie())
-    .send({ name: "" })
-    .expect(400);
-  await request(app)
-    .post(url)
-    .set("Cookie", defaultCookie())
-    .send({ name: "a".repeat(256) })
-    .expect(400);
+  const invalidNames = [undefined, "", "a".repeat(256)];
+  await createDefaultUser();
+
+  await Promise.all(
+    invalidNames.map((name) =>
+      request(app)
+        .post(url)
+        .set("Cookie", defaultCookie())
+        .send({ name })
+        .expect(400)
+    )
+  );
 });
 
 it("should return 409(conflict) if name already exists", async () => {
-  const name = "myFood";
-  const user = await User.create(defaultUser);
-  await Shop.create({ name: name, userId: user.id });
-  await User.create(anotherUser);
-  await request(app)
-    .post(url)
-    .set("Cookie", anotherCookie())
-    .send({ name: name })
-    .expect(409);
-}, 60000);
+  const [shop] = await createShop(1);
 
-it("should return 409(conflict) if store has been activated", async () => {
-  const user = await User.create(defaultUser);
-  await Shop.create({ name: "myFood", userId: user.id });
   await request(app)
     .post(url)
     .set("Cookie", defaultCookie())
-    .send({ name: "myShop" })
+    .send({ name: shop.name })
+    .expect(409);
+});
+
+it("should return 409(conflict) if store has been activated", async () => {
+  await createDefaultShop();
+  await request(app)
+    .post(url)
+    .set("Cookie", defaultCookie())
+    .send({ name: "another shop name" })
     .expect(409);
 });
 
 it("should successfuly create shop when authenticated, has yet to activate shop and supplied with correct name", async () => {
-  const user = await User.create(defaultUser);
+  const user = await createDefaultUser();
   await request(app)
     .post(url)
     .set("Cookie", defaultCookie())

@@ -2,12 +2,12 @@ import request from "supertest";
 import { faker } from "@faker-js/faker";
 import app from "../../../app";
 import Tag from "../../../models/Tag";
+import { invalidTagNames } from "../../../test/helpers/IdHelper";
 const url = "/api/tag";
 
 it("should return 400 for invalid names", async () => {
-  const invalidNames = ["", "a".repeat(51)];
   await Promise.all(
-    invalidNames.map((name) =>
+    invalidTagNames.map((name) =>
       request(app).post(url).send({ name }).expect(400)
     )
   );

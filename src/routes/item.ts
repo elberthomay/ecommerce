@@ -79,13 +79,13 @@ router.get(
 router.post(
   "/",
   authenticate(true),
+  validator({ body: itemCreateSchema }),
   fetch<ShopCreationAttribute, TokenTypes>({
     model: Shop,
     key: ["userId", "id"],
     location: "tokenData",
     force: "exist",
   }),
-  validator({ body: itemCreateSchema }),
   catchAsync(
     async (
       req: Request<unknown, unknown, ItemCreateType>,
@@ -121,7 +121,7 @@ router.patch(
       const changes = req.body;
       const item: Item = (req as any)[Item.name];
       await item.set(changes).save();
-      res.json({ status: "success" });
+      res.json(item);
     }
   )
 );

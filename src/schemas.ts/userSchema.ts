@@ -5,14 +5,14 @@ import { uuidSchema } from "./commonSchema";
 export const userSchema = {
   id: uuidSchema,
   name: Joi.string()
-    .required()
+    .max(255)
     .label("Name")
     .messages({ "any.required": "{#label} is required" }),
-  email: Joi.string().email().required().label("Email").messages({
+  email: Joi.string().email().label("Email").messages({
     "string.email": "{#label} must be a valid email address",
     "any.required": "{#label} is required",
   }),
-  password: Joi.string().min(8).max(90).required().label("Password").messages({
+  password: Joi.string().min(8).max(90).label("Password").messages({
     "string.min": "{#label} must be at least {#limit} characters long",
     "string.max": "{#label} must be shorter than {#limit} characters",
     "any.required": "{#label} is required",

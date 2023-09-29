@@ -1,206 +1,148 @@
-import { defaultUser, forgeCookie } from "../../../test/forgeCookie";
-import request from "supertest";
+import {
+  createDefaultUser,
+  createUser,
+  defaultUser,
+  forgeCookie,
+  parseResponseCookie,
+  tokenEqualityTest,
+} from "../../../test/helpers/user/userHelper";
+import request, { Response } from "supertest";
 import app from "../../../app";
+import _ from "lodash";
+import {
+  invalidEmails,
+  invalidName,
+  invalidPasswords,
+} from "../../../test/helpers/user/userData";
 import User from "../../../models/User";
-import bcrypt from "bcrypt";
-import jwt from "jsonwebtoken";
 
-const insertDefaultUser = async () => {
-  await User.create(defaultUser);
-};
+const url = "/api/user/login";
+
+const defaultLoginData = _.pick(defaultUser, ["email", "password"]);
 
 it("should return 400 if any required property is missing", async () => {
-  await insertDefaultUser();
-  const missingEmail = {
-    password: "password123",
-  };
+  const invalidLoginDatas = [
+    _.omit(defaultLoginData, "email"), //no email
+    _.omit(defaultLoginData, "password"), //no password
+    {}, //no anything
+  ];
 
-  const missingPassword = {
-    email: "test@example.com",
-  };
-
-  const emptyObject = {};
-
-  await request(app).post("/api/user/login").send(missingEmail).expect(400);
-  await request(app).post("/api/user/login").send(missingPassword).expect(400);
-
-  await request(app).post("/api/user/login").send(emptyObject).expect(400);
+  await Promise.all(
+    invalidLoginDatas.map((invalidLoginData) =>
+      request(app).post(url).send(invalidLoginData).expect(400)
+    )
+  );
 });
 
 it("should return 400 if any property is empty", async () => {
-  const emptygEmail = {
-    email: "",
-    password: "password123",
-  };
+  const invalidLoginDatas = [
+    { ...defaultLoginData, email: "" }, //empty email
+    { ...defaultLoginData, password: "" }, //empty password
+  ];
 
-  const emptyPassword = {
-    email: "test@example.com",
-    password: "",
-  };
-
-  await request(app).post("/api/user/login").send(emptygEmail).expect(400);
-  await request(app).post("/api/user/login").send(emptyPassword).expect(400);
+  await Promise.all(
+    invalidLoginDatas.map((invalidLoginData) =>
+      request(app).post(url).send(invalidLoginData).expect(400)
+    )
+  );
 });
 
-it("should return 400 if password length is invalid", async () => {
-  const shortPasswordUserData = {
-    email: "test@example.com",
-    password: "123", // Password less than 8 characters
-  };
+it("should return 400 with invalid property", async () => {
+  const invalidLoginDatas = [
+    { ...defaultLoginData, invalid: "property" }, // an invalid property
+  ];
 
-  const longPasswordUserData = {
-    email: "test@example.com",
-    password: "a".repeat(91), // Password more than 90 characters
-  };
+  await Promise.all(
+    invalidLoginDatas.map((invalidLoginData) =>
+      request(app).post(url).send(invalidLoginData).expect(400)
+    )
+  );
+});
 
-  await request(app)
-    .post("/api/user/login")
-    .send(shortPasswordUserData)
-    .expect(400);
+it("should return 400 if password is invalid", async () => {
+  const invalidLoginDatas = invalidPasswords.map((password) => ({
+    ...defaultLoginData,
+    password,
+  }));
 
-  await request(app)
-    .post("/api/user/login")
-    .send(longPasswordUserData)
-    .expect(400);
+  await Promise.all(
+    invalidLoginDatas.map((loginData) =>
+      request(app).post(url).send(loginData).expect(400)
+    )
+  );
 });
 
 it("should return 400 if email is invalid", async () => {
-  const invalidTLD = {
-    email: "invalid@mistake",
-    password: "password123",
-  };
-  const noAt = {
-    email: "invalidmistake.com",
-    password: "password123",
-  };
-  const noIdentifier = {
-    email: "@mistake.com",
-    password: "password123",
-  };
-  const invalidCharacter = {
-    email: "inval/id@mis?take.com",
-    password: "password123",
-  };
+  const invalidLoginDatas = invalidEmails.map((email) => ({
+    ...defaultLoginData,
+    email,
+  }));
 
-  await request(app).post("/api/user/login").send(invalidTLD).expect(400);
-  await request(app).post("/api/user/login").send(noAt).expect(400);
-  await request(app).post("/api/user/login").send(noIdentifier).expect(400);
-  await request(app).post("/api/user/login").send(invalidCharacter).expect(400);
+  await Promise.all(
+    invalidLoginDatas.map((loginData) =>
+      request(app).post(url).send(loginData).expect(400)
+    )
+  );
+});
+
+it("should return 400 if name is invalid", async () => {
+  const invalidLoginDatas = invalidName.map((name) => ({
+    ...defaultLoginData,
+    name,
+  }));
+
+  await Promise.all(
+    invalidLoginDatas.map((loginData) =>
+      request(app).post(url).send(loginData).expect(400)
+    )
+  );
 });
 
 it("should return 401 if account doesn't exist in db", async () => {
-  //adding a few account
-  await User.create({
-    email: "test0@google.com",
-    name: "Test Name1",
-    hash: await bcrypt.hash("flJ(jB38h82", 10),
-  });
-  await User.create({
-    email: "test1@yahoo.com",
-    name: "Test5 Name1",
-    hash: await bcrypt.hash("flJ(9khH3782", 10),
-  });
+  const users = await createUser(3);
 
-  const loginData = {
-    email: "test@example.com",
-    password: "password123",
-  };
-
-  await request(app).post("/api/user/login").send(loginData).expect(401);
+  await request(app).post(url).send(defaultLoginData).expect(401);
 });
 
 it("should return 401 if password doesn't match", async () => {
-  //adding a few account
-  await User.create({
-    email: "test0@google.com",
-    name: "Test Name1",
-    hash: await bcrypt.hash("flJ(jB38h82", 10),
-  });
-  await User.create({
-    email: "test1@yahoo.com",
-    name: "Test5 Name1",
-    hash: await bcrypt.hash("flJ(9khH3782", 10),
-  });
-
+  const users = await createUser(3);
+  const count = (await User.findAll()).length;
+  console.log(count);
   const loginData = {
-    email: "test0@google.com",
-    password: "password123",
+    email: users.userDatas[0].email,
+    password: users.userDatas[0].password + "1",
   };
 
-  await request(app).post("/api/user/login").send(loginData).expect(401);
+  await request(app).post(url).send(loginData).expect(401);
 });
 
 it("should return 200 if email and password match and correct expiration period", async () => {
   //adding a few account
-  const user = await User.create({
-    email: "test0@google.com",
-    name: "Test Name1",
-    hash: await bcrypt.hash("flJ(jB38h82", 10),
-  });
-  await User.create({
-    email: "test1@yahoo.com",
-    name: "Test5 Name1",
-    hash: await bcrypt.hash("flJ(9khH3782", 10),
-  });
-
-  const loginData = {
-    email: "test0@google.com",
-    password: "flJ(jB38h82",
-  };
+  const users = await createUser([defaultUser, {}, {}]); // create 3 user with one of them default user
 
   //remember me false
-  let response = await request(app)
-    .post("/api/user/login")
-    .send({ ...loginData, rememberMe: false })
-    .expect(200);
-  expect(response.headers["set-cookie"]).toBeDefined();
-  // Parse the cookie strings (assuming there's only one cookie)
-  let cookieString: string = response.headers["set-cookie"][0];
-  let cookies = cookieString.split(";").map((cookie) => cookie.trim());
-
-  //   // Check the cookies for the expected values
-  expect(
-    cookies.some((cookie) => {
-      // Parse the cookie string further if needed
-      const [cookieName, cookieValue] = cookie.split("=");
-
-      // Check if the cookie name and value match your expectations
-      if (cookieName === "jwt") {
-        expect(cookie).toEqual(
-          forgeCookie({ id: user.id }, process.env.JWT_SECRET!, "jwt", {
-            expiresIn: "86400000",
-          })
-        );
-        return true;
-      } else return false;
-    })
-  ).toBe(true);
+  await request(app)
+    .post(url)
+    .send({ ...defaultLoginData, rememberMe: false })
+    .expect(200)
+    .expect(
+      tokenEqualityTest(
+        forgeCookie(defaultUser, {
+          expiresIn: "86400000",
+        }).split("=")[1]
+      )
+    );
 
   //remember me true
-  response = await request(app)
-    .post("/api/user/login")
-    .send({ ...loginData, rememberMe: true })
-    .expect(200);
-  expect(response.headers["set-cookie"]).toBeDefined();
-  // Parse the cookie strings (assuming there's only one cookie)
-  cookieString = response.headers["set-cookie"][0];
-  cookies = cookieString.split(";").map((cookie) => cookie.trim());
-
-  //   // Check the cookies for the expected values
-  expect(
-    cookies.some((cookie) => {
-      // Parse the cookie string further if needed
-      const [cookieName, cookieValue] = cookie.split("=");
-
-      // Check if the cookie name and value match your expectations
-      if (cookieName === "jwt") {
-        expect(cookie).toBe(
-          forgeCookie({ id: user.id }, process.env.JWT_SECRET!, "jwt", {
-            expiresIn: "2592000000",
-          })
-        );
-        return true;
-      } else return false;
-    })
-  ).toBe(true);
+  await request(app)
+    .post(url)
+    .send({ ...defaultLoginData, rememberMe: true })
+    .expect(200)
+    .expect(
+      tokenEqualityTest(
+        forgeCookie(defaultUser, {
+          expiresIn: "2592000000",
+        }).split("=")[1]
+      )
+    );
 });
