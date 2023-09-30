@@ -18,7 +18,7 @@ export interface ItemTagCreationAttribute {
   tag?: ItemCreationAttribute;
 }
 
-@Table
+@Table({ tableName: "ItemTag" })
 class ItemTag extends Model<ItemTagCreationAttribute> {
   @ForeignKey(() => Item)
   @Column

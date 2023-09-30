@@ -16,7 +16,7 @@ export interface TagCreationAttribute {
   items?: ItemCreationAttribute[];
 }
 
-@Table
+@Table({ tableName: "Tag" })
 class Tag extends Model<TagCreationAttribute> {
   @PrimaryKey
   @AutoIncrement

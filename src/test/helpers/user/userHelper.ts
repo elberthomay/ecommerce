@@ -4,7 +4,7 @@ import jwt from "jsonwebtoken";
 import User, { UserCreationAttribute } from "../../../models/User";
 import { TokenTypes } from "../../../types/TokenTypes";
 import _ from "lodash";
-import sequelizeTest from "../../sequelizeTest";
+import sequelize from "../../../models/sequelize";
 import { Response } from "supertest";
 
 /**
@@ -45,7 +45,7 @@ export const createUser = async (
     });
   else userDatas = creationData.map((data) => userDataCreateFunction(data)());
 
-  const transaction = await sequelizeTest.transaction();
+  const transaction = await sequelize.transaction();
   const records = await Promise.all(
     userDatas.map((userData) =>
       User.findOrCreate({

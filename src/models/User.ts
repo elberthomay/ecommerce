@@ -22,7 +22,7 @@ export interface UserCreationAttribute {
   itemsInCart?: ItemCreationAttribute[];
 }
 
-@Table
+@Table({ tableName: "User" })
 class User extends Model<UserCreationAttribute> {
   @Column({
     type: DataType.UUID,

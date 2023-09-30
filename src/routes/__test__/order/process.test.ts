@@ -114,52 +114,66 @@ it("return 200 when order is successful, delete all selected item in cart, decre
   );
 });
 
-// it("kept integrity by failing one order when order race condition occur", async () => {
-//   //create 5 item, filter out item with quantity less than 2
-//   const selectedItems = (await createItem(5)).filter(
-//     (item) => item.quantity > 1
-//   );
+it("kept integrity by failing one order when order race condition occur", async () => {
+  //create 5 item, filter out item with quantity less than 2
+  const selectedItems = (await createItem(5)).filter(
+    (item) => item.quantity > 1
+  );
 
-//   //create 5 users and put all items to their carts
-//   const { users } = await createUser([defaultUser, {}, {}, {}, {}]);
+  //create 5 users and put all items to their carts
+  const { users } = await createUser([defaultUser, {}, {}, {}, {}]);
 
-//   await Promise.all(
-//     users.map(async (user) => {
-//       await Cart.bulkCreate(
-//         selectedItems.map((item) => ({
-//           itemId: item.id,
-//           userId: user.id,
-//           selected: true,
-//           quantity: item.quantity - 2,
-//         }))
-//       );
-//     })
-//   );
+  await Promise.all(
+    users.map(async (user) => {
+      await Cart.bulkCreate(
+        selectedItems.map((item) => ({
+          itemId: item.id,
+          userId: user.id,
+          selected: true,
+          quantity: item.quantity - 2,
+        }))
+      );
+    })
+  );
 
-//   // create request objects
-//   const requests = users.map((user) =>
-//     request(app).post(url).set("Cookie", forgeCookie(user))
-//   );
+  // create request objects
+  const requests = users.map((user) =>
+    request(app).post(url).set("Cookie", forgeCookie(user))
+  );
 
-//   //send them all
-//   const results = await Promise.all(requests.map((request) => request.send()));
+  //send them all
+  const results = await Promise.all(requests.map((request) => request.send()));
 
-//   //count successes
-//   const successCount = results.reduce((successCount, response, index) => {
-//     if (response.statusCode === 200) {
-//       console.log(index);
-//       return successCount + 1;
-//     } else return successCount;
-//   }, 0);
+  const successArray = results.map((result) => result.statusCode);
+  console.log(successArray);
 
-//   //only 1 succeed
-//   expect(successCount).toEqual(1);
+  //count successes
+  const successCount = results.reduce((successCount, response, index) => {
+    if (response.statusCode === 200) {
+      //deleting successful user from users
+      users.splice(index, 1);
+      return successCount + 1;
+    } else return successCount;
+  }, 0);
 
-//   // all selected item's inventory reduced only by 1 order
-//   await Promise.all(
-//     selectedItems.map(async (item) => {
-//       await item.reload();
-//       expect(item.quantity).toEqual(2);
-//     })
-//   );
-// });
+  //only 1 succeed
+  expect(successCount).toEqual(1);
+
+  // all selected item's inventory reduced only by 1 order
+  await Promise.all(
+    selectedItems.map(async (item) => {
+      await item.reload();
+      expect(item.quantity).toEqual(2);
+    })
+  );
+
+  await Promise.all(
+    users.map(async (user) => {
+      const cart = await Cart.findAll({
+        where: { userId: user.id, selected: true },
+      });
+      expect(cart).toHaveLength(5);
+      return cart;
+    })
+  );
+});

@@ -29,7 +29,7 @@ export interface ItemCreationAttribute {
   updatedAt?: Date;
 }
 
-@Table
+@Table({ tableName: "Item" })
 class Item extends Model<ItemCreationAttribute> {
   @PrimaryKey
   @Column({

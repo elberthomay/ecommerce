@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "jest --watch-all --no-cache",
+    "test": "jest --watch-all --no-cache --maxWorkers=1",
     "debug": "npx ts-node-dev src/index.ts"
   },
   "keywords": [],

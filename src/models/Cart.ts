@@ -17,7 +17,7 @@ interface CartCreationAttribute {
   selected?: boolean;
 }
 
-@Table
+@Table({ tableName: "Cart" })
 class Cart extends Model<CartCreationAttribute> {
   @ForeignKey(() => User)
   @Column

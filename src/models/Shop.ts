@@ -6,6 +6,9 @@ import {
   ForeignKey,
   DataType,
   HasMany,
+  Unique,
+  AllowNull,
+  IsUUID,
 } from "sequelize-typescript";
 import User, { UserCreationAttribute } from "./User";
 import Item, { ItemCreationAttribute } from "./Item";
@@ -18,7 +21,7 @@ export interface ShopCreationAttribute {
   items?: ItemCreationAttribute[];
 }
 
-@Table
+@Table({ tableName: "Shop" })
 class Shop extends Model<ShopCreationAttribute> {
   @Column({
     type: DataType.UUID,
@@ -34,11 +37,9 @@ class Shop extends Model<ShopCreationAttribute> {
   name!: string;
 
   @ForeignKey(() => User)
-  @Column({
-    type: DataType.UUID,
-    allowNull: false,
-    unique: true,
-  })
+  @Unique
+  @AllowNull(false)
+  @Column(DataType.UUID)
   userId!: string;
 
   @BelongsTo(() => User)

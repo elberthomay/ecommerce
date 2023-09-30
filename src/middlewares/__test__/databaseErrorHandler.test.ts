@@ -3,7 +3,7 @@ import quickExpressInstance from "../../test/quickExpressInstance";
 import { NextFunction, Response, Request } from "express";
 import databaseErrorHandler from "../databaseErrorHandler";
 import errorHandler from "../errorHandler";
-import sequelize from "../../test/sequelizeTest";
+import sequelize from "../../models/sequelize";
 import catchAsync from "../catchAsync";
 import { AuthorizationError } from "../../errors/AuthorizationError";
 it("convert sequelize DatabaseError to CustomError DatabaseError", async () => {

@@ -6,7 +6,7 @@ import { TokenTypes } from "../types/TokenTypes";
 import catchAsync from "../middlewares/catchAsync";
 import Cart from "../models/Cart";
 import Item from "../models/Item";
-import sequelize from "../test/sequelizeTest";
+import sequelize from "../models/sequelize";
 import InventoryError from "../errors/InventoryError";
 import Shop from "../models/Shop";
 import ChangedInventory from "../errors/ChangedInventory";
@@ -90,13 +90,6 @@ router.post(
       where: { userId: currentUser.id, selected: true },
       include: Item,
     });
-
-    console.log(
-      carts.map((cart) => ({
-        quantity: cart.quantity,
-        inventory: cart.item?.quantity,
-      }))
-    );
 
     if (carts.length === 0) return res.status(204).send();
     else if (carts.some((cart) => cart.quantity > cart.item!.quantity))
