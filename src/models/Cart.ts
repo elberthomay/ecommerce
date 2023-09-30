@@ -5,6 +5,7 @@ import {
   DataType,
   BelongsToMany,
   ForeignKey,
+  BelongsTo,
 } from "sequelize-typescript";
 import Item from "./Item";
 import User from "./User";
@@ -40,6 +41,12 @@ class Cart extends Model<CartCreationAttribute> {
     defaultValue: true,
   })
   selected!: boolean;
+
+  @BelongsTo(() => Item)
+  item!: Item | null;
+
+  @BelongsTo(() => User)
+  user!: User | null;
 }
 
 export default Cart;

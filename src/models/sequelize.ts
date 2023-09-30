@@ -1,12 +1,3 @@
-// import { Sequelize } from "sequelize";
-
-// const sequelize = new Sequelize("ecommerce", "root", "123456", {
-//   host: "localhost",
-//   dialect: "mysql",
-// });
-
-// export default sequelize;
-
 import { Sequelize } from "sequelize-typescript";
 import User from "./User";
 import Shop from "./Shop";
@@ -22,6 +13,7 @@ const sequelize = new Sequelize({
   password: "123456",
   host: "localhost",
   models: [User, Shop, Item, Tag, ItemTag, Cart],
+  logging: false,
 });
 
 export default sequelize;

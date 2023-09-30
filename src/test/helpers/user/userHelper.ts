@@ -55,7 +55,7 @@ export const createUser = async (
       })
     )
   );
-  transaction.commit();
+  await transaction.commit();
   return { users: records.map((record) => record[0]), userDatas: userDatas };
 };
 

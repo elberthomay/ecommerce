@@ -64,7 +64,6 @@ it("return one item with cart data if there's 1 item user's cart", async () => {
     .send()
     .expect(200)
     .expect(({ body }) => {
-      console.log(body);
       expect(body).toHaveLength(1);
       expect(_.pick(body[0], ["itemId", "userId", "quantity"])).toEqual({
         itemId: items[0].id,

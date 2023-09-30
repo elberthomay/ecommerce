@@ -5,6 +5,7 @@ import {
   DataType,
   BelongsToMany,
   PrimaryKey,
+  AutoIncrement,
 } from "sequelize-typescript";
 import Item, { ItemCreationAttribute } from "./Item";
 import ItemTag from "./ItemTag";
@@ -18,9 +19,9 @@ export interface TagCreationAttribute {
 @Table
 class Tag extends Model<TagCreationAttribute> {
   @PrimaryKey
+  @AutoIncrement
   @Column({
     type: DataType.INTEGER,
-    autoIncrement: true,
   })
   id!: number;
 

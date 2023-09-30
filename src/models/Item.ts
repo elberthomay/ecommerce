@@ -7,6 +7,7 @@ import {
   ForeignKey,
   BelongsToMany,
   PrimaryKey,
+  HasMany,
 } from "sequelize-typescript";
 import Shop, { ShopCreationAttribute } from "./Shop";
 import Tag, { TagCreationAttribute } from "./Tag";
