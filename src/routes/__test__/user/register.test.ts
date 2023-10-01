@@ -94,7 +94,7 @@ it("should return 409 if email already exists", async () => {
   await request(app).post(url).send(defaultRegisterData).expect(409);
 });
 
-it("should return 200 if data is correct and email is not in the database", async () => {
+it("should return 201 if data is correct and email is not in the database", async () => {
   const validBodies = [
     {
       email: "tacosBelly@gmail.com",
@@ -114,7 +114,7 @@ it("should return 200 if data is correct and email is not in the database", asyn
     defaultRegisterData,
   ];
   await Promise.all(
-    validBodies.map((body) => request(app).post(url).send(body).expect(200))
+    validBodies.map((body) => request(app).post(url).send(body).expect(201))
   );
 
   expect(await User.count()).toEqual(4);

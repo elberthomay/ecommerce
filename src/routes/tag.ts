@@ -32,8 +32,8 @@ router.post(
   }),
   catchAsync(async (req, res) => {
     const data: { name: string } = req.body;
-    await Tag.create(data);
-    res.json({ status: "success" });
+    const newTag = await Tag.create(data);
+    res.status(201).json(newTag);
   })
 );
 

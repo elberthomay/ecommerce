@@ -9,7 +9,9 @@ import authenticationTests from "../../../test/authenticationTests.test";
 import {
   createDefaultShop,
   createShop,
+  defaultShop,
 } from "../../../test/helpers/shopHelper";
+import _ from "lodash";
 
 const url = "/api/shop";
 
@@ -51,13 +53,19 @@ it("should return 409(conflict) if store has been activated", async () => {
     .expect(409);
 });
 
-it("should successfuly create shop when authenticated, has yet to activate shop and supplied with correct name", async () => {
+it("should successfuly create shop when authenticated(status code 201), has yet to activate shop and supplied with correct name", async () => {
   const user = await createDefaultUser();
   await request(app)
     .post(url)
     .set("Cookie", defaultCookie())
-    .send({ name: "myShop" })
-    .expect(200);
+    .send({ name: defaultShop.name })
+    .expect(201)
+    .expect(({ body }) => {
+      expect(_.pick(body, ["userId", "name"])).toEqual({
+        userId: user.id,
+        name: defaultShop.name,
+      });
+    });
 
   const shop = await Shop.findOne({ where: { userId: user.id } });
   expect(shop).toBeTruthy();

@@ -140,26 +140,26 @@ describe("created default shop", () => {
       .expect(400);
   });
 
-  it("should return 200 and create item with default quantity", async () => {
+  it("should return 201 and create item with default quantity", async () => {
     await createItem(5, { id: defaultShop.id });
     await request(app)
       .post(url)
       .set("Cookie", defaultCookie())
       .send(_.omit(defaultCreateItem, "quantity"))
-      .expect(200)
+      .expect(201)
       .expect(
         assertItemCreationEquality({ ...defaultCreateItem, quantity: 0 })
       );
     expect(await Item.count()).toBe(6);
   });
 
-  it("should return 200 and successfully create a new item in user's shop", async () => {
+  it("should return 201 and successfully create a new item in user's shop", async () => {
     await createItem(5, { id: defaultShop.id });
     await request(app)
       .post(url)
       .set("Cookie", defaultCookie())
       .send(defaultCreateItem)
-      .expect(200)
+      .expect(201)
       .expect(assertItemCreationEquality(defaultCreateItem));
     expect(await Item.count()).toBe(6);
   });

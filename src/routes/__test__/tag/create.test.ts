@@ -21,7 +21,15 @@ it("should return 409 for duplicate name", async () => {
 it("should return 200 and create new tag", async () => {
   const tagNames = ["food", "clothing", "back to school"];
   await Promise.all(
-    tagNames.map((name) => request(app).post(url).send({ name }).expect(200))
+    tagNames.map((name) =>
+      request(app)
+        .post(url)
+        .send({ name })
+        .expect(201)
+        .expect(({ body }) => {
+          expect(body.name).toEqual(name);
+        })
+    )
   );
   await Promise.all(
     tagNames.map(async (name) =>

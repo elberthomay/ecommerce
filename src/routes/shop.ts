@@ -80,8 +80,8 @@ router.post(
     ) => {
       const shopData = req.body;
       const userId = ((req as any).currentUser as User).id;
-      await Shop.create({ ...shopData, userId });
-      res.json({ status: "success" });
+      const newShop = await Shop.create({ ...shopData, userId });
+      res.status(201).json(newShop);
     }
   )
 );

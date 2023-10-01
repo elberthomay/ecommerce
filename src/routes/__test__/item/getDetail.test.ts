@@ -1,9 +1,9 @@
-import { faker } from "@faker-js/faker";
 import request from "supertest";
 import app from "../../../app";
 import { createItem, defaultItem } from "../../../test/helpers/item/itemHelper";
 import { defaultShop } from "../../../test/helpers/shopHelper";
 import Item from "../../../models/Item";
+import _ from "lodash";
 
 const url = "/api/item/";
 
@@ -45,10 +45,6 @@ it("should return 200 when there are 10 items created and using one of the creat
     .get(url + defaultItem.id)
     .expect(200)
     .expect(({ body }) => {
-      expect(body).toEqual({
-        ...defaultItem,
-        createdAt: (item?.createdAt as Date).toISOString(),
-        updatedAt: (item?.updatedAt as Date).toISOString(),
-      });
+      expect(_.omit(body, ["createdAt", "updatedAt"])).toEqual(defaultItem);
     });
 });

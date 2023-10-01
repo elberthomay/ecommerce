@@ -120,7 +120,7 @@ router.post(
             ...newCartData,
             userId: currentUser.id,
           });
-          res.json(newCart);
+          res.status(201).json(newCart);
         }
       }
     }

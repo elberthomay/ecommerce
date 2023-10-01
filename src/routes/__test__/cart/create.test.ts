@@ -71,20 +71,20 @@ it("return 422 if quantity to add exceeds item's current inventory", async () =>
     .expect(422);
 });
 
-it("successfully added item to cart", async () => {
+it("successfully added item to cart with status 201", async () => {
   const [item] = await createItem([{ quantity: 5 }]);
   await request(app)
     .post(url)
     .set("Cookie", defaultCookie())
     .send({ itemId: item.id, quantity: 4 })
-    .expect(200);
+    .expect(201);
   const cart = await Cart.findOne({
     where: { userId: defaultUser.id, itemId: item.id },
   });
   expect(cart).not.toBeNull();
   expect(cart?.quantity).toEqual(4);
 });
-it("tries to add quantity if item already exists in cart", async () => {
+it("tries to add quantity if item already exists in cart, results in status code 200 instead of 201", async () => {
   const [item] = await createItem([{ quantity: 5 }]);
   const cart = await Cart.create({
     userId: defaultUser.id,
@@ -111,18 +111,20 @@ it("tries to add quantity if item already exists in cart", async () => {
 });
 
 it("successfully added item to cart even with the same item in another cart", async () => {
+  //create item and user
   const [item] = await createItem([{ quantity: 5 }]);
   const {
     users: [user],
   } = await createUser(1);
 
+  //add item to user cart
   await Cart.create({ userId: user.id, itemId: item.id, quantity: 5 });
 
   await request(app)
     .post(url)
     .set("Cookie", defaultCookie())
     .send({ itemId: item.id, quantity: 4 })
-    .expect(200);
+    .expect(201);
 
   const cart = await Cart.findOne({
     where: { userId: defaultUser.id, itemId: item.id },

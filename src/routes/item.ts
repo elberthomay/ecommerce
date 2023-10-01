@@ -95,7 +95,7 @@ router.post(
       const shop = (req as any)[Shop.name];
       const newItemData = req.body;
       const newItem = await Item.create({ ...newItemData, shopId: shop.id });
-      res.json(newItem);
+      res.status(201).json(newItem);
     }
   )
 );
