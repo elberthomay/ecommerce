@@ -145,7 +145,6 @@ it("kept integrity by failing one order when order race condition occur", async 
   const results = await Promise.all(requests.map((request) => request.send()));
 
   const successArray = results.map((result) => result.statusCode);
-  console.log(successArray);
 
   //count successes
   const successCount = results.reduce((successCount, response, index) => {

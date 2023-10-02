@@ -26,11 +26,7 @@ it("should return 200 when there is 1 item from 1 user using the created item ID
     .get(url + defaultItem.id)
     .expect(200)
     .expect(({ body }) => {
-      expect(body).toEqual({
-        ...defaultItem,
-        createdAt: (item?.createdAt as Date).toISOString(),
-        updatedAt: (item?.updatedAt as Date).toISOString(),
-      });
+      expect(_.omit(body, ["createdAt", "updatedAt"])).toEqual(defaultItem);
     });
 });
 

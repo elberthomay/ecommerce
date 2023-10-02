@@ -22,6 +22,7 @@ export interface ItemCreationAttribute {
   price: number;
   quantity: number;
   shopId?: string;
+  inStock?: boolean;
   shop?: ShopCreationAttribute;
   tags?: TagCreationAttribute[];
   inCartUsers?: UserCreationAttribute[];
@@ -71,6 +72,14 @@ class Item extends Model<ItemCreationAttribute> {
   })
   shopId!: string;
 
+  @Column({
+    type: "BOOLEAN AS (quantity != 0)",
+    set() {
+      throw new Error("Virtual column cannot be set");
+    },
+  })
+  inStock!: boolean;
+
   @BelongsTo(() => Shop)
   shop!: Shop | null;
 
@@ -79,6 +88,12 @@ class Item extends Model<ItemCreationAttribute> {
 
   @BelongsToMany(() => User, () => Cart)
   inCartUsers!: User[];
+
+  toJSON() {
+    const defaultJson = super.toJSON();
+    delete defaultJson.inStock;
+    return defaultJson;
+  }
 }
 
 export default Item;

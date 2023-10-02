@@ -4,6 +4,7 @@ import pagingAndLimitTests from "../../../test/pagingAndLimitTests.test";
 import Tag from "../../../models/Tag";
 import { createItem } from "../../../test/helpers/item/itemHelper";
 import { defaultShop } from "../../../test/helpers/shopHelper";
+import Item, { ItemCreationAttribute } from "../../../models/Item";
 const url = "/api/item";
 
 describe("test basic paging and limit", () => {
@@ -57,5 +58,30 @@ it("should return items with the correct tag when using tagId query option", asy
     .expect(200)
     .expect(({ body }) => {
       expect(body).toHaveLength(100);
+    });
+});
+
+it("order first by whenever item sold out or not", async () => {
+  //create 150 item in default shop 100 of which are empty
+  const item = await createItem(
+    Array(50)
+      .fill({ quantity: 0 })
+      .concat(Array(50).fill({ quantity: 5 }), Array(50).fill({ quantity: 0 }))
+  );
+
+  const items = await Item.findAll();
+  console.log(items.length);
+
+  await request(app)
+    .get(url)
+    .send()
+    .expect(200)
+    .expect(({ body }) => {
+      //first 50 must be in stock
+      const firstFifty = (body as ItemCreationAttribute[]).slice(0, 50);
+      expect(firstFifty.every((item) => item.quantity !== 0)).toBe(true);
+
+      //return 80 item, default limit
+      expect(body).toHaveLength(80);
     });
 });

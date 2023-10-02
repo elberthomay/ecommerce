@@ -19,6 +19,7 @@ import {
   ItemQueryType,
   ItemUpdateType,
 } from "../types/itemTypes";
+import { FindOptions, Sequelize } from "sequelize";
 
 const router = Router();
 
@@ -63,12 +64,14 @@ router.get(
       const queryData = req.query;
       const limit = queryData.limit ?? 80;
       const offset = queryData.page ? (queryData.page - 1) * limit : 0;
-      const queryOption = {
+      const include = queryData.tagId
+        ? [{ model: Tag, where: { id: queryData.tagId } }]
+        : undefined;
+      const queryOption: FindOptions<ItemCreationAttribute> = {
         limit,
         offset,
-        include: queryData.tagId
-          ? [{ model: Tag, where: { id: queryData.tagId } }]
-          : undefined,
+        include,
+        order: [["inStock", "DESC"]],
       };
       const items = await Item.findAll(queryOption);
       res.json(items);

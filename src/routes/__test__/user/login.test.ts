@@ -106,8 +106,6 @@ it("should return 401 if account doesn't exist in db", async () => {
 
 it("should return 401 if password doesn't match", async () => {
   const users = await createUser(3);
-  const count = (await User.findAll()).length;
-  console.log(count);
   const loginData = {
     email: users.userDatas[0].email,
     password: users.userDatas[0].password + "1",

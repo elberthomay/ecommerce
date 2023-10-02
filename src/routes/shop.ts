@@ -18,6 +18,7 @@ import {
   ShopParamType,
   ShopQueryType,
 } from "../types/shopTypes";
+import { Sequelize, Op } from "sequelize";
 
 const router = Router();
 
@@ -42,7 +43,12 @@ router.get(
       const limit = options.limit ?? 80;
       const offset = options.page ? (options.page - 1) * limit : 0;
       const shopId = req.params.shopId;
-      const items = await Item.findAll({ where: { shopId }, limit, offset });
+      const items = await Item.findAll({
+        where: { shopId },
+        limit,
+        offset,
+        order: [["inStock", "DESC"]],
+      });
       res.json(items);
     }
   )
