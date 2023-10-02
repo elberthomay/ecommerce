@@ -11,4 +11,5 @@ export interface ShopParamType {
 export interface ShopQueryType {
   limit?: number;
   page?: number;
+  orderBy?: string;
 }

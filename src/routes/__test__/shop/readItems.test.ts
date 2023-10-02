@@ -46,3 +46,54 @@ it("order first by whenever item sold out or not", async () => {
       expect(body).toHaveLength(80);
     });
 });
+
+it("sort by price ascending when corresponding query option is used", async () => {
+  await createItem(Array(50).fill({ quantity: 0, price: 0 }), defaultShop);
+  const items = await createItem(100, defaultShop);
+
+  await request(app)
+    .get(url)
+    .query({ orderBy: "cheapest" })
+    .expect(200)
+    .expect(({ body }) => {
+      expect(body).toHaveLength(80);
+      const priceIsAscending = (body as ItemCreationAttribute[]).every(
+        ({ price }, index, array) => {
+          //every price must be higher or equal than the last, first one compare with itself
+          return price >= array[index ? index - 1 : index].price;
+        }
+      );
+      expect(priceIsAscending).toBe(true);
+      const allInStock = (body as ItemCreationAttribute[]).every(
+        ({ quantity }) => quantity != 0
+      );
+      expect(allInStock).toBe(true);
+    });
+});
+
+it("sort by price descending when corresponding query option is used", async () => {
+  await createItem(
+    Array(50).fill({ quantity: 0, price: 1000000000 }),
+    defaultShop
+  );
+  const items = await createItem(100, defaultShop);
+
+  await request(app)
+    .get(url)
+    .query({ orderBy: "mostExpensive" })
+    .expect(200)
+    .expect(({ body }) => {
+      expect(body).toHaveLength(80);
+      const priceIsDescending = (body as ItemCreationAttribute[]).every(
+        ({ price }, index, array) => {
+          //every price must be lower or equal than the last, first one compare with itself
+          return price <= array[index ? index - 1 : index].price;
+        }
+      );
+      expect(priceIsDescending).toBe(true);
+      const allInStock = (body as ItemCreationAttribute[]).every(
+        ({ quantity }) => quantity != 0
+      );
+      expect(allInStock).toBe(true);
+    });
+});

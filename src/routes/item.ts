@@ -20,6 +20,7 @@ import {
   ItemUpdateType,
 } from "../types/itemTypes";
 import { FindOptions, Sequelize } from "sequelize";
+import orderNameEnum from "../var/orderNameEnum";
 
 const router = Router();
 
@@ -61,19 +62,24 @@ router.get(
       res: Response,
       next: NextFunction
     ) => {
-      const queryData = req.query;
-      const limit = queryData.limit ?? 80;
-      const offset = queryData.page ? (queryData.page - 1) * limit : 0;
-      const include = queryData.tagId
-        ? [{ model: Tag, where: { id: queryData.tagId } }]
+      const options = req.query;
+      const limit = options.limit ?? 80;
+      const offset = options.page ? (options.page - 1) * limit : 0;
+      const include = options.tagId
+        ? [{ model: Tag, where: { id: options.tagId } }]
         : undefined;
-      const queryOption: FindOptions<ItemCreationAttribute> = {
+
+      const findOption: FindOptions<ItemCreationAttribute> = {
         limit,
         offset,
         include,
         order: [["inStock", "DESC"]],
       };
-      const items = await Item.findAll(queryOption);
+
+      if (options.orderBy)
+        (findOption.order as any[]).push(orderNameEnum[options.orderBy]);
+
+      const items = await Item.findAll(findOption);
       res.json(items);
     }
   )

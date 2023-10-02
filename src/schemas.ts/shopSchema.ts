@@ -1,6 +1,7 @@
 import Joi from "joi";
 import { ShopCreateType, ShopParamType } from "../types/shopTypes";
 import { paginationSchema, uuidSchema } from "./commonSchema";
+import orderNameEnum from "../var/orderNameEnum";
 
 const shopSchema = {
   id: uuidSchema,
@@ -25,6 +26,7 @@ export const shopParamSchema = Joi.object<ShopParamType>({
 export const ShopQuerySchema = Joi.object({
   limit: paginationSchema.limit.optional(),
   page: paginationSchema.limit.optional(),
-})
-  .required()
-  .unknown(false);
+  orderBy: Joi.string()
+    .valid(...Object.keys(orderNameEnum))
+    .optional(),
+}).unknown(false);

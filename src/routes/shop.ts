@@ -10,7 +10,7 @@ import {
 import User, { UserCreationAttribute } from "../models/User";
 import Shop, { ShopCreationAttribute } from "../models/Shop";
 import fetch from "../middlewares/fetch";
-import Item from "../models/Item";
+import Item, { ItemCreationAttribute } from "../models/Item";
 import { ParamsDictionary } from "express-serve-static-core";
 import { TokenTypes } from "../types/TokenTypes";
 import {
@@ -18,7 +18,8 @@ import {
   ShopParamType,
   ShopQueryType,
 } from "../types/shopTypes";
-import { Sequelize, Op } from "sequelize";
+import { Sequelize, Op, FindOptions } from "sequelize";
+import orderNameEnum from "../var/orderNameEnum";
 
 const router = Router();
 
@@ -43,12 +44,18 @@ router.get(
       const limit = options.limit ?? 80;
       const offset = options.page ? (options.page - 1) * limit : 0;
       const shopId = req.params.shopId;
-      const items = await Item.findAll({
+
+      const findOption: FindOptions<ItemCreationAttribute> = {
         where: { shopId },
         limit,
         offset,
         order: [["inStock", "DESC"]],
-      });
+      };
+
+      if (options.orderBy)
+        (findOption.order as any[]).push(orderNameEnum[options.orderBy]);
+
+      const items = await Item.findAll(findOption);
       res.json(items);
     }
   )

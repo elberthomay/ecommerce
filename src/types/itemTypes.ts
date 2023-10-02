@@ -14,6 +14,7 @@ export interface ItemQueryType {
   limit?: number;
   page?: number;
   tagId?: Tag["id"];
+  orderBy?: string;
 }
 
 export interface ItemUpdateType {

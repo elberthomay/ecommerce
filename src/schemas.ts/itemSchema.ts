@@ -7,6 +7,7 @@ import {
 } from "../types/itemTypes";
 import { paginationSchema, uuidSchema } from "./commonSchema";
 import { tagSchema } from "./tagSchema";
+import orderNameEnum from "../var/orderNameEnum";
 
 export const itemSchema = {
   id: uuidSchema,
@@ -49,9 +50,10 @@ export const itemQuerySchema = Joi.object<ItemQueryType>({
   limit: paginationSchema.limit.optional(),
   page: paginationSchema.page.optional(),
   tagId: tagSchema.id.optional(),
-})
-  .required()
-  .unknown(false);
+  orderBy: Joi.string()
+    .valid(...Object.keys(orderNameEnum))
+    .optional(),
+}).unknown(false);
 
 export const itemUpdateSchema = Joi.object<ItemUpdateType>({
   name: itemSchema.name.optional(),
