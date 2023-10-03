@@ -17,7 +17,6 @@ const router = Router();
 
 const tagAuthorize = (req: Request, res: Response, next: NextFunction) => {
   const currentUser: User = (req as any).currentUser;
-  console.log(currentUser);
   if (currentUser.privilege !== 0 && currentUser.privilege !== 1)
     throw new AuthorizationError("Tag");
   else next();

@@ -12,6 +12,7 @@ import { createItem, defaultItem } from "../../../test/helpers/item/itemHelper";
 import { createShop, defaultShop } from "../../../test/helpers/shopHelper";
 import { invalidUuid } from "../../../test/helpers/commonData";
 import _ from "lodash";
+import { defaultRootUser } from "../../../test/helpers/user/userData";
 
 const url = "/api/item/";
 
@@ -57,16 +58,24 @@ it("should return 400 validation error when accessed with no update property", a
     .expect(400);
 });
 
-it("should return 403 unauthorized when user has yet to activate shop", async () => {
-  //create another user
+it("should return 200 when deleted by admin or root", async () => {
   const {
-    users: [user],
-  } = await createUser(1);
+    users: [newAdmin],
+  } = await createUser([{ privilege: 1 }]);
+  const [newItem] = await createItem(1); //create item for another user
+  const count = await Item.count();
+
   await request(app)
     .patch(url + defaultItem.id)
-    .set("Cookie", forgeCookie(user))
+    .set("Cookie", forgeCookie(newAdmin))
     .send(changesItemData)
-    .expect(403);
+    .expect(200);
+
+  await request(app)
+    .patch(url + newItem.id)
+    .set("Cookie", forgeCookie(defaultRootUser))
+    .send(changesItemData)
+    .expect(200);
 });
 
 it("should return 403 unauthorized when item is not associated with user's shop", async () => {

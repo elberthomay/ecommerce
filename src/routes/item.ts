@@ -1,5 +1,5 @@
 import { NextFunction, Request, Response, Router } from "express";
-import fetch from "../middlewares/fetch";
+import fetch, { fetchCurrentUser } from "../middlewares/fetch";
 import Item, { ItemCreationAttribute } from "../models/Item";
 import validator from "../middlewares/validator";
 import catchAsync from "../middlewares/catchAsync";
@@ -21,18 +21,21 @@ import {
 } from "../types/itemTypes";
 import { FindOptions, Sequelize } from "sequelize";
 import orderNameEnum from "../var/orderNameEnum";
+import User from "../models/User";
 
 const router = Router();
 
-const compareUserIdToShopUserId = (
+const authorizeUpdateOrDelete = (
   req: Request,
   res: Response,
   next: NextFunction
 ) => {
-  const value = ((req as any).tokenData as TokenTypes).id;
-  const target = ((req as any)[Item.name] as Item).shop?.userId;
-  if (!target) throw new Error("item has no Shop!");
-  authorize(value, target);
+  const user: User = (req as any).currentUser;
+  const itemOwnerId = ((req as any)[Item.name] as Item).shop?.userId;
+  if (!itemOwnerId) throw new Error("item has no Shop!");
+
+  if (user.privilege !== 1 && user.privilege !== 0)
+    authorize(user.id, itemOwnerId);
   next();
 };
 
@@ -113,6 +116,7 @@ router.patch(
   "/:itemId",
   authenticate(true),
   validator({ params: itemParamSchema, body: itemUpdateSchema }),
+  fetchCurrentUser,
   fetch<ItemCreationAttribute, { itemId: string }>({
     model: Item,
     key: ["id", "itemId"],
@@ -120,7 +124,7 @@ router.patch(
     force: "exist",
     include: [Shop],
   }),
-  compareUserIdToShopUserId,
+  authorizeUpdateOrDelete,
   catchAsync(
     async (
       req: Request<unknown, unknown, ItemUpdateType>,
@@ -139,6 +143,7 @@ router.delete(
   "/:itemId",
   authenticate(true),
   validator({ params: itemParamSchema }),
+  fetchCurrentUser,
   fetch<ItemCreationAttribute, { itemId: string }>({
     model: Item,
     key: ["id", "itemId"],
@@ -146,7 +151,7 @@ router.delete(
     force: "exist",
     include: [Shop],
   }),
-  compareUserIdToShopUserId,
+  authorizeUpdateOrDelete,
   catchAsync(async (req: Request, res: Response, next: NextFunction) => {
     const item: Item = (req as any)[Item.name];
     await item.destroy();
