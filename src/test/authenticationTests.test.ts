@@ -1,5 +1,6 @@
 import request from "supertest";
-import { defaultUser, forgeCookie } from "./helpers/user/userHelper";
+import { forgeCookie } from "./helpers/user/userHelper";
+import { defaultUser } from "./helpers/user/userData";
 import { Express } from "express";
 export default function authenticationTests(
   app: Express,

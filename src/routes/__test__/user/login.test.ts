@@ -1,101 +1,59 @@
 import {
-  createDefaultUser,
   createUser,
-  defaultUser,
   forgeCookie,
-  parseResponseCookie,
   tokenEqualityTest,
 } from "../../../test/helpers/user/userHelper";
-import request, { Response } from "supertest";
+import { defaultUser } from "../../../test/helpers/user/userData";
+import request from "supertest";
 import app from "../../../app";
 import _ from "lodash";
-import {
-  invalidEmails,
-  invalidName,
-  invalidPasswords,
-} from "../../../test/helpers/user/userData";
-import User from "../../../models/User";
+import { emailTest, passwordTest } from "../../../test/helpers/user/userSuite";
 
 const url = "/api/user/login";
 
 const defaultLoginData = _.pick(defaultUser, ["email", "password"]);
 
-it("should return 400 if any required property is missing", async () => {
-  const invalidLoginDatas = [
-    _.omit(defaultLoginData, "email"), //no email
-    _.omit(defaultLoginData, "password"), //no password
-    {}, //no anything
-  ];
+describe("return 400 for validation errors", () => {
+  it("should return 400 if any required property is missing", async () => {
+    const invalidLoginDatas = [
+      _.omit(defaultLoginData, "email"), //no email
+      _.omit(defaultLoginData, "password"), //no password
+      {}, //no anything
+    ];
 
-  await Promise.all(
-    invalidLoginDatas.map((invalidLoginData) =>
-      request(app).post(url).send(invalidLoginData).expect(400)
-    )
-  );
-});
+    await Promise.all(
+      invalidLoginDatas.map((invalidLoginData) =>
+        request(app).post(url).send(invalidLoginData).expect(400)
+      )
+    );
+  });
 
-it("should return 400 if any property is empty", async () => {
-  const invalidLoginDatas = [
-    { ...defaultLoginData, email: "" }, //empty email
-    { ...defaultLoginData, password: "" }, //empty password
-  ];
+  it("should return 400 if any property is empty", async () => {
+    const invalidLoginDatas = [
+      { ...defaultLoginData, email: "" }, //empty email
+      { ...defaultLoginData, password: "" }, //empty password
+    ];
 
-  await Promise.all(
-    invalidLoginDatas.map((invalidLoginData) =>
-      request(app).post(url).send(invalidLoginData).expect(400)
-    )
-  );
-});
+    await Promise.all(
+      invalidLoginDatas.map((invalidLoginData) =>
+        request(app).post(url).send(invalidLoginData).expect(400)
+      )
+    );
+  });
 
-it("should return 400 with invalid property", async () => {
-  const invalidLoginDatas = [
-    { ...defaultLoginData, invalid: "property" }, // an invalid property
-  ];
+  it("should return 400 with invalid property", async () => {
+    const invalidLoginDatas = [
+      { ...defaultLoginData, invalid: "property" }, // an invalid property
+    ];
 
-  await Promise.all(
-    invalidLoginDatas.map((invalidLoginData) =>
-      request(app).post(url).send(invalidLoginData).expect(400)
-    )
-  );
-});
-
-it("should return 400 if password is invalid", async () => {
-  const invalidLoginDatas = invalidPasswords.map((password) => ({
-    ...defaultLoginData,
-    password,
-  }));
-
-  await Promise.all(
-    invalidLoginDatas.map((loginData) =>
-      request(app).post(url).send(loginData).expect(400)
-    )
-  );
-});
-
-it("should return 400 if email is invalid", async () => {
-  const invalidLoginDatas = invalidEmails.map((email) => ({
-    ...defaultLoginData,
-    email,
-  }));
-
-  await Promise.all(
-    invalidLoginDatas.map((loginData) =>
-      request(app).post(url).send(loginData).expect(400)
-    )
-  );
-});
-
-it("should return 400 if name is invalid", async () => {
-  const invalidLoginDatas = invalidName.map((name) => ({
-    ...defaultLoginData,
-    name,
-  }));
-
-  await Promise.all(
-    invalidLoginDatas.map((loginData) =>
-      request(app).post(url).send(loginData).expect(400)
-    )
-  );
+    await Promise.all(
+      invalidLoginDatas.map((invalidLoginData) =>
+        request(app).post(url).send(invalidLoginData).expect(400)
+      )
+    );
+  });
+  passwordTest(app, url);
+  emailTest(app, url);
 });
 
 it("should return 401 if account doesn't exist in db", async () => {

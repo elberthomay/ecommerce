@@ -10,6 +10,9 @@ import jwt from "jsonwebtoken";
 import { TokenTypes } from "../types/TokenTypes";
 import authenticate from "../middlewares/authenticate";
 import { UserLoginType, UserRegisterType } from "../types/userTypes";
+import { exist } from "joi";
+import authorize from "../middlewares/authorize";
+import { AuthorizationError } from "../errors/AuthorizationError";
 
 const router = Router();
 
@@ -27,6 +30,38 @@ router.post(
       const newUserData = req.body;
       const hash = await bcrypt.hash(newUserData.password, 10);
       const newUser = await User.create({ ...newUserData, hash });
+      res.status(201).json({ status: "success", email: newUser.email });
+    }
+  )
+);
+
+router.post(
+  "/createAdmin",
+  validator({ body: registerSchema }),
+  authenticate(true),
+  fetch<UserCreationAttribute, UserRegisterType>({
+    model: User,
+    key: "email",
+    location: "body",
+    force: "absent",
+  }),
+  fetch<UserCreationAttribute, TokenTypes>({
+    model: User,
+    key: "id",
+    location: "tokenData",
+    destination: "currentUser",
+    force: "exist",
+  }),
+  (req, res, next) => {
+    const currentUser: User = (req as any).currentUser;
+    if (currentUser.privilege !== 0) throw new AuthorizationError("User");
+    else next();
+  },
+  catchAsync(
+    async (req: Request<unknown, unknown, UserRegisterType>, res, next) => {
+      const newUserData = req.body;
+      const hash = await bcrypt.hash(newUserData.password, 10);
+      const newUser = await User.create({ ...newUserData, hash, privilege: 1 });
       res.status(201).json({ status: "success", email: newUser.email });
     }
   )

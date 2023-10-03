@@ -5,9 +5,6 @@ import {
   HasOne,
   DataType,
   BelongsToMany,
-  IsUUID,
-  PrimaryKey,
-  Default,
 } from "sequelize-typescript";
 import Shop, { ShopCreationAttribute } from "./Shop";
 import Item, { ItemCreationAttribute } from "./Item";
@@ -20,6 +17,7 @@ export interface UserCreationAttribute {
   hash: string;
   shop?: ShopCreationAttribute;
   itemsInCart?: ItemCreationAttribute[];
+  privilege?: 0 | 1 | 2;
 }
 
 @Table({ tableName: "User" })
@@ -49,6 +47,14 @@ class User extends Model<UserCreationAttribute> {
     allowNull: false,
   })
   hash!: string;
+
+  @Column({
+    type: DataType.INTEGER,
+    allowNull: false,
+    defaultValue: 2,
+    validate: { isIn: [[0, 1, 2]] },
+  })
+  privilege!: number;
 
   @HasOne(() => Shop)
   shop!: Shop | null;

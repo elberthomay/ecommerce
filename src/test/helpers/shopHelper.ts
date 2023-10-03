@@ -1,6 +1,7 @@
 import { faker } from "@faker-js/faker";
 import Shop, { ShopCreationAttribute } from "../../models/Shop";
-import { createUser, defaultUser } from "./user/userHelper";
+import { createUser } from "./user/userHelper";
+import { defaultUser } from "./user/userData";
 
 /**
  * Create Shop from number or array of fragmented(or whole) user data.

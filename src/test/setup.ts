@@ -1,4 +1,6 @@
 import sequelize from "../models/sequelize";
+import { createUser } from "./helpers/user/userHelper";
+import { defaultRootUser } from "./helpers/user/userData";
 
 beforeAll(async () => {
   process.env.JWT_SECRET = "secret";
@@ -18,6 +20,7 @@ beforeEach(async () => {
     console.log(err);
   }
   // await sequelize.truncate({ cascade: true });
+  await createUser([defaultRootUser]);
 });
 
 afterAll(async () => {

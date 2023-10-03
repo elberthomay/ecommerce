@@ -7,8 +7,8 @@ import {
   createDefaultUser,
   createUser,
   defaultCookie,
-  defaultUser,
 } from "../../../test/helpers/user/userHelper";
+import { defaultUser } from "../../../test/helpers/user/userData";
 import Cart from "../../../models/Cart";
 import { invalidUuid } from "../../../test/helpers/commonData";
 import { invalidCartQuantity } from "../../../test/helpers/cartHelper";

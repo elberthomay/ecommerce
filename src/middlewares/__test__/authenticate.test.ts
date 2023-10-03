@@ -4,7 +4,8 @@ import request from "supertest";
 import authenticate from "../authenticate";
 import errorHandler from "../errorHandler";
 import { NextFunction, Request, Response } from "express";
-import { defaultCookie, defaultUser } from "../../test/helpers/user/userHelper";
+import { defaultCookie } from "../../test/helpers/user/userHelper";
+import { defaultUser } from "../../test/helpers/user/userData";
 
 describe("Test authentication with malformed or invalid token", () =>
   authenticationTests(

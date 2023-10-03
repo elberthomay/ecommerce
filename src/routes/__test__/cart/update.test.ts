@@ -4,8 +4,8 @@ import {
   createDefaultUser,
   createUser,
   defaultCookie,
-  defaultUser,
 } from "../../../test/helpers/user/userHelper";
+import { defaultUser } from "../../../test/helpers/user/userData";
 import { faker } from "@faker-js/faker";
 import request from "supertest";
 import Cart from "../../../models/Cart";

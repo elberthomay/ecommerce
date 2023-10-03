@@ -1,3 +1,5 @@
+import { pick } from "lodash";
+
 export const invalidEmails = [
   "invalid@mistake", // invalid TLD
   "invalidmistake.com", // no @
@@ -13,3 +15,24 @@ export const invalidPasswords = [
 export const invalidName = [
   "a".repeat(256), //more than 256 character
 ];
+
+export const defaultUser = {
+  id: "3ad3bf2c-6a47-4ce3-ba64-afed197160e0",
+  email: "test@example.com",
+  name: "Test Name",
+  password: "password123",
+};
+
+export const defaultRootUser = {
+  id: "538a708b-517c-48de-851f-607357b105bb",
+  email: "root@user.com",
+  name: "Root User",
+  password: "root123456789",
+  privilege: 0 as 0,
+};
+
+export const defaultRegisterData = pick(defaultUser, [
+  "email",
+  "name",
+  "password",
+]);

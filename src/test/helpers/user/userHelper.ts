@@ -6,6 +6,7 @@ import { TokenTypes } from "../../../types/TokenTypes";
 import _ from "lodash";
 import sequelize from "../../../models/sequelize";
 import { Response } from "supertest";
+import { defaultUser } from "./userData";
 
 /**
  * Create users from count or array of fragmented(or whole) user data.
@@ -22,13 +23,8 @@ export const createUser = async (
 
   //function to create completed userData
   const userDataCreateFunction =
-    (creationData?: {
-      id?: string;
-      name?: string;
-      email?: string;
-      password?: string;
-    }) =>
-    () => {
+    (creationData?: Partial<UserCreationAttribute & { password: string }>) =>
+    (): UserCreationAttribute & { password: string } => {
       const password = creationData?.password ?? faker.internet.password();
       return {
         id: creationData?.id ?? faker.string.uuid(),
@@ -36,6 +32,7 @@ export const createUser = async (
         email: creationData?.email ?? faker.internet.email(),
         hash: bcrypt.hashSync(password, 10),
         password,
+        privilege: creationData?.privilege ?? 2,
       };
     };
 
@@ -68,7 +65,7 @@ export const createUser = async (
  * @returns cookie string with format of cookieName=Token
  */
 export const forgeCookie = (
-  sessionData: TokenTypes | UserCreationAttribute | User,
+  sessionData: { id: string },
   options?: jwt.SignOptions,
   jwtSecret?: string,
   cookieName?: string
@@ -110,13 +107,6 @@ export const tokenEqualityTest = (token: string) => (res: Response) => {
       })
     )
   ).toBe(true);
-};
-
-export const defaultUser = {
-  id: "3ad3bf2c-6a47-4ce3-ba64-afed197160e0",
-  email: "test@example.com",
-  name: "Test Name",
-  password: "password123",
 };
 
 export const createDefaultUser = async () => {

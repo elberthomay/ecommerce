@@ -6,8 +6,8 @@ import {
   createDefaultUser,
   createUser,
   defaultCookie,
-  defaultUser,
 } from "../../../test/helpers/user/userHelper";
+import { defaultUser } from "../../../test/helpers/user/userData";
 import User from "../../../models/User";
 import Item, { ItemCreationAttribute } from "../../../models/Item";
 import Shop from "../../../models/Shop";

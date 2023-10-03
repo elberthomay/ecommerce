@@ -5,9 +5,9 @@ import {
   createDefaultUser,
   createUser,
   defaultCookie,
-  defaultUser,
   forgeCookie,
 } from "../../../test/helpers/user/userHelper";
+import { defaultUser } from "../../../test/helpers/user/userData";
 import { createItem } from "../../../test/helpers/item/itemHelper";
 import Cart from "../../../models/Cart";
 

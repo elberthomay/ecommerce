@@ -5,8 +5,8 @@ import {
   createDefaultUser,
   createUser,
   defaultCookie,
-  defaultUser,
 } from "../../../test/helpers/user/userHelper";
+import { defaultUser } from "../../../test/helpers/user/userData";
 import User from "../../../models/User";
 import _ from "lodash";
 import { createItem } from "../../../test/helpers/item/itemHelper";

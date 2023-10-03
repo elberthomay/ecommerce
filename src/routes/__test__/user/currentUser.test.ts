@@ -4,8 +4,8 @@ import User from "../../../models/User";
 import {
   createDefaultUser,
   defaultCookie,
-  defaultUser,
 } from "../../../test/helpers/user/userHelper";
+import { defaultUser } from "../../../test/helpers/user/userData";
 
 const url = "/api/user";
 
