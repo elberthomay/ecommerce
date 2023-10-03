@@ -1,38 +1,62 @@
 import request from "supertest";
 import app from "../../../app";
 import Tag from "../../../models/Tag";
-import { invalidTagIds } from "../../../test/helpers/IdHelper";
+import {
+  testTagId,
+  testTagName,
+  testTagNotFound,
+} from "../../../test/helpers/Tag/tagSuite";
+import { createUser, forgeCookie } from "../../../test/helpers/user/userHelper";
+import {
+  defaultRootUser,
+  defaultUser,
+} from "../../../test/helpers/user/userData";
+
 const url = "/api/tag/";
+const method = "patch";
 
-it("should return 400 for invalid names", async () => {
+describe("return 400 for validation error", () => {
+  testTagName(app, url, method);
+  testTagId(app, url, method);
+});
+
+testTagNotFound(app, url, method, { name: "food" });
+
+it("should return 403 when accessed by non-admin/root", async () => {
   const tag = await Tag.create({ name: "food" });
-  const invalidNames = ["", "a".repeat(51)];
-  await Promise.all(
-    invalidNames.map((name) =>
-      request(app)
-        .patch(url + tag.id)
-        .send({ name })
-        .expect(400)
-    )
-  );
-});
-
-it("should return 400 for invalid tagId", async () => {
-  await Promise.all(
-    invalidTagIds.map((invalidTagId) =>
-      request(app)
-        .patch(url + invalidTagId)
-        .send({ name: "food" })
-        .expect(400)
-    )
-  );
-});
-
-it("should return 404 for unavailable tag", async () => {
+  await createUser([defaultUser]);
+  const newName = "grocery";
   await request(app)
-    .patch(url + "1")
+    .patch(url + tag.id)
+    .set("Cookie", forgeCookie(defaultUser))
+    .send({ name: newName })
+    .expect(403);
+
+  let updatedTag = await Tag.findByPk(tag.id);
+  expect(updatedTag?.name).toEqual(tag.name);
+
+  const {
+    users: [newAdmin],
+  } = await createUser([{ privilege: 1 }]);
+
+  await request(app)
+    .patch(url + tag.id)
+    .set("Cookie", forgeCookie(newAdmin))
+    .send({ name: newName })
+    .expect(200);
+
+  updatedTag = await Tag.findByPk(tag.id);
+  expect(updatedTag?.name).toEqual(newName);
+});
+
+it("should return 409 for duplicate name", async () => {
+  await Tag.create({ name: "food" });
+  const tag = await Tag.create({ name: "grocery" });
+  await request(app)
+    .patch(url + tag.id)
+    .set("Cookie", forgeCookie(defaultRootUser))
     .send({ name: "food" })
-    .expect(404);
+    .expect(409);
 });
 
 it("should successfuly updated tag and return the updated tag data", async () => {
@@ -40,6 +64,7 @@ it("should successfuly updated tag and return the updated tag data", async () =>
   const newName = "grocery";
   await request(app)
     .patch(url + tag.id)
+    .set("Cookie", forgeCookie(defaultRootUser))
     .send({ name: newName })
     .expect(200)
     .expect(({ body }) => {

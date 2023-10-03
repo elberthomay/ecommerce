@@ -1,31 +1,54 @@
 import request from "supertest";
 import app from "../../../app";
 import Tag from "../../../models/Tag";
-import { invalidTagIds } from "../../../test/helpers/IdHelper";
-const url = "/api/tag/";
+import { testTagId, testTagNotFound } from "../../../test/helpers/Tag/tagSuite";
+import { createUser, forgeCookie } from "../../../test/helpers/user/userHelper";
+import {
+  defaultRootUser,
+  defaultUser,
+} from "../../../test/helpers/user/userData";
 
-it("should return 400 for invalid tagId", async () => {
-  await Promise.all(
-    invalidTagIds.map((invalidTagId) =>
-      request(app)
-        .delete(url + invalidTagId)
-        .send()
-        .expect(400)
-    )
-  );
+const url = "/api/tag/";
+const method = "delete";
+
+describe("return 400 for validation error", () => {
+  testTagId(app, url, method);
 });
 
-it("should return 404 for unavailable tag", async () => {
+testTagNotFound(app, url, method, {});
+
+it("should return 403 when accessed by non-admin/root", async () => {
+  const tag = await Tag.create({ name: "food" });
+  await createUser([defaultUser]);
+
   await request(app)
-    .delete(url + "1")
+    .delete(url + tag.id)
+    .set("Cookie", forgeCookie(defaultUser))
     .send()
-    .expect(404);
+    .expect(403);
+
+  let deletedTag = await Tag.findByPk(tag.id);
+  expect(deletedTag).not.toBeNull();
+
+  const {
+    users: [newAdmin],
+  } = await createUser([{ privilege: 1 }]);
+
+  await request(app)
+    .delete(url + tag.id)
+    .set("Cookie", forgeCookie(newAdmin))
+    .send()
+    .expect(200);
+
+  deletedTag = await Tag.findByPk(tag.id);
+  expect(deletedTag).toBeNull();
 });
 
 it("should successfuly deleted tag and return the deleted tag data", async () => {
   const tag = await Tag.create({ name: "food" });
   await request(app)
     .delete(url + tag.id)
+    .set("Cookie", forgeCookie(defaultRootUser))
     .send()
     .expect(200)
     .expect(({ body }) => {

@@ -4,6 +4,8 @@ import { Model, ModelCtor } from "sequelize-typescript";
 import NotFoundError from "../errors/NotFoundError";
 import { Includeable, FindAttributeOptions } from "sequelize";
 import DuplicateDataError from "../errors/DuplicateDataError";
+import User, { UserCreationAttribute } from "../models/User";
+import { TokenTypes } from "../types/TokenTypes";
 
 /**
  * Fetch data from provided model using property from Request object
@@ -68,3 +70,11 @@ export default function fetch<M extends any, I extends any>({
     next();
   });
 }
+
+export const fetchCurrentUser = fetch<UserCreationAttribute, TokenTypes>({
+  model: User,
+  key: "id",
+  location: "tokenData",
+  destination: "currentUser",
+  force: "exist",
+});
