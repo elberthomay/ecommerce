@@ -19,9 +19,12 @@ import {
   ItemQueryType,
   ItemUpdateType,
 } from "../types/itemTypes";
-import { FindOptions, Sequelize } from "sequelize";
+import { FindOptions, Sequelize, Transaction } from "sequelize";
 import orderNameEnum from "../var/orderNameEnum";
 import User from "../models/User";
+import { omit } from "lodash";
+import sequelize from "../models/sequelize";
+import ItemTag from "../models/ItemTag";
 
 const router = Router();
 
@@ -38,6 +41,16 @@ const authorizeUpdateOrDelete = (
     authorize(user.id, itemOwnerId);
   next();
 };
+
+async function addTags(item: Item, tagIds: number[], transaction: Transaction) {
+  const tags = await Promise.all(tagIds.map((tagId) => Tag.findByPk(tagId)));
+  const existingTag: Tag[] = tags.filter((tag) => tag !== null) as Tag[];
+
+  await ItemTag.bulkCreate(
+    existingTag.map((tag) => ({ itemId: item.id, tagId: tag.id })),
+    { transaction, ignoreDuplicates: true }
+  );
+}
 
 /** get item detail by itemId */
 router.get(
@@ -106,7 +119,21 @@ router.post(
     ) => {
       const shop = (req as any)[Shop.name];
       const newItemData = req.body;
-      const newItem = await Item.create({ ...newItemData, shopId: shop.id });
+      //transaction to prevent created item with incomplete tags
+      const newItem = await sequelize.transaction(async (transaction) => {
+        const newItem = await Item.create(
+          {
+            ...omit(newItemData, "tags"),
+            shopId: shop.id,
+          },
+          { transaction }
+        );
+        if (newItemData.tags && newItemData.tags.length !== 0)
+          await addTags(newItem, newItemData.tags, transaction);
+        return newItem;
+      });
+      await newItem.reload({ include: [Tag] });
+      console.log(newItem);
       res.status(201).json(newItem);
     }
   )
@@ -158,5 +185,8 @@ router.delete(
     res.json({ status: "success" });
   })
 );
+
+router.post("/:itemId/tag");
+router.delete("/:itemId/tag");
 
 export default router;

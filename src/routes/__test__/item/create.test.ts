@@ -6,31 +6,28 @@ import {
   defaultCookie,
 } from "../../../test/helpers/user/userHelper";
 import { createItem, defaultItem } from "../../../test/helpers/item/itemHelper";
+import { createShop, defaultShop } from "../../../test/helpers/shopHelper";
+import { pick, omit } from "lodash";
 import {
-  createDefaultShop,
-  createShop,
-  defaultShop,
-} from "../../../test/helpers/shopHelper";
-import _ from "lodash";
-import { ItemCreateType } from "../../../types/itemTypes";
-import {
+  defaultCreateItem,
   invalidDescription,
   invalidNames,
   invalidPrice,
   invalidQuantity,
 } from "../../../test/helpers/item/itemData";
 import Item, { ItemCreationAttribute } from "../../../models/Item";
+import Tag from "../../../models/Tag";
+import ItemTag from "../../../models/ItemTag";
+import { invalidTagIds } from "../../../test/helpers/Tag/tagData";
 
 const url = "/api/item";
-
-const defaultCreateItem: ItemCreateType = _.omit(defaultItem, ["id", "shopId"]);
 
 const assertItemCreationEquality =
   (expectedItem: Partial<ItemCreationAttribute>) =>
   async ({ body }: { body: any }) => {
     // correct returned item data
     expect(
-      _.pick(body as ItemCreationAttribute, [
+      pick(body as ItemCreationAttribute, [
         "name",
         "description",
         "price",
@@ -43,7 +40,7 @@ const assertItemCreationEquality =
     expect(item).toBeDefined();
 
     //correct created item
-    expect(_.pick(item, ["name", "description", "price", "quantity"])).toEqual(
+    expect(pick(item, ["name", "description", "price", "quantity"])).toEqual(
       expectedItem
     );
   };
@@ -66,9 +63,9 @@ describe("created default shop", () => {
 
   it("should return 400 for missing property", async () => {
     const invalidBodies = [
-      _.omit(defaultCreateItem, "name"), // no name
-      _.omit(defaultCreateItem, "description"), // no description
-      _.omit(defaultCreateItem, "price"), // no price
+      omit(defaultCreateItem, "name"), // no name
+      omit(defaultCreateItem, "description"), // no description
+      omit(defaultCreateItem, "price"), // no price
     ];
 
     await Promise.all(
@@ -140,16 +137,90 @@ describe("created default shop", () => {
       .expect(400);
   });
 
+  it("should return 400 for invalid tags", async () => {
+    await Promise.all(
+      invalidTagIds.map((tagId) =>
+        request(app)
+          .post(url)
+          .set("Cookie", defaultCookie())
+          .send({ ...defaultCreateItem, tags: [tagId, 12] })
+          .expect(400)
+      )
+    );
+  });
+
+  it("should return 400 for duplicate tags", async () => {
+    await request(app)
+      .post(url)
+      .set("Cookie", defaultCookie())
+      .send({ ...defaultCreateItem, tags: [1, 1, 2] })
+      .expect(400);
+  });
+
   it("should return 201 and create item with default quantity", async () => {
     await createItem(5, { id: defaultShop.id });
     await request(app)
       .post(url)
       .set("Cookie", defaultCookie())
-      .send(_.omit(defaultCreateItem, "quantity"))
+      .send(omit(defaultCreateItem, "quantity"))
       .expect(201)
       .expect(
-        assertItemCreationEquality({ ...defaultCreateItem, quantity: 0 })
+        assertItemCreationEquality({
+          ...omit(defaultCreateItem, "tags"),
+          quantity: 0,
+        })
       );
+    expect(await Item.count()).toBe(6);
+  });
+
+  it("should return 201 and create item with tag", async () => {
+    await createItem(5, { id: defaultShop.id });
+    const tagNames = ["food", "utensils", "pots"];
+    const tags = await Tag.bulkCreate(tagNames.map((name) => ({ name })));
+
+    await request(app)
+      .post(url)
+      .set("Cookie", defaultCookie())
+      .send({ ...defaultCreateItem, tags: tags.map((tag) => tag.id) })
+      .expect(201)
+      .expect(
+        assertItemCreationEquality({
+          ...omit(defaultCreateItem, "tags"),
+        })
+      )
+      .expect(async ({ body }) => {
+        const item: ItemCreationAttribute = body;
+        const tags = await ItemTag.findAll({ where: { itemId: item.id } });
+        expect(tags).toHaveLength(tags.length);
+        expect(item.tags).toHaveLength(tags.length);
+      });
+    expect(await Item.count()).toBe(6);
+  });
+
+  it("should return 201 and create item with tag, skipping nonexistent tag id", async () => {
+    await createItem(5, { id: defaultShop.id });
+    const tagNames = ["food", "utensils", "pots"];
+    const tags = await Tag.bulkCreate(tagNames.map((name) => ({ name })));
+
+    await request(app)
+      .post(url)
+      .set("Cookie", defaultCookie())
+      .send({
+        ...defaultCreateItem,
+        tags: [...tags.map((tag) => tag.id), 356, 223],
+      })
+      .expect(201)
+      .expect(
+        assertItemCreationEquality({
+          ...omit(defaultCreateItem, "tags"),
+        })
+      )
+      .expect(async ({ body }) => {
+        const item: ItemCreationAttribute = body;
+        const tags = await ItemTag.findAll({ where: { itemId: item.id } });
+        expect(tags).toHaveLength(tags.length);
+        expect(item.tags).toHaveLength(tags.length);
+      });
     expect(await Item.count()).toBe(6);
   });
 
@@ -160,7 +231,7 @@ describe("created default shop", () => {
       .set("Cookie", defaultCookie())
       .send(defaultCreateItem)
       .expect(201)
-      .expect(assertItemCreationEquality(defaultCreateItem));
+      .expect(assertItemCreationEquality(omit(defaultCreateItem, "tags")));
     expect(await Item.count()).toBe(6);
   });
 });

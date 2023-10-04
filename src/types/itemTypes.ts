@@ -4,7 +4,7 @@ import Tag from "../models/Tag";
 export type ItemCreateType = Pick<
   Item,
   "name" | "description" | "price" | "quantity"
->;
+> & { tags?: number[] };
 
 export type ItemParamType = {
   itemId: Item["id"];

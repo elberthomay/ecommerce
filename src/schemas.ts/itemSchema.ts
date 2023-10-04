@@ -31,11 +31,14 @@ export const itemSchema = {
   }),
 };
 
+const tagIdArray = Joi.array().items(tagSchema.id).max(100).unique();
+
 export const itemCreateSchema = Joi.object<ItemCreateType>({
   name: itemSchema.name.required(),
   description: itemSchema.description.required(),
   price: itemSchema.price.required(),
   quantity: itemSchema.quantity.default(0),
+  tags: tagIdArray.optional(),
 })
   .required()
   .unknown(false);
