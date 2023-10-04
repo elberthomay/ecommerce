@@ -3,6 +3,7 @@ import {
   ItemCreateType,
   ItemParamType,
   ItemQueryType,
+  ItemTagEditType,
   ItemUpdateType,
 } from "../types/itemTypes";
 import { paginationSchema, uuidSchema } from "./commonSchema";
@@ -31,7 +32,7 @@ export const itemSchema = {
   }),
 };
 
-const tagIdArray = Joi.array().items(tagSchema.id).max(100).unique();
+const tagIdArray = Joi.array().items(tagSchema.id).max(100).unique().min(1);
 
 export const itemCreateSchema = Joi.object<ItemCreateType>({
   name: itemSchema.name.required(),
@@ -67,3 +68,7 @@ export const itemUpdateSchema = Joi.object<ItemUpdateType>({
   .required()
   .unknown(false)
   .min(1);
+
+export const itemTagEditSchema = Joi.object<ItemTagEditType>({
+  tags: tagIdArray.required(),
+});

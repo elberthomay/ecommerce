@@ -12,14 +12,16 @@ import {
   itemCreateSchema,
   itemParamSchema,
   itemQuerySchema,
+  itemTagEditSchema,
   itemUpdateSchema,
 } from "../schemas.ts/itemSchema";
 import {
   ItemCreateType,
   ItemQueryType,
+  ItemTagEditType,
   ItemUpdateType,
 } from "../types/itemTypes";
-import { FindOptions, Sequelize, Transaction } from "sequelize";
+import { FindOptions, Op, Transaction } from "sequelize";
 import orderNameEnum from "../var/orderNameEnum";
 import User from "../models/User";
 import { omit } from "lodash";
@@ -42,7 +44,11 @@ const authorizeUpdateOrDelete = (
   next();
 };
 
-async function addTags(item: Item, tagIds: number[], transaction: Transaction) {
+async function addTags(
+  item: Item,
+  tagIds: number[],
+  transaction?: Transaction
+) {
   const tags = await Promise.all(tagIds.map((tagId) => Tag.findByPk(tagId)));
   const existingTag: Tag[] = tags.filter((tag) => tag !== null) as Tag[];
 
@@ -50,6 +56,13 @@ async function addTags(item: Item, tagIds: number[], transaction: Transaction) {
     existingTag.map((tag) => ({ itemId: item.id, tagId: tag.id })),
     { transaction, ignoreDuplicates: true }
   );
+}
+
+async function removeTags(item: Item, tagIds: number[]) {
+  console.log(tagIds);
+  await ItemTag.destroy({
+    where: { itemId: item.id, tagId: tagIds },
+  });
 }
 
 /** get item detail by itemId */
@@ -133,7 +146,6 @@ router.post(
         return newItem;
       });
       await newItem.reload({ include: [Tag] });
-      console.log(newItem);
       res.status(201).json(newItem);
     }
   )
@@ -186,7 +198,52 @@ router.delete(
   })
 );
 
-router.post("/:itemId/tag");
-router.delete("/:itemId/tag");
+router.post(
+  "/:itemId/tag",
+  authenticate(true),
+  validator({ params: itemParamSchema, body: itemTagEditSchema }),
+  fetchCurrentUser,
+  fetch<ItemCreationAttribute, { itemId: string }>({
+    model: Item,
+    key: ["id", "itemId"],
+    location: "params",
+    force: "exist",
+    include: [Shop],
+  }),
+  authorizeUpdateOrDelete,
+  catchAsync(
+    async (req: Request<unknown, unknown, ItemTagEditType>, res, next) => {
+      const item: Item = (req as any)[Item.name];
+      const tags = req.body.tags;
+      await addTags(item, tags);
+      await item.reload({ include: [Tag] });
+      res.json(item);
+    }
+  )
+);
+
+router.delete(
+  "/:itemId/tag",
+  authenticate(true),
+  validator({ params: itemParamSchema, body: itemTagEditSchema }),
+  fetchCurrentUser,
+  fetch<ItemCreationAttribute, { itemId: string }>({
+    model: Item,
+    key: ["id", "itemId"],
+    location: "params",
+    force: "exist",
+    include: [Shop],
+  }),
+  authorizeUpdateOrDelete,
+  catchAsync(
+    async (req: Request<unknown, unknown, ItemTagEditType>, res, next) => {
+      const item: Item = (req as any)[Item.name];
+      const tags = req.body.tags;
+      await removeTags(item, tags);
+      await item.reload({ include: [Tag] });
+      res.json(item);
+    }
+  )
+);
 
 export default router;
