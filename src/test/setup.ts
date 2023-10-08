@@ -6,7 +6,12 @@ beforeAll(async () => {
   process.env.JWT_SECRET = "secret";
   process.env.NODE_ENV = "test";
 
-  await sequelize.sync({ force: true });
+  try {
+    await sequelize.sync({ force: true });
+  } catch (err) {
+    console.error(err);
+    throw err;
+  }
 });
 
 beforeEach(async () => {

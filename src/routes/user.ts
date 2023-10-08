@@ -10,8 +10,6 @@ import jwt from "jsonwebtoken";
 import { TokenTypes } from "../types/TokenTypes";
 import authenticate from "../middlewares/authenticate";
 import { UserLoginType, UserRegisterType } from "../types/userTypes";
-import { exist } from "joi";
-import authorize from "../middlewares/authorize";
 import { AuthorizationError } from "../errors/AuthorizationError";
 
 const router = Router();

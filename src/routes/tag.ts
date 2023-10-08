@@ -12,15 +12,11 @@ import authenticate from "../middlewares/authenticate";
 import User from "../models/User";
 import { AuthorizationError } from "../errors/AuthorizationError";
 import { TagCreateType, TagPatchType } from "../types/tagTypes";
+import { authorization } from "../middlewares/authorize";
 
 const router = Router();
 
-const tagAuthorize = (req: Request, res: Response, next: NextFunction) => {
-  const currentUser: User = (req as any).currentUser;
-  if (currentUser.privilege !== 0 && currentUser.privilege !== 1)
-    throw new AuthorizationError("Tag");
-  else next();
-};
+const authorizeStaff = authorization([0, 1], "Tag");
 
 /** return list of all tags */
 router.get(
@@ -43,7 +39,7 @@ router.post(
     force: "absent",
   }),
   fetchCurrentUser,
-  tagAuthorize,
+  authorizeStaff,
   catchAsync(async (req: Request<unknown, unknown, TagCreateType>, res) => {
     const data = req.body;
     const newTag = await Tag.create(data);
@@ -57,7 +53,7 @@ router.patch(
   authenticate(true),
   validator({ params: tagQuerySchema, body: tagPatchSchema }),
   fetchCurrentUser,
-  tagAuthorize,
+  authorizeStaff,
   fetch<TagCreationAttribute, TagPatchType>({
     model: Tag,
     key: "name",
@@ -84,7 +80,7 @@ router.delete(
   authenticate(true),
   validator({ params: tagQuerySchema }),
   fetchCurrentUser,
-  tagAuthorize,
+  authorizeStaff,
   fetch<TagCreationAttribute, { tagId: number }>({
     model: Tag,
     key: ["id", "tagId"],

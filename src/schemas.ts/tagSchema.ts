@@ -1,8 +1,9 @@
 import Joi from "joi";
 import { TagCreateType, TagPatchType, TagQueryType } from "../types/tagTypes";
+import { numericIdSchema } from "./commonSchema";
 
 export const tagSchema = {
-  id: Joi.number().integer().min(1).max(1000),
+  id: numericIdSchema.max(1000),
   name: Joi.string().max(50),
 };
 

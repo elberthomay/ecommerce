@@ -8,6 +8,7 @@ import {
   BelongsToMany,
   PrimaryKey,
   HasMany,
+  Default,
 } from "sequelize-typescript";
 import Shop, { ShopCreationAttribute } from "./Shop";
 import Tag, { TagCreationAttribute } from "./Tag";
@@ -33,10 +34,8 @@ export interface ItemCreationAttribute {
 @Table({ tableName: "Item" })
 class Item extends Model<ItemCreationAttribute> {
   @PrimaryKey
-  @Column({
-    type: DataType.UUID,
-    defaultValue: DataType.UUIDV4,
-  })
+  @Default(DataType.UUIDV4)
+  @Column(DataType.UUID)
   id!: string;
 
   @Column({

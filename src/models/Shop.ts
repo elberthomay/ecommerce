@@ -9,9 +9,14 @@ import {
   Unique,
   AllowNull,
   IsUUID,
+  BelongsToMany,
+  PrimaryKey,
+  Default,
 } from "sequelize-typescript";
 import User, { UserCreationAttribute } from "./User";
 import Item, { ItemCreationAttribute } from "./Item";
+import Address from "./Address";
+import ShopAddress from "./ShopAddress";
 
 export interface ShopCreationAttribute {
   id?: string;
@@ -23,17 +28,13 @@ export interface ShopCreationAttribute {
 
 @Table({ tableName: "Shop" })
 class Shop extends Model<ShopCreationAttribute> {
-  @Column({
-    type: DataType.UUID,
-    defaultValue: DataType.UUIDV4,
-    primaryKey: true,
-  })
+  @PrimaryKey
+  @Default(DataType.UUIDV4)
+  @Column(DataType.UUID)
   id!: string;
 
-  @Column({
-    type: DataType.STRING,
-    allowNull: false,
-  })
+  @AllowNull(false)
+  @Column(DataType.STRING)
   name!: string;
 
   @ForeignKey(() => User)
@@ -44,6 +45,9 @@ class Shop extends Model<ShopCreationAttribute> {
 
   @BelongsTo(() => User)
   user!: User | null;
+
+  @BelongsToMany(() => Address, () => ShopAddress)
+  addresses!: Address[];
 
   @HasMany(() => Item)
   items!: Item[] | null;

@@ -5,10 +5,19 @@ import {
   HasOne,
   DataType,
   BelongsToMany,
+  ForeignKey,
+  PrimaryKey,
+  Default,
+  AllowNull,
+  Unique,
+  Validate,
+  BelongsTo,
 } from "sequelize-typescript";
 import Shop, { ShopCreationAttribute } from "./Shop";
 import Item, { ItemCreationAttribute } from "./Item";
 import Cart from "./Cart";
+import Address from "./Address";
+import UserAddress from "./UserAddress";
 
 export interface UserCreationAttribute {
   id?: string;
@@ -22,45 +31,50 @@ export interface UserCreationAttribute {
 
 @Table({ tableName: "User" })
 class User extends Model<UserCreationAttribute> {
-  @Column({
-    type: DataType.UUID,
-    primaryKey: true,
-    defaultValue: DataType.UUIDV4,
-  })
+  @PrimaryKey
+  @Default(DataType.UUIDV4)
+  @Column(DataType.UUID)
   id!: string;
 
-  @Column({
-    type: DataType.STRING,
-    allowNull: false,
-  })
+  @AllowNull(false)
+  @Column(DataType.STRING)
   name!: string;
 
-  @Column({
-    type: DataType.STRING,
-    allowNull: false,
-    unique: true,
-  })
+  @AllowNull(false)
+  @Unique
+  @Column(DataType.STRING)
   email!: string;
 
-  @Column({
-    type: DataType.CHAR(60),
-    allowNull: false,
-  })
+  @AllowNull(false)
+  @Column(DataType.CHAR(60))
   hash!: string;
 
-  @Column({
-    type: DataType.INTEGER,
-    allowNull: false,
-    defaultValue: 2,
-    validate: { isIn: [[0, 1, 2]] },
-  })
+  @AllowNull(false)
+  @Default(2)
+  @Validate({ isIn: [[0, 1, 2]] })
+  @Column(DataType.INTEGER)
   privilege!: number;
+
+  @ForeignKey(() => Address)
+  @AllowNull(true)
+  @Unique
+  @Column(DataType.UUID)
+  selectedAddressId!: string;
+
+  @BelongsTo(() => Address, {
+    targetKey: "id",
+    foreignKey: "selectedAddressId",
+  })
+  selectedAddress!: Address | null;
 
   @HasOne(() => Shop)
   shop!: Shop | null;
 
   @BelongsToMany(() => Item, () => Cart)
   itemsInCart!: Item[];
+
+  @BelongsToMany(() => Address, () => UserAddress)
+  addresses!: Address[];
 
   toJSON() {
     // Use super.toJSON() to get the default serialization

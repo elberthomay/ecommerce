@@ -1,5 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import { AuthorizationError } from "../errors/AuthorizationError";
+import priviledgeEnum from "../var/priviledgeEnum";
+import User from "../models/User";
 
 /**
  *
@@ -21,5 +23,20 @@ const authorize = (
   }
   throw new AuthorizationError(resourceName);
 };
+
+export const authorization =
+  (
+    allowed: (keyof priviledgeEnum | ((req: Request) => boolean))[],
+    resourceName = "Data"
+  ) =>
+  (req: Request, res: Response, next: NextFunction) => {
+    const currentUser: User | null | undefined = (req as any).currentUser;
+    const result = allowed.some((entry) => {
+      if (typeof entry === "number") return currentUser?.privilege === entry;
+      else return entry(req);
+    });
+    if (result) next();
+    else throw new AuthorizationError(resourceName);
+  };
 
 export default authorize;

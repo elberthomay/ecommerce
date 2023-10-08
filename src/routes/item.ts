@@ -7,7 +7,7 @@ import Tag from "../models/Tag";
 import authenticate from "../middlewares/authenticate";
 import Shop, { ShopCreationAttribute } from "../models/Shop";
 import { TokenTypes } from "../types/TokenTypes";
-import authorize from "../middlewares/authorize";
+import authorize, { authorization } from "../middlewares/authorize";
 import {
   itemCreateSchema,
   itemParamSchema,
@@ -30,19 +30,18 @@ import ItemTag from "../models/ItemTag";
 
 const router = Router();
 
-const authorizeUpdateOrDelete = (
-  req: Request,
-  res: Response,
-  next: NextFunction
-) => {
-  const user: User = (req as any).currentUser;
-  const itemOwnerId = ((req as any)[Item.name] as Item).shop?.userId;
-  if (!itemOwnerId) throw new Error("item has no Shop!");
-
-  if (user.privilege !== 1 && user.privilege !== 0)
-    authorize(user.id, itemOwnerId);
-  next();
-};
+const authorizeStaffOrOwner = authorization(
+  [
+    0,
+    1,
+    (req: Request) => {
+      const currentUser: User | null | undefined = (req as any).currentUser;
+      const shop = ((req as any)[Item.name] as Item)?.shop;
+      return currentUser?.id === shop?.userId && !!currentUser;
+    },
+  ],
+  "Item"
+);
 
 async function addTags(
   item: Item,
@@ -163,7 +162,7 @@ router.patch(
     force: "exist",
     include: [Shop],
   }),
-  authorizeUpdateOrDelete,
+  authorizeStaffOrOwner,
   catchAsync(
     async (
       req: Request<unknown, unknown, ItemUpdateType>,
@@ -190,7 +189,7 @@ router.delete(
     force: "exist",
     include: [Shop],
   }),
-  authorizeUpdateOrDelete,
+  authorizeStaffOrOwner,
   catchAsync(async (req: Request, res: Response, next: NextFunction) => {
     const item: Item = (req as any)[Item.name];
     await item.destroy();
@@ -210,7 +209,7 @@ router.post(
     force: "exist",
     include: [Shop],
   }),
-  authorizeUpdateOrDelete,
+  authorizeStaffOrOwner,
   catchAsync(
     async (req: Request<unknown, unknown, ItemTagEditType>, res, next) => {
       const item: Item = (req as any)[Item.name];
@@ -234,7 +233,7 @@ router.delete(
     force: "exist",
     include: [Shop],
   }),
-  authorizeUpdateOrDelete,
+  authorizeStaffOrOwner,
   catchAsync(
     async (req: Request<unknown, unknown, ItemTagEditType>, res, next) => {
       const item: Item = (req as any)[Item.name];

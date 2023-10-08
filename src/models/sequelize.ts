@@ -5,6 +5,11 @@ import Item from "./Item";
 import Tag from "./Tag";
 import ItemTag from "./ItemTag";
 import Cart from "./Cart";
+import Address from "./Address";
+import City from "./City";
+import Subdistrict from "./Subdistrict";
+import UserAddress from "./UserAddress";
+import ShopAddress from "./ShopAddress";
 
 const sequelize = new Sequelize({
   database: "ecommerce",
@@ -12,7 +17,19 @@ const sequelize = new Sequelize({
   username: "root",
   password: "123456",
   host: "localhost",
-  models: [User, Shop, Item, Tag, ItemTag, Cart],
+  models: [
+    User,
+    Shop,
+    Item,
+    Tag,
+    ItemTag,
+    Cart,
+    City,
+    Subdistrict,
+    Address,
+    UserAddress,
+    ShopAddress,
+  ],
   logging: false,
 });
 

@@ -1,5 +1,5 @@
 export default interface priviledgeEnum {
-  root: 0;
-  admin: 1;
-  user: 2;
+  0: "root";
+  1: "admin";
+  2: "user";
 }
