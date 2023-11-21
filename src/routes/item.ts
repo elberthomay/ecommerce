@@ -84,6 +84,10 @@ router.get(
 /** get list of item, optionally receive limit and page to handle pagination */
 router.get(
   "/",
+  (req: Request, res: Response, next: NextFunction) => {
+    console.log(req.query);
+    next();
+  },
   validator({ query: itemQuerySchema }),
   catchAsync(
     async (
@@ -92,8 +96,13 @@ router.get(
       next: NextFunction
     ) => {
       const options = req.query;
-      const include = options.tagId
-        ? [{ model: Tag, where: { id: options.tagId } }]
+      const include = options.tagIds
+        ? [
+            {
+              model: Tag,
+              where: { id: { [Op.in]: options.tagIds.split(",") } },
+            },
+          ]
         : undefined;
 
       const findOption: FindOptions<ItemCreationAttribute> = {

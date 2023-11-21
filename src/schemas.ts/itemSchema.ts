@@ -53,7 +53,9 @@ export const itemParamSchema = Joi.object<ItemParamType>({
 export const itemQuerySchema = Joi.object<ItemQueryType>({
   limit: paginationSchema.limit.optional(),
   page: paginationSchema.page.optional(),
-  tagId: tagSchema.id.optional(),
+  tagIds: Joi.string()
+    .pattern(/^\d+(,\d+)*$/) //numbers separated by comma
+    .optional(), //Joi.array().items(tagSchema.id).optional(),
   orderBy: Joi.string()
     .valid(...Object.keys(orderNameEnum))
     .optional(),

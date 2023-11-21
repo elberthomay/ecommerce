@@ -50,14 +50,30 @@ it("should return items with the correct tag when using tagId query option", asy
       return tag.$add("items", items.slice(index * 100, index * 100 + 100));
     })
   );
+  console.log({
+    tagIds: tags
+      .slice(0, 2)
+      .map((tag) => tag.id)
+      .join(","),
+    limit: 300,
+  });
 
   await request(app)
     .get(url)
-    .query({ tagId: tags[0].id, limit: 200 })
+    .query({
+      tagIds: tags
+        .slice(0, 2)
+        .map((tag) => tag.id)
+        .join(","),
+      limit: 300,
+    })
     .send()
+    .expect((res) => {
+      if (res.status != 200) console.log(res.body.errors);
+    })
     .expect(200)
     .expect(({ body }) => {
-      expect(body).toHaveLength(100);
+      expect(body).toHaveLength(200);
     });
 });
 

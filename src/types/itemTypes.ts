@@ -13,7 +13,7 @@ export type ItemParamType = {
 export interface ItemQueryType {
   limit?: number;
   page?: number;
-  tagId?: Tag["id"];
+  tagIds?: string;
   orderBy?: string;
 }
 

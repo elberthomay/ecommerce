@@ -8,7 +8,7 @@ export const uuidSchema = Joi.string().uuid({
 export const numericIdSchema = Joi.number().integer().min(1);
 
 export const paginationSchema = {
-  limit: Joi.number().min(1).max(200),
+  limit: Joi.number().min(1).max(500),
   page: Joi.number().min(1).max(5000),
 };
 

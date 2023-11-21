@@ -113,7 +113,7 @@ export default function pagingAndLimitTests(
   });
 
   it("invalid limit values, should return status code 400", async () => {
-    const invalidLimits = [-1, 0, 201, "blabla"];
+    const invalidLimits = [-1, 0, 501, "blabla"];
     for (const limit of invalidLimits) {
       await request(app)
         .get(url)
