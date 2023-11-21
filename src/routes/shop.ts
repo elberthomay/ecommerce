@@ -20,6 +20,7 @@ import {
 } from "../types/shopTypes";
 import { Sequelize, Op, FindOptions } from "sequelize";
 import orderNameEnum from "../var/orderNameEnum";
+import queryOptionToLimitOffset from "../helper/queryOptionToLimitOffset";
 
 const router = Router();
 
@@ -41,14 +42,11 @@ router.get(
       next: NextFunction
     ) => {
       const options = req.query;
-      const limit = options.limit ?? 80;
-      const offset = options.page ? (options.page - 1) * limit : 0;
       const shopId = req.params.shopId;
 
       const findOption: FindOptions<ItemCreationAttribute> = {
         where: { shopId },
-        limit,
-        offset,
+        ...queryOptionToLimitOffset(options),
         order: [["inStock", "DESC"]],
       };
 

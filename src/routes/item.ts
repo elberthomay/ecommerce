@@ -27,6 +27,7 @@ import User from "../models/User";
 import { omit } from "lodash";
 import sequelize from "../models/sequelize";
 import ItemTag from "../models/ItemTag";
+import queryOptionToLimitOffset from "../helper/queryOptionToLimitOffset";
 
 const router = Router();
 
@@ -91,15 +92,12 @@ router.get(
       next: NextFunction
     ) => {
       const options = req.query;
-      const limit = options.limit ?? 80;
-      const offset = options.page ? (options.page - 1) * limit : 0;
       const include = options.tagId
         ? [{ model: Tag, where: { id: options.tagId } }]
         : undefined;
 
       const findOption: FindOptions<ItemCreationAttribute> = {
-        limit,
-        offset,
+        ...queryOptionToLimitOffset(options),
         include,
         order: [["inStock", "DESC"]],
       };
