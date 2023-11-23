@@ -9,6 +9,7 @@ import {
 import { paginationSchema, uuidSchema } from "./commonSchema";
 import { tagSchema } from "./tagSchema";
 import orderNameEnum from "../var/orderNameEnum";
+import { shopSchema } from "./shopSchema";
 
 export const itemSchema = {
   id: uuidSchema,
@@ -73,4 +74,13 @@ export const itemUpdateSchema = Joi.object<ItemUpdateType>({
 
 export const itemTagEditSchema = Joi.object<ItemTagEditType>({
   tags: tagIdArray.required(),
+});
+
+export const getItemOutputSchema = Joi.object({
+  id: itemSchema.id.required(),
+  name: itemSchema.name.required(),
+  price: itemSchema.price.required(),
+  quantity: itemSchema.quantity.required(),
+  shopId: shopSchema.id.required(),
+  shopName: shopSchema.name.required(),
 });

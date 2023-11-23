@@ -8,11 +8,13 @@ import orderRouter from "./routes/order";
 import errorHandler from "./middlewares/errorHandler";
 import pathNotFound from "./middlewares/pathNotFound";
 import cookieParser from "cookie-parser";
+import cors from "cors";
 import databaseErrorHandler from "./middlewares/databaseErrorHandler";
 
 const app = express();
 app.use(express.json());
 app.use(cookieParser());
+app.use(cors());
 
 app.use("/api/user/", userRouter);
 app.use("/api/shop/", shopRouter);

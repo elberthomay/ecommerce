@@ -3,7 +3,7 @@ import { ShopCreateType, ShopParamType } from "../types/shopTypes";
 import { paginationSchema, uuidSchema } from "./commonSchema";
 import orderNameEnum from "../var/orderNameEnum";
 
-const shopSchema = {
+export const shopSchema = {
   id: uuidSchema,
   name: Joi.string().max(255).messages({
     "string.max": "{#label} must be shorter than {#limit} characters",

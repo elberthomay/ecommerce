@@ -21,6 +21,7 @@ import {
 import { Sequelize, Op, FindOptions } from "sequelize";
 import orderNameEnum from "../var/orderNameEnum";
 import queryOptionToLimitOffset from "../helper/queryOptionToLimitOffset";
+import sequelize from "../models/sequelize";
 
 const router = Router();
 
@@ -47,7 +48,7 @@ router.get(
       const findOption: FindOptions<ItemCreationAttribute> = {
         where: { shopId },
         ...queryOptionToLimitOffset(options),
-        order: [["inStock", "DESC"]],
+        order: [[sequelize.literal("(quantity != 0)"), "DESC"]],
       };
 
       if (options.orderBy)

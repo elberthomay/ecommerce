@@ -71,14 +71,6 @@ class Item extends Model<ItemCreationAttribute> {
   })
   shopId!: string;
 
-  @Column({
-    type: "BOOLEAN AS (quantity != 0)",
-    set() {
-      throw new Error("Virtual column cannot be set");
-    },
-  })
-  inStock!: boolean;
-
   @BelongsTo(() => Shop)
   shop!: Shop | null;
 

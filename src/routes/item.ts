@@ -21,7 +21,7 @@ import {
   ItemTagEditType,
   ItemUpdateType,
 } from "../types/itemTypes";
-import { FindOptions, Op, Transaction } from "sequelize";
+import { FindOptions, Includeable, Op, Transaction } from "sequelize";
 import orderNameEnum from "../var/orderNameEnum";
 import User from "../models/User";
 import { omit } from "lodash";
@@ -59,7 +59,6 @@ async function addTags(
 }
 
 async function removeTags(item: Item, tagIds: number[]) {
-  console.log(tagIds);
   await ItemTag.destroy({
     where: { itemId: item.id, tagId: tagIds },
   });
@@ -84,10 +83,6 @@ router.get(
 /** get list of item, optionally receive limit and page to handle pagination */
 router.get(
   "/",
-  (req: Request, res: Response, next: NextFunction) => {
-    console.log(req.query);
-    next();
-  },
   validator({ query: itemQuerySchema }),
   catchAsync(
     async (
@@ -96,25 +91,39 @@ router.get(
       next: NextFunction
     ) => {
       const options = req.query;
-      const include = options.tagIds
-        ? [
-            {
-              model: Tag,
-              where: { id: { [Op.in]: options.tagIds.split(",") } },
-            },
-          ]
-        : undefined;
+
+      const include: Includeable[] = [
+        { model: Shop, attributes: ["id", "name"] },
+      ];
+      if (options.tagIds)
+        include.push({
+          model: Tag,
+          where: { id: { [Op.in]: options.tagIds.split(",") } },
+        });
 
       const findOption: FindOptions<ItemCreationAttribute> = {
         ...queryOptionToLimitOffset(options),
+        attributes: ["id", "name", "price", "quantity"],
         include,
-        order: [["inStock", "DESC"]],
+        // order: [["inStock", "DESC"]],
+        order: [[sequelize.literal("(quantity != 0)"), "DESC"]],
       };
 
       if (options.orderBy)
         (findOption.order as any[]).push(orderNameEnum[options.orderBy]);
 
-      const items = await Item.findAll(findOption);
+      console.log(findOption);
+
+      const items = (await Item.findAll(findOption)).map(
+        ({ id, name, price, quantity, shop }) => ({
+          id,
+          name,
+          price,
+          quantity,
+          shopId: shop?.id,
+          shopName: shop?.name,
+        })
+      );
       res.json(items);
     }
   )

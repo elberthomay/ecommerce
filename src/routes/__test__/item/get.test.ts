@@ -5,6 +5,7 @@ import Tag from "../../../models/Tag";
 import { createItem } from "../../../test/helpers/item/itemHelper";
 import { defaultShop } from "../../../test/helpers/shopHelper";
 import Item, { ItemCreationAttribute } from "../../../models/Item";
+import { getItemOutputSchema } from "../../../schemas.ts/itemSchema";
 const url = "/api/item";
 
 describe("test basic paging and limit", () => {
@@ -50,13 +51,6 @@ it("should return items with the correct tag when using tagId query option", asy
       return tag.$add("items", items.slice(index * 100, index * 100 + 100));
     })
   );
-  console.log({
-    tagIds: tags
-      .slice(0, 2)
-      .map((tag) => tag.id)
-      .join(","),
-    limit: 300,
-  });
 
   await request(app)
     .get(url)
@@ -93,12 +87,16 @@ it("order first by whenever item sold out or not", async () => {
     .send()
     .expect(200)
     .expect(({ body }) => {
+      //return 80 item, default limit
+      expect(body).toHaveLength(80);
+
       //first 50 must be in stock
       const firstFifty = (body as ItemCreationAttribute[]).slice(0, 50);
       expect(firstFifty.every((item) => item.quantity !== 0)).toBe(true);
 
-      //return 80 item, default limit
-      expect(body).toHaveLength(80);
+      //next 30 must be out of stock
+      const lastThirty = (body as ItemCreationAttribute[]).slice(50, 80);
+      expect(lastThirty.every((item) => item.quantity === 0)).toBe(true);
     });
 });
 
@@ -147,5 +145,20 @@ it("sort by price descending when corresponding query option is used", async () 
         ({ quantity }) => quantity != 0
       );
       expect(allInStock).toBe(true);
+    });
+});
+
+it("return item and shop data with determined format", async () => {
+  await createItem(20);
+  await request(app)
+    .get(url)
+    .send()
+    .expect(200)
+    .expect(async ({ body }) => {
+      expect(
+        Promise.all(
+          body.map((item: any) => getItemOutputSchema.validateAsync(item))
+        )
+      ).resolves;
     });
 });
