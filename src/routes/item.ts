@@ -112,8 +112,6 @@ router.get(
       if (options.orderBy)
         (findOption.order as any[]).push(orderNameEnum[options.orderBy]);
 
-      console.log(findOption);
-
       const items = (await Item.findAll(findOption)).map(
         ({ id, name, price, quantity, shop }) => ({
           id,

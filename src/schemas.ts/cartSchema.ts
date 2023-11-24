@@ -1,6 +1,8 @@
 import Joi from "joi";
 import { itemSchema } from "./itemSchema";
 import { userSchema } from "./userSchema";
+import { cartOutputType } from "../types/cartType";
+import { shopSchema } from "./shopSchema";
 
 export const cartSchema = {
   userId: userSchema.id,
@@ -28,6 +30,19 @@ export const cartUpdateSchema = Joi.object({
 
 export const cartDeleteSchema = Joi.object({
   itemId: cartSchema.itemId.required(),
+})
+  .required()
+  .unknown(false);
+
+export const cartOutputSchema = Joi.object<cartOutputType>({
+  inventory: itemSchema.quantity.required(),
+  itemId: itemSchema.id.required(),
+  name: itemSchema.name.required(),
+  price: itemSchema.price.required(),
+  quantity: cartSchema.quantity.required(),
+  selected: cartSchema.selected.required(),
+  shopId: shopSchema.id.required(),
+  shopName: shopSchema.name.required(),
 })
   .required()
   .unknown(false);

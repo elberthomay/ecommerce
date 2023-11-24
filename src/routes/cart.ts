@@ -34,6 +34,7 @@ const updateHandler = catchAsync(
     const item = await Item.findByPk(updateData.itemId);
     if (cart && item) {
       if (updateData.quantity !== undefined) {
+        //check inventory if quantity has to be changed
         if (updateData.quantity === 0) return next(); // delete
         else if (item.quantity < updateData.quantity)
           throw new InventoryError();
@@ -70,16 +71,26 @@ router.get(
   }),
   catchAsync(async (req, res) => {
     const user: User = (req as any).currentUser;
-    const itemsInCart = await user.$get("itemsInCart", {
-      include: [Shop],
+    const cartItems = await Cart.findAll({
+      where: { userId: user.id },
+      attributes: ["itemId", "quantity", "selected"],
+      include: [
+        {
+          model: Item,
+          attributes: ["quantity", "name", "price", "shopId"],
+          include: [{ model: Shop, attributes: ["name"] }],
+        },
+      ],
     });
-    const result = itemsInCart.map((item) => ({
-      ...(item as any).Cart.toJSON(),
-      inventory: item.quantity,
-      name: item.name,
-      price: item.price,
-      shopId: item.shopId,
-      shopName: item.shop?.name,
+    const result = cartItems.map(({ itemId, quantity, selected, item }) => ({
+      itemId,
+      quantity,
+      selected,
+      inventory: item?.quantity,
+      name: item?.name,
+      price: item?.price,
+      shopId: item?.shopId,
+      shopName: item?.shop?.name,
     }));
     res.json(result);
   })

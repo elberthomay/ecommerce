@@ -46,6 +46,7 @@ router.get(
       const shopId = req.params.shopId;
 
       const findOption: FindOptions<ItemCreationAttribute> = {
+        attributes: ["id", "name", "price", "quantity"],
         where: { shopId },
         ...queryOptionToLimitOffset(options),
         order: [[sequelize.literal("(quantity != 0)"), "DESC"]],
