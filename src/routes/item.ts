@@ -21,7 +21,13 @@ import {
   ItemTagEditType,
   ItemUpdateType,
 } from "../types/itemTypes";
-import { FindOptions, Includeable, Op, Transaction } from "sequelize";
+import {
+  FindOptions,
+  Includeable,
+  Op,
+  Sequelize,
+  Transaction,
+} from "sequelize";
 import orderNameEnum from "../var/orderNameEnum";
 import User from "../models/User";
 import { omit } from "lodash";
@@ -109,6 +115,13 @@ router.get(
         // order: [["inStock", "DESC"]],
         order: [[sequelize.literal("(quantity != 0)"), "DESC"]],
       };
+
+      if (options.search) {
+        findOption.where = Sequelize.literal(
+          "MATCH(item.name) AGAINST(:name IN NATURAL LANGUAGE MODE)"
+        );
+        findOption.replacements = { name: options.search };
+      }
 
       if (options.orderBy)
         (findOption.order as any[]).push(orderNameEnum[options.orderBy]);

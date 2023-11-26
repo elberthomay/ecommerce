@@ -11,6 +11,7 @@ export type ItemParamType = {
 };
 
 export interface ItemQueryType {
+  search?: string;
   limit?: number;
   page?: number;
   tagIds?: string;

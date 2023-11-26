@@ -9,6 +9,7 @@ import {
   PrimaryKey,
   HasMany,
   Default,
+  Index,
 } from "sequelize-typescript";
 import Shop, { ShopCreationAttribute } from "./Shop";
 import Tag, { TagCreationAttribute } from "./Tag";
@@ -38,6 +39,10 @@ class Item extends Model<ItemCreationAttribute> {
   @Column(DataType.UUID)
   id!: string;
 
+  @Index({
+    name: "name-idx",
+    type: "FULLTEXT",
+  })
   @Column({
     type: DataType.STRING,
     allowNull: false,

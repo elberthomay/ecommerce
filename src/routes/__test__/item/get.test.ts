@@ -6,6 +6,7 @@ import { createItem } from "../../../test/helpers/item/itemHelper";
 import { defaultShop } from "../../../test/helpers/shopHelper";
 import Item, { ItemCreationAttribute } from "../../../models/Item";
 import { getItemOutputSchema } from "../../../schemas.ts/itemSchema";
+import { faker } from "@faker-js/faker";
 const url = "/api/item";
 
 describe("test basic paging and limit", () => {
@@ -164,5 +165,29 @@ it("return item and shop data with determined format", async () => {
           rows.map((item: any) => getItemOutputSchema.validateAsync(item))
         )
       ).resolves;
+    });
+});
+
+it("should return item with certain string when search option is used", async () => {
+  //create 120 items across 3 shops
+  const shopId = faker.string.uuid();
+  await createItem(40, { id: shopId });
+  await createItem(
+    [
+      { name: "blue eyes white dragon" },
+      { name: "red eyes blade dragon" },
+      { name: "green eyes scaley dragon" },
+    ],
+    { id: shopId }
+  );
+
+  await request(app)
+    .get(url)
+    .query({ search: "dragon" })
+    .send()
+    .expect(200)
+    .expect(({ body: { count, rows } }) => {
+      expect(count).toEqual(3);
+      console.log(rows);
     });
 });

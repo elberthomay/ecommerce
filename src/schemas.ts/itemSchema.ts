@@ -52,6 +52,10 @@ export const itemParamSchema = Joi.object<ItemParamType>({
   .unknown(false);
 
 export const itemQuerySchema = Joi.object<ItemQueryType>({
+  search: Joi.string()
+    .pattern(/[a-zA-Z0-9_\-., ]+/)
+    .max(60)
+    .optional(),
   limit: paginationSchema.limit.optional(),
   page: paginationSchema.page.optional(),
   tagIds: Joi.string()
