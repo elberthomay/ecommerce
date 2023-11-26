@@ -55,7 +55,7 @@ router.get(
       if (options.orderBy)
         (findOption.order as any[]).push(orderNameEnum[options.orderBy]);
 
-      const items = await Item.findAll(findOption);
+      const items = await Item.findAndCountAll(findOption);
       res.json(items);
     }
   )
