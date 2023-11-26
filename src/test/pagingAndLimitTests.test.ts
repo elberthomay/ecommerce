@@ -16,7 +16,11 @@ export default function pagingAndLimitTests(
   cookie: string[] = []
 ) {
   it("default limit default page, should return an empty array when there are no items", async () => {
-    await request(app).get(url).send().expect(200, []);
+    await request(app)
+      .get(url)
+      .send()
+      .expect(200)
+      .expect(({ body }) => expect(transformerFunction(body)).toHaveLength(0));
   });
 
   it("valid limit, default page, should return an empty array when there are no items", async () => {

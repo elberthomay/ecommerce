@@ -74,6 +74,7 @@ router.get(
     const cartItems = await Cart.findAll({
       where: { userId: user.id },
       attributes: ["itemId", "quantity", "selected"],
+      order: [["createdAt", "DESC"]],
       include: [
         {
           model: Item,

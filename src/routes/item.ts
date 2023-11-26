@@ -80,7 +80,7 @@ router.get(
   }
 );
 
-/** get list of item, optionally receive limit and page to handle pagination */
+/** get list of item and the count, optionally receive limit and page to handle pagination */
 router.get(
   "/",
   validator({ query: itemQuerySchema }),
@@ -95,6 +95,7 @@ router.get(
       const include: Includeable[] = [
         { model: Shop, attributes: ["id", "name"] },
       ];
+
       if (options.tagIds)
         include.push({
           model: Tag,
@@ -112,17 +113,19 @@ router.get(
       if (options.orderBy)
         (findOption.order as any[]).push(orderNameEnum[options.orderBy]);
 
-      const items = (await Item.findAll(findOption)).map(
-        ({ id, name, price, quantity, shop }) => ({
+      const items = await Item.findAndCountAll(findOption);
+      const result = {
+        ...items,
+        rows: items.rows.map(({ id, name, price, quantity, shop }) => ({
           id,
           name,
           price,
           quantity,
           shopId: shop?.id,
           shopName: shop?.name,
-        })
-      );
-      res.json(items);
+        })),
+      };
+      res.json(result);
     }
   )
 );

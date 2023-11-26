@@ -9,8 +9,11 @@ import { getItemOutputSchema } from "../../../schemas.ts/itemSchema";
 const url = "/api/item";
 
 describe("test basic paging and limit", () => {
-  pagingAndLimitTests(app, url, (count: number) =>
-    createItem(count, defaultShop)
+  pagingAndLimitTests(
+    app,
+    url,
+    (count: number) => createItem(count, defaultShop),
+    (body: any) => body.rows
   );
 });
 
@@ -25,16 +28,17 @@ it("should return item from all shop", async () => {
     .query({ limit: 120 })
     .send()
     .expect(200)
-    .expect(({ body }) => {
-      expect(body).toHaveLength(120);
+    .expect(({ body: { count, rows } }) => {
+      expect(count).toEqual(120);
+      expect(rows).toHaveLength(120);
     });
   await request(app)
     .get(url)
     .query({ limit: 80 })
     .send()
     .expect(200)
-    .expect(({ body }) => {
-      expect(body).toHaveLength(80);
+    .expect(({ body: { count, rows } }) => {
+      expect(rows).toHaveLength(80);
     });
 });
 
@@ -66,8 +70,8 @@ it("should return items with the correct tag when using tagId query option", asy
       if (res.status != 200) console.log(res.body.errors);
     })
     .expect(200)
-    .expect(({ body }) => {
-      expect(body).toHaveLength(200);
+    .expect(({ body: { count, rows } }) => {
+      expect(rows).toHaveLength(200);
     });
 });
 
@@ -80,22 +84,22 @@ it("order first by whenever item sold out or not", async () => {
   );
 
   const items = await Item.findAll();
-  console.log(items.length);
 
   await request(app)
     .get(url)
     .send()
     .expect(200)
-    .expect(({ body }) => {
+    .expect(({ body: { count, rows } }) => {
       //return 80 item, default limit
-      expect(body).toHaveLength(80);
+      expect(count).toEqual(150);
+      expect(rows).toHaveLength(80);
 
       //first 50 must be in stock
-      const firstFifty = (body as ItemCreationAttribute[]).slice(0, 50);
+      const firstFifty = (rows as ItemCreationAttribute[]).slice(0, 50);
       expect(firstFifty.every((item) => item.quantity !== 0)).toBe(true);
 
       //next 30 must be out of stock
-      const lastThirty = (body as ItemCreationAttribute[]).slice(50, 80);
+      const lastThirty = (rows as ItemCreationAttribute[]).slice(50, 80);
       expect(lastThirty.every((item) => item.quantity === 0)).toBe(true);
     });
 });
@@ -108,16 +112,16 @@ it("sort by price ascending when corresponding query option is used", async () =
     .get(url)
     .query({ orderBy: "cheapest" })
     .expect(200)
-    .expect(({ body }) => {
-      expect(body).toHaveLength(80);
-      const priceIsAscending = (body as ItemCreationAttribute[]).every(
+    .expect(({ body: { count, rows } }) => {
+      expect(rows).toHaveLength(80);
+      const priceIsAscending = (rows as ItemCreationAttribute[]).every(
         ({ price }, index, array) => {
           //every price must be higher or equal than the last, first one compare with itself
           return price >= array[index ? index - 1 : index].price;
         }
       );
       expect(priceIsAscending).toBe(true);
-      const allInStock = (body as ItemCreationAttribute[]).every(
+      const allInStock = (rows as ItemCreationAttribute[]).every(
         ({ quantity }) => quantity != 0
       );
       expect(allInStock).toBe(true);
@@ -132,16 +136,16 @@ it("sort by price descending when corresponding query option is used", async () 
     .get(url)
     .query({ orderBy: "mostExpensive" })
     .expect(200)
-    .expect(({ body }) => {
-      expect(body).toHaveLength(80);
-      const priceIsDescending = (body as ItemCreationAttribute[]).every(
+    .expect(({ body: { count, rows } }) => {
+      expect(rows).toHaveLength(80);
+      const priceIsDescending = (rows as ItemCreationAttribute[]).every(
         ({ price }, index, array) => {
           //every price must be lower or equal than the last, first one compare with itself
           return price <= array[index ? index - 1 : index].price;
         }
       );
       expect(priceIsDescending).toBe(true);
-      const allInStock = (body as ItemCreationAttribute[]).every(
+      const allInStock = (rows as ItemCreationAttribute[]).every(
         ({ quantity }) => quantity != 0
       );
       expect(allInStock).toBe(true);
@@ -154,10 +158,10 @@ it("return item and shop data with determined format", async () => {
     .get(url)
     .send()
     .expect(200)
-    .expect(async ({ body }) => {
+    .expect(async ({ body: { count, rows } }) => {
       expect(
         Promise.all(
-          body.map((item: any) => getItemOutputSchema.validateAsync(item))
+          rows.map((item: any) => getItemOutputSchema.validateAsync(item))
         )
       ).resolves;
     });
