@@ -25,6 +25,7 @@ import {
   FindOptions,
   Includeable,
   Op,
+  Order,
   Sequelize,
   Transaction,
 } from "sequelize";
@@ -97,34 +98,35 @@ router.get(
       next: NextFunction
     ) => {
       const options = req.query;
-
-      const include: Includeable[] = [
-        { model: Shop, attributes: ["id", "name"] },
+      const { tagIds, orderBy, search } = options;
+      const defaultInclude = [{ model: Shop, attributes: ["id", "name"] }];
+      const defaultOrder: Order = [
+        [sequelize.literal("(quantity != 0)"), "DESC"],
       ];
-
-      if (options.tagIds)
-        include.push({
-          model: Tag,
-          where: { id: { [Op.in]: options.tagIds.split(",") } },
-        });
 
       const findOption: FindOptions<ItemCreationAttribute> = {
         ...queryOptionToLimitOffset(options),
         attributes: ["id", "name", "price", "quantity"],
-        include,
+        include: tagIds
+          ? [
+              ...defaultInclude,
+              {
+                model: Tag,
+                where: { id: { [Op.in]: tagIds.split(",") } },
+              },
+            ]
+          : defaultInclude,
         // order: [["inStock", "DESC"]],
-        order: [[sequelize.literal("(quantity != 0)"), "DESC"]],
+        order: orderBy
+          ? [...defaultOrder, orderNameEnum[orderBy]]
+          : defaultOrder,
+        where: search
+          ? Sequelize.literal(
+              "MATCH(item.name) AGAINST(:name IN NATURAL LANGUAGE MODE)"
+            )
+          : undefined,
+        replacements: search ? { name: options.search } : undefined,
       };
-
-      if (options.search) {
-        findOption.where = Sequelize.literal(
-          "MATCH(item.name) AGAINST(:name IN NATURAL LANGUAGE MODE)"
-        );
-        findOption.replacements = { name: options.search };
-      }
-
-      if (options.orderBy)
-        (findOption.order as any[]).push(orderNameEnum[options.orderBy]);
 
       const items = await Item.findAndCountAll(findOption);
       const result = {

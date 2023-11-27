@@ -18,6 +18,14 @@ describe("test basic paging and limit", () => {
   );
 });
 
+it("reject search string with invalid character", async () => {
+  //create 120 items across 3 shops
+  const shopId = faker.string.uuid();
+  await createItem(40, { id: shopId });
+
+  await request(app).get(url).query({ search: "/'\"" }).send().expect(400);
+});
+
 it("should return item from all shop", async () => {
   //create 120 items across 3 shops
   await createItem(40);

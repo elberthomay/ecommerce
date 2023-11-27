@@ -55,6 +55,7 @@ export const itemQuerySchema = Joi.object<ItemQueryType>({
   search: Joi.string()
     .pattern(/[a-zA-Z0-9_\-., ]+/)
     .max(60)
+    .empty("")
     .optional(),
   limit: paginationSchema.limit.optional(),
   page: paginationSchema.page.optional(),

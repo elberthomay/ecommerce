@@ -5,7 +5,8 @@
   "main": "index.js",
   "scripts": {
     "test": "jest --watch-all --no-cache --maxWorkers=1",
-    "debug": "npx ts-node-dev src/index.ts"
+    "debug": "npx ts-node-dev src/index.ts",
+    "populate": "npx ts-node-dev ./src/test/helpers/populateDb.ts"
   },
   "keywords": [],
   "author": "",

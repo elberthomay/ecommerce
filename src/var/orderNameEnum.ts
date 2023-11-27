@@ -5,6 +5,7 @@ const orderNameEnum: {
 } = {
   cheapest: ["price", "ASC"],
   newest: ["createdAt", "ASC"],
+  oldest: ["createdAt", "DESC"],
   mostExpensive: ["price", "DESC"],
 };
 export default orderNameEnum;
