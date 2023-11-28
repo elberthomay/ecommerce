@@ -1,10 +1,10 @@
 import Tag from "../../models/Tag";
-import sequelizeTest from "../sequelizeTest";
+import sequelize from "../../models/sequelize";
 import { createItem } from "./item/itemHelper";
 
 async function sequelizetry() {
   try {
-    await sequelizeTest.sync({ force: true });
+    await sequelize.sync({ force: true });
     //create 4 shops each with 200 item
     const items0 = await createItem(200);
     const items1 = await createItem(200);

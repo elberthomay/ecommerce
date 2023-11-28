@@ -5,8 +5,10 @@ import Tag from "../../../models/Tag";
 import { createItem } from "../../../test/helpers/item/itemHelper";
 import { defaultShop } from "../../../test/helpers/shopHelper";
 import Item, { ItemCreationAttribute } from "../../../models/Item";
-import { getItemOutputSchema } from "../../../schemas.ts/itemSchema";
+import { itemGetOutputSchema } from "../../../schemas.ts/itemSchema";
 import { faker } from "@faker-js/faker";
+import ItemImage from "../../../models/ItemImage";
+import { ItemGetOutputType } from "../../../types/itemTypes";
 const url = "/api/item";
 
 describe("test basic paging and limit", () => {
@@ -162,17 +164,29 @@ it("sort by price descending when corresponding query option is used", async () 
 });
 
 it("return item and shop data with determined format", async () => {
-  await createItem(20);
+  const items = await createItem(20);
+  await Promise.all(
+    items.map(({ id: itemId }) =>
+      ItemImage.bulkCreate([
+        { itemId, imageName: "http://image.com/2", order: 1 },
+        { itemId, imageName: "http://image.com/3", order: 2 },
+        { itemId, imageName: "http://image.com/1", order: 0 },
+        { itemId, imageName: "http://image.com/4", order: 3 },
+      ])
+    )
+  );
   await request(app)
     .get(url)
     .send()
     .expect(200)
     .expect(async ({ body: { count, rows } }) => {
+      console.log(rows);
+      expect(itemGetOutputSchema.validateAsync(rows)).resolves;
       expect(
-        Promise.all(
-          rows.map((item: any) => getItemOutputSchema.validateAsync(item))
+        rows.every(
+          (item: ItemGetOutputType) => item.image === "http://image.com/1"
         )
-      ).resolves;
+      ).toBeTruthy();
     });
 });
 

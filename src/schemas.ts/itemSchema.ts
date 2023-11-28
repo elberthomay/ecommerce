@@ -81,11 +81,36 @@ export const itemTagEditSchema = Joi.object<ItemTagEditType>({
   tags: tagIdArray.required(),
 });
 
-export const getItemOutputSchema = Joi.object({
+export const itemGetOutputSchema = Joi.array()
+  .items(
+    Joi.object({
+      id: itemSchema.id.required(),
+      name: itemSchema.name.required(),
+      price: itemSchema.price.required(),
+      quantity: itemSchema.quantity.required(),
+      shopId: shopSchema.id.required(),
+      shopName: shopSchema.name.required(),
+      image: Joi.string().optional(),
+    })
+      .unknown(false)
+      .required()
+  )
+  .required();
+
+export const itemDetailsOutputSchema = Joi.object({
   id: itemSchema.id.required(),
   name: itemSchema.name.required(),
   price: itemSchema.price.required(),
+  description: itemSchema.description.required(),
   quantity: itemSchema.quantity.required(),
   shopId: shopSchema.id.required(),
   shopName: shopSchema.name.required(),
-});
+  images: Joi.array()
+    .items(Joi.object({ imageName: Joi.string(), order: Joi.number() }))
+    .required(),
+  tags: Joi.array()
+    .items(Joi.object({ id: tagSchema.id, order: tagSchema.name }))
+    .required(),
+})
+  .unknown(false)
+  .required();

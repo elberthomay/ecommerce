@@ -16,6 +16,7 @@ import Tag, { TagCreationAttribute } from "./Tag";
 import ItemTag from "./ItemTag";
 import User, { UserCreationAttribute } from "./User";
 import Cart from "./Cart";
+import ItemImage from "./ItemImage";
 
 export interface ItemCreationAttribute {
   id?: string;
@@ -24,7 +25,6 @@ export interface ItemCreationAttribute {
   price: number;
   quantity: number;
   shopId?: string;
-  inStock?: boolean;
   shop?: ShopCreationAttribute;
   tags?: TagCreationAttribute[];
   inCartUsers?: UserCreationAttribute[];
@@ -76,6 +76,9 @@ class Item extends Model<ItemCreationAttribute> {
   })
   shopId!: string;
 
+  @HasMany(() => ItemImage)
+  images!: ItemImage[];
+
   @BelongsTo(() => Shop)
   shop!: Shop | null;
 
@@ -87,7 +90,6 @@ class Item extends Model<ItemCreationAttribute> {
 
   toJSON() {
     const defaultJson = super.toJSON();
-    delete defaultJson.inStock;
     return defaultJson;
   }
 }

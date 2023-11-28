@@ -7,7 +7,7 @@ import Tag from "../models/Tag";
 import authenticate from "../middlewares/authenticate";
 import Shop, { ShopCreationAttribute } from "../models/Shop";
 import { TokenTypes } from "../types/TokenTypes";
-import authorize, { authorization } from "../middlewares/authorize";
+import { authorization } from "../middlewares/authorize";
 import {
   itemCreateSchema,
   itemParamSchema,
@@ -35,6 +35,10 @@ import { omit } from "lodash";
 import sequelize from "../models/sequelize";
 import ItemTag from "../models/ItemTag";
 import queryOptionToLimitOffset from "../helper/queryOptionToLimitOffset";
+import multer from "multer";
+import ItemImage from "../models/ItemImage";
+
+const upload = multer.memoryStorage();
 
 const router = Router();
 
@@ -80,10 +84,37 @@ router.get(
     key: ["id", "itemId"],
     location: "params",
     force: "exist",
+    include: [
+      { model: ItemImage, attributes: ["imageName", "order"] },
+      { model: Shop, attributes: ["name"] },
+      { model: Tag, attributes: ["id", "name"] },
+    ],
   }),
   (req: Request, res: Response, next: NextFunction) => {
-    const item = (req as any)[Item.name];
-    res.json(item);
+    const item: Item = (req as any)[Item.name];
+    const {
+      id,
+      name,
+      description,
+      price,
+      quantity,
+      shop,
+      shopId,
+      tags,
+      images,
+    } = item;
+    const result = {
+      id,
+      name,
+      description,
+      price,
+      quantity,
+      shopId,
+      shopName: shop?.name,
+      tags,
+      images,
+    };
+    res.json(result);
   }
 );
 
@@ -99,7 +130,16 @@ router.get(
     ) => {
       const options = req.query;
       const { tagIds, orderBy, search } = options;
-      const defaultInclude = [{ model: Shop, attributes: ["id", "name"] }];
+      // load shop name and first image
+      const defaultInclude = [
+        { model: Shop, attributes: ["id", "name"] },
+        {
+          model: ItemImage,
+          attributes: ["imageName", "order"],
+          where: { order: 0 },
+          required: false,
+        },
+      ];
       const defaultOrder: Order = [
         [sequelize.literal("(quantity != 0)"), "DESC"],
       ];
@@ -131,13 +171,14 @@ router.get(
       const items = await Item.findAndCountAll(findOption);
       const result = {
         ...items,
-        rows: items.rows.map(({ id, name, price, quantity, shop }) => ({
+        rows: items.rows.map(({ id, name, price, quantity, shop, images }) => ({
           id,
           name,
           price,
           quantity,
           shopId: shop?.id,
           shopName: shop?.name,
+          image: images[0]?.imageName,
         })),
       };
       res.json(result);

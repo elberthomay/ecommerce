@@ -10,9 +10,10 @@ import City from "./City";
 import Subdistrict from "./Subdistrict";
 import UserAddress from "./UserAddress";
 import ShopAddress from "./ShopAddress";
+import ItemImage from "./ItemImage";
 
 const sequelize = new Sequelize({
-  database: "ecommerce",
+  database: process.env.NODE_ENV === "test" ? "ecommerce_test" : "ecommerce",
   dialect: "mysql",
   username: "root",
   password: "123456",
@@ -21,6 +22,7 @@ const sequelize = new Sequelize({
     User,
     Shop,
     Item,
+    ItemImage,
     Tag,
     ItemTag,
     Cart,
