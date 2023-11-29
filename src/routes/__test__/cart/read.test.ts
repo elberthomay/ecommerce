@@ -108,7 +108,6 @@ it("return cart item with determined schema, with correct data", async () => {
     .send()
     .expect(200)
     .expect(({ body }) => {
-      console.log(body);
       expect(body).toHaveLength(1);
       expect(cartOutputSchema.validateAsync(body[0])).resolves;
       expect(_.isEqual(body[0], expectedCartItem)).toBeTruthy();

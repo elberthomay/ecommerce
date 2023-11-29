@@ -2,15 +2,16 @@
   "name": "e-commerce",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "exports": "./index.js",
   "scripts": {
-    "test": "jest --watch-all --no-cache --maxWorkers=1",
+    "test": "jest --watch-all --no-cache --runInBand",
     "debug": "npx ts-node-dev src/index.ts",
     "populate": "npx ts-node-dev ./src/test/helpers/populateDb.ts"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
+  "type": "module",
   "jest": {
     "preset": "ts-jest",
     "testEnvironment": "node",

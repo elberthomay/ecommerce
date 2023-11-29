@@ -1,8 +1,8 @@
 import catchAsync from "./catchAsync";
 import multer from "multer";
 import { Request, Response, NextFunction } from "express";
-import { MAX_FILE_SIZE_IN_MB } from "../var/constants";
-import fileType from "file-type";
+import { MAX_FILE_SIZE_IN_MB, MAX_IMAGE_COUNT } from "../var/constants";
+// import fileType from "file-type";
 import ImageError from "../errors/ImageError";
 
 const storage = multer.memoryStorage();
@@ -13,11 +13,17 @@ const upload = multer({
 
 export default function processImage() {
   return [
-    upload.array("images", 10),
+    upload.array("images", MAX_IMAGE_COUNT),
     catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+      if (!req.is("multipart/form-data")) {
+        console.log("is json(not multipart)");
+        return next();
+      }
+
+      console.log("is multipart");
       //try to parse body
       try {
-        req.body = JSON.parse(req.body);
+        req.body = JSON.parse(req.body.body);
       } catch (e) {
         req.body = {};
         return next();
@@ -25,21 +31,28 @@ export default function processImage() {
       const uploadedFiles = req.files;
       if (!uploadedFiles || uploadedFiles.length === 0)
         throw new ImageError("No image provided");
-      const validatedFiles = await Promise.all(
+
+      const validationResult = await Promise.all(
         (uploadedFiles as Express.Multer.File[]).map(async (file) => {
-          const fileTypeResult = await fileType.fileTypeFromBuffer(file.buffer);
-          if (!fileTypeResult || fileTypeResult.mime !== "image/webp")
-            return {
-              field: file.filename,
-              message: "File is not of type WEBP",
-            };
-          else return file.buffer;
+          // const mimeType = (await fileType.fileTypeFromBuffer(file.buffer))
+          //   ?.mime;
+          const mimeType = file.mimetype;
+
+          const isCorrectType = mimeType && mimeType === "image/webp";
+          return isCorrectType
+            ? file.buffer
+            : {
+                field: file.filename,
+                message: "File is not of type WEBP",
+              };
         })
       );
-      const errors = validatedFiles.filter(
+      const errors = validationResult.filter(
         (fileOrError) => !(fileOrError instanceof Buffer)
       ) as { field: string; message: string }[];
-      if (errors) throw new ImageError("File is not of type WEBP", errors);
+
+      if (errors.length !== 0)
+        throw new ImageError("File is not of type WEBP", errors);
       else next();
     }),
   ];

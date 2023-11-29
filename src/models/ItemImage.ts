@@ -29,7 +29,7 @@ class ItemImage extends Model<ItemImageCreationAttribute> {
   itemId!: string;
 
   @Column({
-    type: DataType.UUID,
+    type: DataType.STRING,
     primaryKey: true,
   })
   imageName!: string;

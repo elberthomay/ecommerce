@@ -89,7 +89,6 @@ it("should return 200 with the correct schema", async () => {
   ]);
 
   const tags = await Tag.bulkCreate([{ name: "leaf" }, { name: "stone" }]);
-  console.log(tags[0].id);
 
   const fetchedDefaultItem = await Item.findByPk(defaultItem.id);
 
@@ -97,7 +96,6 @@ it("should return 200 with the correct schema", async () => {
     .get(url + defaultItem.id)
     .expect(200)
     .expect(({ body }) => {
-      console.log(body);
       expect(itemDetailsOutputSchema.validateAsync(body)).resolves;
       expect(body?.images).toHaveLength(6);
     });

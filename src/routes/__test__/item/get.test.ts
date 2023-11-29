@@ -180,7 +180,6 @@ it("return item and shop data with determined format", async () => {
     .send()
     .expect(200)
     .expect(async ({ body: { count, rows } }) => {
-      console.log(rows);
       expect(itemGetOutputSchema.validateAsync(rows)).resolves;
       expect(
         rows.every(
@@ -210,6 +209,5 @@ it("should return item with certain string when search option is used", async ()
     .expect(200)
     .expect(({ body: { count, rows } }) => {
       expect(count).toEqual(3);
-      console.log(rows);
     });
 });

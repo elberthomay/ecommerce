@@ -1,4 +1,5 @@
 import { NextFunction, Request, Response, Router } from "express";
+import { v4 as uuid } from "uuid";
 import fetch, { fetchCurrentUser } from "../middlewares/fetch";
 import Item, { ItemCreationAttribute } from "../models/Item";
 import validator from "../middlewares/validator";
@@ -35,10 +36,8 @@ import { omit } from "lodash";
 import sequelize from "../models/sequelize";
 import ItemTag from "../models/ItemTag";
 import queryOptionToLimitOffset from "../helper/queryOptionToLimitOffset";
-import multer from "multer";
 import ItemImage from "../models/ItemImage";
-
-const upload = multer.memoryStorage();
+import processImage from "../middlewares/processImage";
 
 const router = Router();
 
@@ -67,6 +66,22 @@ async function addTags(
     existingTag.map((tag) => ({ itemId: item.id, tagId: tag.id })),
     { transaction, ignoreDuplicates: true }
   );
+}
+
+async function addImages(
+  item: Item,
+  images: Buffer[],
+  transaction?: Transaction
+) {
+  const imagesMetadata = images.map((image, i) => ({
+    itemId: item.id,
+    imageName: `${uuid()}.webp`,
+    order: i,
+  }));
+
+  //upload here
+
+  await ItemImage.bulkCreate(imagesMetadata, { transaction });
 }
 
 async function removeTags(item: Item, tagIds: number[]) {
@@ -189,36 +204,72 @@ router.get(
 router.post(
   "/",
   authenticate(true),
-  validator({ body: itemCreateSchema }),
+
   fetch<ShopCreationAttribute, TokenTypes>({
     model: Shop,
     key: ["userId", "id"],
     location: "tokenData",
     force: "exist",
   }),
+  processImage(),
+  validator({ body: itemCreateSchema }),
   catchAsync(
     async (
       req: Request<unknown, unknown, ItemCreateType>,
       res: Response,
       next: NextFunction
     ) => {
-      const shop = (req as any)[Shop.name];
+      const itemShop = (req as any)[Shop.name];
+      const imageBuffers: Buffer[] = req.files
+        ? (req.files as Express.Multer.File[]).map((image) => image.buffer)
+        : [];
+
       const newItemData = req.body;
       //transaction to prevent created item with incomplete tags
       const newItem = await sequelize.transaction(async (transaction) => {
         const newItem = await Item.create(
           {
             ...omit(newItemData, "tags"),
-            shopId: shop.id,
+            shopId: itemShop.id,
           },
           { transaction }
         );
         if (newItemData.tags && newItemData.tags.length !== 0)
           await addTags(newItem, newItemData.tags, transaction);
+        if (imageBuffers.length !== 0)
+          await addImages(newItem, imageBuffers, transaction);
         return newItem;
       });
-      await newItem.reload({ include: [Tag] });
-      res.status(201).json(newItem);
+      await newItem.reload({
+        include: [
+          { model: ItemImage, attributes: ["imageName", "order"] },
+          { model: Shop, attributes: ["name"] },
+          { model: Tag, attributes: ["id", "name"] },
+        ],
+      });
+      const {
+        id,
+        name,
+        description,
+        price,
+        quantity,
+        shop,
+        shopId,
+        tags,
+        images,
+      } = newItem;
+      const result = {
+        id,
+        name,
+        description,
+        price,
+        quantity,
+        shopId,
+        shopName: shop?.name,
+        tags,
+        images,
+      };
+      res.status(201).json(result);
     }
   )
 );

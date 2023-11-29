@@ -89,7 +89,6 @@ it("should return 200 on successful add", async () => {
   const tagIds = (await Tag.bulkCreate(tagNames.map((name) => ({ name })))).map(
     (tag) => tag.id
   );
-  console.log(tagIds);
   await request(app)
     .post(defaultUrl)
     .set("Cookie", defaultCookie())
@@ -114,7 +113,6 @@ it("should ignore tag that has been added or does not exist", async () => {
   const tagIds = (await Tag.bulkCreate(tagNames.map((name) => ({ name })))).map(
     (tag) => tag.id
   );
-  console.log(tagIds);
   await ItemTag.bulkCreate(
     tagIds.slice(0, 3).map((tagId) => ({ itemId: defaultItem.id, tagId }))
   );

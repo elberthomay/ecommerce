@@ -10,6 +10,7 @@ import pathNotFound from "./middlewares/pathNotFound";
 import cookieParser from "cookie-parser";
 import cors from "cors";
 import databaseErrorHandler from "./middlewares/databaseErrorHandler";
+import multerErrorHandler from "./middlewares/multerErrorHandler";
 
 const app = express();
 app.use(express.json());
@@ -28,6 +29,7 @@ app.use("/api/tag/", tagRouter);
 app.use("/api/cart/", cartRouter);
 app.use("/api/order/", orderRouter);
 app.use(pathNotFound);
+app.use(multerErrorHandler);
 app.use(databaseErrorHandler);
 app.use(errorHandler);
 

@@ -4,6 +4,7 @@ import authenticationTests from "../../../test/authenticationTests.test";
 import {
   createDefaultUser,
   defaultCookie,
+  forgeCookie,
 } from "../../../test/helpers/user/userHelper";
 import { createItem, defaultItem } from "../../../test/helpers/item/itemHelper";
 import { createShop, defaultShop } from "../../../test/helpers/shopHelper";
@@ -19,8 +20,18 @@ import Item, { ItemCreationAttribute } from "../../../models/Item";
 import Tag from "../../../models/Tag";
 import ItemTag from "../../../models/ItemTag";
 import { invalidTagIds } from "../../../test/helpers/Tag/tagData";
+import imageInputTests from "../../../test/imageInputTests.test";
+import { MAX_IMAGE_COUNT } from "../../../var/constants";
+import { ItemDetailsOutputType } from "../../../types/itemTypes";
+import { defaultUser } from "../../../test/helpers/user/userData";
+import path from "path";
+import ItemImage from "../../../models/ItemImage";
+import { itemDetailsOutputSchema } from "../../../schemas.ts/itemSchema";
 
 const url = "/api/item";
+
+const getImagePath = (fileName: string) =>
+  path.resolve(__dirname, "..", "..", "..", "test", "testImage", fileName);
 
 const assertItemCreationEquality =
   (expectedItem: Partial<ItemCreationAttribute>) =>
@@ -60,6 +71,18 @@ it("should return 404 when shop is unactivated", async () => {
 
 describe("created default shop", () => {
   beforeEach(async () => await createShop([defaultShop]));
+
+  describe("should return 400 with image errors", () => {
+    imageInputTests(
+      app,
+      url,
+      "post",
+      [forgeCookie(defaultUser, undefined, "secret", "jwt")],
+      MAX_IMAGE_COUNT,
+      "images",
+      defaultCreateItem
+    );
+  });
 
   it("should return 400 for missing property", async () => {
     const invalidBodies = [
@@ -224,14 +247,31 @@ describe("created default shop", () => {
     expect(await Item.count()).toBe(6);
   });
 
-  it("should return 201 and successfully create a new item in user's shop", async () => {
+  it("should return 201 and successfully create a new item in user's shop with image, and return with expected schema", async () => {
     await createItem(5, { id: defaultShop.id });
-    await request(app)
+    const imageArray = Array(5).fill(getImagePath("350kb.webp"));
+
+    let requestObject = request(app)
       .post(url)
       .set("Cookie", defaultCookie())
-      .send(defaultCreateItem)
+      .type("multipart/form-data")
+      .field("body", JSON.stringify(defaultCreateItem));
+
+    for (const image of imageArray) {
+      requestObject = requestObject.attach(`images`, image);
+    }
+
+    await requestObject
       .expect(201)
-      .expect(assertItemCreationEquality(omit(defaultCreateItem, "tags")));
+      .expect(assertItemCreationEquality(omit(defaultCreateItem, "tags")))
+      .expect(async ({ body }: { body: ItemDetailsOutputType }) => {
+        expect(body?.images?.length === 5).toBeTruthy();
+        const newItem = await Item.findByPk(body.id, { include: ItemImage });
+        expect(newItem?.images?.length === 5).toBeTruthy();
+      })
+      .expect(async ({ body }: { body: ItemDetailsOutputType }) => {
+        expect(itemDetailsOutputSchema.validateAsync(body)).resolves;
+      });
     expect(await Item.count()).toBe(6);
   });
 });
