@@ -26,7 +26,6 @@ export default function processImage() {
         req.body = JSON.parse(req.body.body);
       } catch (e) {
         req.body = {};
-        return next();
       }
       const uploadedFiles = req.files;
       if (!uploadedFiles || uploadedFiles.length === 0)

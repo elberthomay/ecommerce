@@ -52,3 +52,5 @@ export interface ItemDetailsOutputType {
   tags: { id: Tag["id"]; name: Tag["name"] }[];
   images: { imageName: ItemImage["imageName"]; order: ItemImage["order"] }[];
 }
+
+export type ItemImageOrderArray = ItemImage["order"][];

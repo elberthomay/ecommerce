@@ -13,7 +13,7 @@ export type ValidationErrorType = {
  * @throws ValidationError
  */
 const validator =
-  (schemas: { [key in "body" | "params" | "query"]?: Joi.ObjectSchema }) =>
+  (schemas: { [key in "body" | "params" | "query"]?: Joi.Schema }) =>
   (req: Request, res: Response, next: NextFunction) => {
     let validationErrors:
       | { [key in "body" | "params" | "query"]?: Joi.ValidationError }

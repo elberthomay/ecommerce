@@ -10,6 +10,7 @@ import { paginationSchema, uuidSchema } from "./commonSchema";
 import { tagSchema } from "./tagSchema";
 import orderNameEnum from "../var/orderNameEnum";
 import { shopSchema } from "./shopSchema";
+import { MAX_IMAGE_COUNT } from "../var/constants";
 
 export const itemSchema = {
   id: uuidSchema,
@@ -114,3 +115,9 @@ export const itemDetailsOutputSchema = Joi.object({
 })
   .unknown(false)
   .required();
+
+export const itemImageOrdersSchema = Joi.array()
+  .items(Joi.number().max(9).min(0).integer())
+  .required()
+  .min(1)
+  .max(MAX_IMAGE_COUNT);

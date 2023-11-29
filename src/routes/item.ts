@@ -11,6 +11,7 @@ import { TokenTypes } from "../types/TokenTypes";
 import { authorization } from "../middlewares/authorize";
 import {
   itemCreateSchema,
+  itemImageOrdersSchema,
   itemParamSchema,
   itemQuerySchema,
   itemTagEditSchema,
@@ -18,6 +19,7 @@ import {
 } from "../schemas.ts/itemSchema";
 import {
   ItemCreateType,
+  ItemImageOrderArray,
   ItemQueryType,
   ItemTagEditType,
   ItemUpdateType,
@@ -38,6 +40,9 @@ import ItemTag from "../models/ItemTag";
 import queryOptionToLimitOffset from "../helper/queryOptionToLimitOffset";
 import ItemImage from "../models/ItemImage";
 import processImage from "../middlewares/processImage";
+import ImageError from "../errors/ImageError";
+import { MAX_IMAGE_COUNT } from "../var/constants";
+import MaxImageExceeded from "../errors/MaxImageExceeded";
 
 const router = Router();
 
@@ -53,6 +58,16 @@ const authorizeStaffOrOwner = authorization(
   ],
   "Item"
 );
+
+const defaultItemInclude: Includeable[] = [
+  {
+    model: ItemImage,
+    attributes: ["imageName", "order"],
+    order: [["order", "ASC"]],
+  },
+  { model: Shop },
+  { model: Tag, attributes: ["id", "name"] },
+];
 
 async function addTags(
   item: Item,
@@ -71,17 +86,26 @@ async function addTags(
 async function addImages(
   item: Item,
   images: Buffer[],
-  transaction?: Transaction
+  transaction?: Transaction,
+  order?: ItemImageOrderArray
 ) {
   const imagesMetadata = images.map((image, i) => ({
     itemId: item.id,
     imageName: `${uuid()}.webp`,
-    order: i,
+    order: order ? order[i] : i,
   }));
 
   //upload here
 
-  await ItemImage.bulkCreate(imagesMetadata, { transaction });
+  const result = await ItemImage.bulkCreate(imagesMetadata, {
+    transaction: transaction ?? null,
+  });
+}
+
+async function deleteImages(item: Item, order: ItemImageOrderArray) {
+  //delete from s3 here
+
+  await ItemImage.destroy({ where: { itemId: item.id, order } });
 }
 
 async function removeTags(item: Item, tagIds: number[]) {
@@ -99,11 +123,7 @@ router.get(
     key: ["id", "itemId"],
     location: "params",
     force: "exist",
-    include: [
-      { model: ItemImage, attributes: ["imageName", "order"] },
-      { model: Shop, attributes: ["name"] },
-      { model: Tag, attributes: ["id", "name"] },
-    ],
+    include: defaultItemInclude,
   }),
   (req: Request, res: Response, next: NextFunction) => {
     const item: Item = (req as any)[Item.name];
@@ -161,7 +181,6 @@ router.get(
 
       const findOption: FindOptions<ItemCreationAttribute> = {
         ...queryOptionToLimitOffset(options),
-        attributes: ["id", "name", "price", "quantity"],
         include: tagIds
           ? [
               ...defaultInclude,
@@ -186,21 +205,24 @@ router.get(
       const items = await Item.findAndCountAll(findOption);
       const result = {
         ...items,
-        rows: items.rows.map(({ id, name, price, quantity, shop, images }) => ({
-          id,
-          name,
-          price,
-          quantity,
-          shopId: shop?.id,
-          shopName: shop?.name,
-          image: images[0]?.imageName,
-        })),
+        rows: items.rows.map(
+          ({ id, name, price, quantity, shopId, shop, images }) => ({
+            id,
+            name,
+            price,
+            quantity,
+            shopId,
+            shopName: shop?.name,
+            image: images[0]?.imageName,
+          })
+        ),
       };
       res.json(result);
     }
   )
 );
 
+//create item
 router.post(
   "/",
   authenticate(true),
@@ -225,7 +247,7 @@ router.post(
         : [];
 
       const newItemData = req.body;
-      //transaction to prevent created item with incomplete tags
+      //transaction to prevent created item with incomplete tags or image
       const newItem = await sequelize.transaction(async (transaction) => {
         const newItem = await Item.create(
           {
@@ -369,4 +391,122 @@ router.delete(
   )
 );
 
+router.post(
+  "/:itemId/images",
+  authenticate(true),
+  processImage(),
+  validator({ params: itemParamSchema }),
+  fetchCurrentUser,
+  fetch<ItemCreationAttribute, { itemId: string }>({
+    model: Item,
+    key: ["id", "itemId"],
+    location: "params",
+    force: "exist",
+    include: defaultItemInclude,
+  }),
+  authorizeStaffOrOwner,
+  catchAsync(
+    async (req: Request<unknown, unknown, unknown>, res: Response, next) => {
+      const item: Item = (req as any)[Item.name];
+
+      //take buffer out of multer object
+      const imageBuffers: Buffer[] = req.files
+        ? (req.files as Express.Multer.File[]).map((image) => image.buffer)
+        : [];
+
+      //return early if no image
+      if (imageBuffers.length === 0) {
+        res.status(200).json({ status: "success" });
+      }
+
+      //image more than MAX_IMAGE_COUNT
+      if (imageBuffers.length + item.images.length > MAX_IMAGE_COUNT)
+        throw new MaxImageExceeded();
+
+      //assign order sequentially after current order
+      const newOrder = [...Array(imageBuffers.length).keys()].map(
+        (i) => i + item.images.length
+      );
+
+      await addImages(item, imageBuffers, undefined, newOrder);
+
+      //success if addImages resolve
+      res.status(200).json({ status: "success" });
+    }
+  )
+);
+
 export default router;
+
+router.patch(
+  "/:itemId/images",
+  authenticate(true),
+  validator({ params: itemParamSchema, body: itemImageOrdersSchema }),
+  fetchCurrentUser,
+  fetch<ItemCreationAttribute, { itemId: string }>({
+    model: Item,
+    key: ["id", "itemId"],
+    location: "params",
+    force: "exist",
+    include: defaultItemInclude,
+  }),
+  authorizeStaffOrOwner,
+  catchAsync(
+    async (
+      req: Request<unknown, unknown, ItemImageOrderArray>,
+      res: Response,
+      next
+    ) => {
+      const newOrder = req.body;
+      const item: Item = (req as any)[Item.name];
+      const invalidLength =
+        [...new Set(newOrder).values()].length !== item.images.length;
+      const hasOutOfBound = newOrder.some(
+        (order) => order >= item.images.length
+      );
+      if (hasOutOfBound || invalidLength)
+        throw new ImageError("invalid order array");
+
+      //construct changes, images sorted ASC by default include
+      const changesArray = item.images.map((image, i) => ({
+        itemId: item.id,
+        imageName: image.imageName,
+        order: newOrder[i],
+      }));
+
+      await ItemImage.bulkCreate(changesArray, {
+        updateOnDuplicate: ["order"],
+      });
+      res.status(200).json({ status: "success" });
+    }
+  )
+);
+
+router.delete(
+  "/:itemId/images",
+  authenticate(true),
+  validator({ params: itemParamSchema, body: itemImageOrdersSchema }),
+  fetchCurrentUser,
+  fetch<ItemCreationAttribute, { itemId: string }>({
+    model: Item,
+    key: ["id", "itemId"],
+    location: "params",
+    force: "exist",
+    include: defaultItemInclude,
+  }),
+  authorizeStaffOrOwner,
+  catchAsync(
+    async (
+      req: Request<unknown, unknown, ItemImageOrderArray>,
+      res: Response,
+      next
+    ) => {
+      const deleteOrder = req.body;
+      const item: Item = (req as any)[Item.name];
+
+      await deleteImages(item, deleteOrder);
+
+      res.status(200).json({ status: "success" });
+    }
+  )
+);

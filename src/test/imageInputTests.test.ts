@@ -22,7 +22,7 @@ export default function imageInputTests(
       [method](url)
       .set("Cookie", cookie)
       .type("multipart/form-data")
-      .field("body", JSON.stringify(body));
+      .field("body", body ? JSON.stringify(body) : "");
     for (const image of imageArray) {
       requestObject = requestObject.attach(fieldName, image);
     }
@@ -45,7 +45,7 @@ export default function imageInputTests(
       [method](url)
       .set("Cookie", cookie)
       .type("multipart/form-data")
-      .field("body", JSON.stringify(body));
+      .field("body", body ? JSON.stringify(body) : "");
 
     for (const image of imageArray) {
       requestObject = requestObject.attach(fieldName, image);
@@ -62,7 +62,7 @@ export default function imageInputTests(
       [method](url)
       .set("Cookie", cookie)
       .type("multipart/form-data")
-      .field("body", JSON.stringify(body));
+      .field("body", body ? JSON.stringify(body) : "");
 
     for (const image of imageArray) {
       requestObject = requestObject.attach(fieldName, image);

@@ -70,7 +70,7 @@ export const forgeCookie = (
   jwtSecret?: string,
   cookieName?: string
 ) => {
-  jwtSecret = jwtSecret ?? process.env.JWT_SECRET!;
+  jwtSecret = jwtSecret ?? process.env.JWT_SECRET ?? "secret";
   const token = jwt.sign({ id: sessionData.id }, jwtSecret, options);
   // const cookie = Buffer.from(token).toString("base64");
   return `${cookieName ?? "jwt"}=${token}`;
