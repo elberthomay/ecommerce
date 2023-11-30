@@ -34,7 +34,7 @@ import {
 } from "sequelize";
 import orderNameEnum from "../var/orderNameEnum";
 import User from "../models/User";
-import { omit } from "lodash";
+import { omit, includes } from "lodash";
 import sequelize from "../models/sequelize";
 import ItemTag from "../models/ItemTag";
 import queryOptionToLimitOffset from "../helper/queryOptionToLimitOffset";
@@ -102,10 +102,14 @@ async function addImages(
   });
 }
 
-async function deleteImages(item: Item, order: ItemImageOrderArray) {
+async function deleteImages(
+  item: Item,
+  order: ItemImageOrderArray,
+  transaction: Transaction
+) {
   //delete from s3 here
 
-  await ItemImage.destroy({ where: { itemId: item.id, order } });
+  await ItemImage.destroy({ where: { itemId: item.id, order }, transaction });
 }
 
 async function removeTags(item: Item, tagIds: number[]) {
@@ -415,9 +419,8 @@ router.post(
         : [];
 
       //return early if no image
-      if (imageBuffers.length === 0) {
+      if (imageBuffers.length === 0)
         res.status(200).json({ status: "success" });
-      }
 
       //image more than MAX_IMAGE_COUNT
       if (imageBuffers.length + item.images.length > MAX_IMAGE_COUNT)
@@ -504,7 +507,27 @@ router.delete(
       const deleteOrder = req.body;
       const item: Item = (req as any)[Item.name];
 
-      await deleteImages(item, deleteOrder);
+      const changedImages = await sequelize.transaction(async (transaction) => {
+        //destroy image
+        await deleteImages(item, deleteOrder, transaction);
+
+        // changes
+        const changes = item?.images
+          .filter((image) => !includes(deleteOrder, image.order))
+          .map((image, i) => ({
+            itemId: item.id,
+            imageName: image.imageName,
+            order: i,
+          }));
+        try {
+          const result = await ItemImage.bulkCreate(changes, {
+            updateOnDuplicate: ["order"],
+            transaction,
+          });
+        } catch (e) {
+          console.log(e);
+        }
+      });
 
       res.status(200).json({ status: "success" });
     }

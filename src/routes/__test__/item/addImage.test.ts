@@ -13,15 +13,10 @@ import { MAX_IMAGE_COUNT } from "../../../var/constants";
 import Item from "../../../models/Item";
 import ItemImage from "../../../models/ItemImage";
 import { defaultShop } from "../../../test/helpers/shopHelper";
-import Shop from "../../../models/Shop";
 
 const createUrl = (itemId: string) => `/api/item/${itemId}/images`;
 const defaultUrl = createUrl(defaultItem.id!);
 const method = "post";
-const defaultRequest = request(app)
-  .post(defaultUrl)
-  .set("Cookie", defaultCookie())
-  .type("multipart/form-data");
 
 const getImagePath = (fileName: string) =>
   path.resolve(__dirname, "..", "..", "..", "test", "testImage", fileName);
@@ -33,7 +28,7 @@ beforeEach(async () => {
 
 //work for now as authentication check is always the first middleware but should be modified
 describe("should return 401 with failed authentication", () => {
-  authenticationTests(app, defaultUrl, "post", defaultItem);
+  authenticationTests(app, defaultUrl, method, defaultItem);
 });
 
 describe("should return 400 for image errors", () => {
@@ -52,14 +47,19 @@ it("return 404 if item does not exist", async () => {
   const item = await Item.findByPk(defaultItem.id);
   await item?.destroy();
 
-  await defaultRequest.attach("images", getImagePath("350kb.webp")).expect(404);
+  await request(app)
+    .post(defaultUrl)
+    .set("Cookie", defaultCookie())
+    .attach("images", getImagePath("350kb.webp"))
+    .expect(404);
 });
 
 it("return 403 if accessed not by the creator", async () => {
   const {
     users: [user],
   } = await createUser(1);
-  await defaultRequest
+  await request(app)
+    .post(defaultUrl)
     .set("Cookie", [forgeCookie(user)])
     .attach("images", getImagePath("350kb.webp"))
     .expect(403);
@@ -73,7 +73,9 @@ it("return 409 when trying to add image above limit", async () => {
   }));
   const imagesObject = await ItemImage.bulkCreate(images);
 
-  let requestObject = defaultRequest;
+  let requestObject = request(app)
+    .post(defaultUrl)
+    .set("Cookie", defaultCookie());
   for (let i = 0; i < 3; i++)
     requestObject = requestObject.attach("images", getImagePath("350kb.webp"));
 
@@ -84,25 +86,38 @@ it("return 200 if accessed by admin", async () => {
   const {
     users: [newAdmin],
   } = await createUser([{ privilege: 1 }]);
-  await defaultRequest
+  await request(app)
+    .post(defaultUrl)
     .set("Cookie", [forgeCookie(newAdmin)])
     .attach("images", getImagePath("350kb.webp"))
     .expect(200);
 });
 
 it("return 200 when adding no image", async () => {
-  await defaultRequest.expect(200);
+  await request(app)
+    .post(defaultUrl)
+    .set("Cookie", defaultCookie())
+    .expect(200);
 });
 
 it("return 200 and successfuly added image", async () => {
-  let requestObject = defaultRequest;
+  let requestObject = request(app)
+    .post(defaultUrl)
+    .set("Cookie", defaultCookie());
   for (let i = 0; i < MAX_IMAGE_COUNT; i++)
     requestObject = requestObject.attach("images", getImagePath("350kb.webp"));
 
-  await requestObject.expect(200);
+  const [item, created] = await Item.findOrCreate({
+    where: { id: defaultItem.id },
+    defaults: defaultItem,
+  });
 
+  const response = await requestObject.expect(200).expect((res) => {
+    expect(res.status === 200);
+  });
   const images = await ItemImage.findAll({
     where: { itemId: defaultItem.id! },
   });
+
   expect(images).toHaveLength(MAX_IMAGE_COUNT);
 });

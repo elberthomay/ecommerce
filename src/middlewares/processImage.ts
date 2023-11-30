@@ -16,7 +16,6 @@ export default function processImage() {
     upload.array("images", MAX_IMAGE_COUNT),
     catchAsync(async (req: Request, res: Response, next: NextFunction) => {
       if (!req.is("multipart/form-data")) {
-        console.log("is json(not multipart)");
         return next();
       }
 
@@ -41,7 +40,7 @@ export default function processImage() {
           return isCorrectType
             ? file.buffer
             : {
-                field: file.filename,
+                field: file.originalname,
                 message: "File is not of type WEBP",
               };
         })
