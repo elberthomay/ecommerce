@@ -3,15 +3,21 @@ import { createItem, defaultItem } from "../../../test/helpers/item/itemHelper";
 import request from "supertest";
 import { defaultCookie } from "../../../test/helpers/user/userHelper";
 import { defaultShop } from "../../../test/helpers/shopHelper";
-import { MAX_IMAGE_COUNT } from "../../../var/constants";
+import { BUCKET_NAME, MAX_IMAGE_COUNT } from "../../../var/constants";
 import ItemImage from "../../../models/ItemImage";
 import authenticationTests from "../../../test/authenticationTests.test";
 import { invalidOrderArray } from "../../../test/helpers/itemImage/itemImageData";
 import _ from "lodash";
+import { DeleteObjectsCommand, PutObjectCommand } from "@aws-sdk/client-s3";
+import s3Client from "../../../helper/s3Client";
+import path from "path";
 
 const createUrl = (itemId: string) => `/api/item/${itemId}/images`;
 const defaultUrl = createUrl(defaultItem.id!);
 const method = "delete";
+
+const getImagePath = (fileName: string) =>
+  path.resolve(__dirname, "..", "..", "..", "test", "testImage", fileName);
 
 const defaultImages = [...Array(MAX_IMAGE_COUNT - 2).keys()].map((i) => ({
   itemId: defaultItem.id!,
@@ -22,6 +28,28 @@ const defaultImages = [...Array(MAX_IMAGE_COUNT - 2).keys()].map((i) => ({
 beforeEach(async () => {
   await createItem([defaultItem], defaultShop);
   await ItemImage.bulkCreate(defaultImages);
+
+  const commandList = defaultImages.map(
+    ({ imageName }, i) =>
+      new PutObjectCommand({
+        Bucket: BUCKET_NAME,
+        Key: imageName,
+        Body: getImagePath("350kb.webp"),
+      })
+  );
+
+  await Promise.all(commandList.map((command) => s3Client.send(command)));
+});
+
+afterEach(async () => {
+  const deleteCommand = new DeleteObjectsCommand({
+    Bucket: BUCKET_NAME,
+    Delete: {
+      Objects: defaultImages.map(({ imageName }) => ({ Key: imageName })),
+    },
+  });
+
+  await s3Client.send(deleteCommand);
 });
 
 describe("should return 401 with failed authentication", () => {

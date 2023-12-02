@@ -41,8 +41,10 @@ import queryOptionToLimitOffset from "../helper/queryOptionToLimitOffset";
 import ItemImage from "../models/ItemImage";
 import processImage from "../middlewares/processImage";
 import ImageError from "../errors/ImageError";
-import { MAX_IMAGE_COUNT } from "../var/constants";
+import { BUCKET_NAME, MAX_IMAGE_COUNT } from "../var/constants";
 import MaxImageExceeded from "../errors/MaxImageExceeded";
+import { DeleteObjectsCommand, PutObjectCommand } from "@aws-sdk/client-s3";
+import s3Client from "../helper/s3Client";
 
 const router = Router();
 
@@ -93,7 +95,16 @@ async function addImages(
     order: order ? order[i] : i,
   }));
 
-  //upload here
+  const commandList = imagesMetadata.map(
+    ({ imageName }, i) =>
+      new PutObjectCommand({
+        Bucket: BUCKET_NAME,
+        Key: imageName,
+        Body: images[i],
+      })
+  );
+
+  await Promise.all(commandList.map((command) => s3Client.send(command)));
 
   const result = await ItemImage.bulkCreate(imagesMetadata, {
     transaction: transaction ?? null,
@@ -101,13 +112,21 @@ async function addImages(
 }
 
 async function deleteImages(
-  item: Item,
-  order: ItemImageOrderArray,
+  imagesToDelete: ItemImage[],
   transaction: Transaction
 ) {
-  //delete from s3 here
+  const deleteCommand = new DeleteObjectsCommand({
+    Bucket: BUCKET_NAME,
+    Delete: {
+      Objects: imagesToDelete.map(({ imageName }) => ({ Key: imageName })),
+    },
+  });
 
-  await ItemImage.destroy({ where: { itemId: item.id, order }, transaction });
+  await s3Client.send(deleteCommand);
+
+  await Promise.all(
+    imagesToDelete.map((image) => image.destroy({ transaction }))
+  );
 }
 
 async function removeTags(item: Item, tagIds: number[]) {
@@ -517,23 +536,27 @@ router.delete(
       const item: Item = (req as any)[Item.name];
       const sortedImages = [...item.images].sort((a, b) => a.order - b.order);
 
-      const changedImages = await sequelize.transaction(async (transaction) => {
-        //destroy image
-        await deleteImages(item, deleteOrder, transaction);
+      const imagesToDelete = sortedImages.filter((image) =>
+        includes(deleteOrder, image.order)
+      );
+      const remainingImages = sortedImages.filter(
+        (image) => !includes(deleteOrder, image.order)
+      );
 
-        // changes
-        const changes = sortedImages
-          .filter((image) => !includes(deleteOrder, image.order))
-          .map((image, i) => ({
-            itemId: item.id,
-            imageName: image.imageName,
-            order: i,
-          }));
-        const result = await ItemImage.bulkCreate(changes, {
-          updateOnDuplicate: ["order"],
-          transaction,
-        });
-      });
+      if (imagesToDelete.length !== 0) {
+        const changedImages = await sequelize.transaction(
+          async (transaction) => {
+            //destroy image
+            await deleteImages(imagesToDelete, transaction);
+
+            await Promise.all(
+              remainingImages.map((image, i) =>
+                image.update({ order: i }, { transaction })
+              )
+            );
+          }
+        );
+      }
 
       res.status(200).json({ status: "success" });
     }

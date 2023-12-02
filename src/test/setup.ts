@@ -1,6 +1,7 @@
 import sequelize from "../models/sequelize";
 import { createUser } from "./helpers/user/userHelper";
 import { defaultRootUser } from "./helpers/user/userData";
+import "dotenv/config";
 
 beforeAll(async () => {
   process.env.JWT_SECRET = "secret";
