@@ -107,10 +107,10 @@ it("return 200 and successfuly added image", async () => {
   for (let i = 0; i < MAX_IMAGE_COUNT; i++)
     requestObject = requestObject.attach("images", getImagePath("350kb.webp"));
 
-  const [item, created] = await Item.findOrCreate({
-    where: { id: defaultItem.id },
-    defaults: defaultItem,
-  });
+  // const [item, created] = await Item.findOrCreate({
+  //   where: { id: defaultItem.id },
+  //   defaults: defaultItem,
+  // });
 
   const response = await requestObject.expect(200).expect((res) => {
     expect(res.status === 200);

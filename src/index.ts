@@ -1,5 +1,6 @@
 import app from "./app";
 import sequelize from "./models/sequelize";
+import "dotenv/config";
 
 (async () => {
   try {

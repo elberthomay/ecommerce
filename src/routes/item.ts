@@ -62,8 +62,6 @@ const authorizeStaffOrOwner = authorization(
 const defaultItemInclude: Includeable[] = [
   {
     model: ItemImage,
-    attributes: ["imageName", "order"],
-    order: [["order", "ASC"]],
   },
   { model: Shop },
   { model: Tag, attributes: ["id", "name"] },
@@ -460,26 +458,37 @@ router.patch(
       res: Response,
       next
     ) => {
-      const newOrder = req.body;
+      let newOrder = [...new Set(req.body).values()];
       const item: Item = (req as any)[Item.name];
-      const invalidLength =
-        [...new Set(newOrder).values()].length !== item.images.length;
+      const sortedImages = [...item.images].sort((a, b) => a.order - b.order);
+
+      const invalidLength = newOrder.length !== item.images.length;
       const hasOutOfBound = newOrder.some(
         (order) => order >= item.images.length
       );
+
       if (hasOutOfBound || invalidLength)
         throw new ImageError("invalid order array");
 
-      //construct changes, images sorted ASC by default include
-      const changesArray = item.images.map((image, i) => ({
-        itemId: item.id,
-        imageName: image.imageName,
-        order: newOrder[i],
-      }));
+      // //construct changes, images sorted ASC by default include
+      // const changesArray = sortedImages.map((image, i) => ({
+      //   itemId: item.id,
+      //   imageName: image.imageName,
+      //   order: newOrder[i],
+      // }));
 
-      await ItemImage.bulkCreate(changesArray, {
-        updateOnDuplicate: ["order"],
+      await sequelize.transaction(async (transaction) => {
+        await Promise.all(
+          sortedImages.map((image, i) =>
+            image.update({ order: newOrder[i] }, { transaction })
+          )
+        );
+        // await ItemImage.bulkCreate(changesArray, {
+        //   updateOnDuplicate: ["order"],
+        //   transaction,
+        // });
       });
+
       res.status(200).json({ status: "success" });
     }
   )
@@ -506,27 +515,24 @@ router.delete(
     ) => {
       const deleteOrder = req.body;
       const item: Item = (req as any)[Item.name];
+      const sortedImages = [...item.images].sort((a, b) => a.order - b.order);
 
       const changedImages = await sequelize.transaction(async (transaction) => {
         //destroy image
         await deleteImages(item, deleteOrder, transaction);
 
         // changes
-        const changes = item?.images
+        const changes = sortedImages
           .filter((image) => !includes(deleteOrder, image.order))
           .map((image, i) => ({
             itemId: item.id,
             imageName: image.imageName,
             order: i,
           }));
-        try {
-          const result = await ItemImage.bulkCreate(changes, {
-            updateOnDuplicate: ["order"],
-            transaction,
-          });
-        } catch (e) {
-          console.log(e);
-        }
+        const result = await ItemImage.bulkCreate(changes, {
+          updateOnDuplicate: ["order"],
+          transaction,
+        });
       });
 
       res.status(200).json({ status: "success" });

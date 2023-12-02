@@ -1,4 +1,4 @@
-import { Model } from "sequelize-typescript";
+import { Model, Unique } from "sequelize-typescript";
 import {
   BelongsTo,
   Column,
@@ -17,14 +17,15 @@ interface ItemImageCreationAttribute {
 
 @Table
 class ItemImage extends Model<ItemImageCreationAttribute> {
-  @Index({
-    name: "unq-order-idx",
-    type: "UNIQUE",
-  })
+  // @Index({
+  //   name: "unq-order-idx",
+  //   type: "UNIQUE",
+  // })
   @ForeignKey(() => Item)
   @Column({
     type: DataType.UUID,
     primaryKey: true,
+    // unique: "unq-item-order-idx",
   })
   itemId!: string;
 
@@ -34,13 +35,14 @@ class ItemImage extends Model<ItemImageCreationAttribute> {
   })
   imageName!: string;
 
-  @Index({
-    name: "unq-order-idx",
-    type: "UNIQUE",
-  })
+  // @Index({
+  //   name: "unq-order-idx",
+  //   type: "UNIQUE",
+  // })
   @Column({
     type: DataType.INTEGER,
     allowNull: false,
+    // unique: "unq-item-order-idx",
   })
   order!: number;
 

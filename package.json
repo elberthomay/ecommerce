@@ -11,7 +11,6 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "type": "module",
   "jest": {
     "preset": "ts-jest",
     "testEnvironment": "node",
@@ -24,6 +23,8 @@
     ]
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.462.0",
+    "@aws-sdk/credential-providers": "^3.462.0",
     "@google-cloud/recaptcha-enterprise": "^4.0.1",
     "@types/bcrypt": "^5.0.0",
     "@types/express": "^4.17.17",
@@ -31,6 +32,7 @@
     "bcrypt": "^5.1.1",
     "cookie-parser": "^1.4.6",
     "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
     "express": "^4.18.2",
     "file-type": "^18.7.0",
     "joi": "^17.10.1",

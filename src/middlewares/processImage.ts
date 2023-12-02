@@ -19,7 +19,6 @@ export default function processImage() {
         return next();
       }
 
-      console.log("is multipart");
       //try to parse body
       try {
         req.body = JSON.parse(req.body.body);
