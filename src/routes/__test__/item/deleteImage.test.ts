@@ -7,7 +7,7 @@ import { BUCKET_NAME, MAX_IMAGE_COUNT } from "../../../var/constants";
 import ItemImage from "../../../models/ItemImage";
 import authenticationTests from "../../../test/authenticationTests.test";
 import { invalidOrderArray } from "../../../test/helpers/itemImage/itemImageData";
-import _ from "lodash";
+import { pick, includes } from "lodash";
 import { DeleteObjectsCommand, PutObjectCommand } from "@aws-sdk/client-s3";
 import s3Client from "../../../helper/s3Client";
 import path from "path";
@@ -81,7 +81,7 @@ it("should not change image when given nonexistent id", async () => {
     order: [["order", "ASC"]],
   });
   expect(
-    images.map((image) => _.pick(image, ["itemId", "imageName", "order"]))
+    images.map((image) => pick(image, ["itemId", "imageName", "order"]))
   ).toEqual(defaultImages);
 });
 
@@ -93,14 +93,12 @@ it("should delete 2 image and return 200", async () => {
     .send([MAX_IMAGE_COUNT - 4, MAX_IMAGE_COUNT - 3])
     .expect(200);
 
-  console.log(response.status);
-  console.log(response.body?.errors);
   const images = await ItemImage.findAll({
     where: { itemId: defaultItem.id },
     order: [["order", "ASC"]],
   });
   expect(
-    images.map((image) => _.pick(image, ["itemId", "imageName", "order"]))
+    images.map((image) => pick(image, ["itemId", "imageName", "order"]))
   ).toEqual(defaultImages.slice(0, MAX_IMAGE_COUNT - 4));
 });
 
@@ -140,9 +138,9 @@ it("should reorder the remaining images", async () => {
 
   //filter and reorder entry
   const filteredImages = defaultImages
-    .filter((image) => !_.includes(deletedOrder, image.order))
+    .filter((image) => !includes(deletedOrder, image.order))
     .map((image, i) => ({ ...image, order: i }));
   expect(
-    images.map((image) => _.pick(image, ["itemId", "imageName", "order"]))
+    images.map((image) => pick(image, ["itemId", "imageName", "order"]))
   ).toEqual(filteredImages);
 });

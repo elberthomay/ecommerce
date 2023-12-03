@@ -34,7 +34,7 @@ import {
 } from "sequelize";
 import orderNameEnum from "../var/orderNameEnum";
 import User from "../models/User";
-import { omit, includes } from "lodash";
+import { omit, includes, pick } from "lodash";
 import sequelize from "../models/sequelize";
 import ItemTag from "../models/ItemTag";
 import queryOptionToLimitOffset from "../helper/queryOptionToLimitOffset";
@@ -129,6 +129,24 @@ async function deleteImages(
   );
 }
 
+async function reorderImages(
+  images: ItemImage[],
+  orders?: number[],
+  transaction?: Transaction
+) {
+  await Promise.all(
+    images.map((image, i) =>
+      image.update({ order: -image.order }, { transaction })
+    )
+  );
+
+  await Promise.all(
+    images.map((image, i) =>
+      image.update({ order: orders ? orders[i] : i }, { transaction })
+    )
+  );
+}
+
 async function removeTags(item: Item, tagIds: number[]) {
   await ItemTag.destroy({
     where: { itemId: item.id, tagId: tagIds },
@@ -168,7 +186,7 @@ router.get(
       shopId,
       shopName: shop?.name,
       tags,
-      images,
+      images: images.map((image) => pick(image, ["imageName", "order"])),
     };
     res.json(result);
   }
@@ -437,7 +455,7 @@ router.post(
 
       //return early if no image
       if (imageBuffers.length === 0)
-        res.status(200).json({ status: "success" });
+        return res.status(200).json({ status: "success" });
 
       //image more than MAX_IMAGE_COUNT
       if (imageBuffers.length + item.images.length > MAX_IMAGE_COUNT)
@@ -497,15 +515,7 @@ router.patch(
       // }));
 
       await sequelize.transaction(async (transaction) => {
-        await Promise.all(
-          sortedImages.map((image, i) =>
-            image.update({ order: newOrder[i] }, { transaction })
-          )
-        );
-        // await ItemImage.bulkCreate(changesArray, {
-        //   updateOnDuplicate: ["order"],
-        //   transaction,
-        // });
+        await reorderImages(sortedImages, newOrder, transaction);
       });
 
       res.status(200).json({ status: "success" });
@@ -549,11 +559,7 @@ router.delete(
             //destroy image
             await deleteImages(imagesToDelete, transaction);
 
-            await Promise.all(
-              remainingImages.map((image, i) =>
-                image.update({ order: i }, { transaction })
-              )
-            );
+            await reorderImages(remainingImages, undefined, transaction);
           }
         );
       }

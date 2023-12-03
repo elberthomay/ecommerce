@@ -14,38 +14,28 @@ export default function imageInputTests(
   fieldName: string,
   body: any
 ) {
+  const getDefaultRequestObject = () =>
+    request(app)[method](url).set("Cookie", cookie);
+
   it("return 400 when number of item exceed maximum count", async () => {
     const imageArray = Array(maxImageCount + 1).fill(
       getImagePath("350kb.webp")
     );
-    let requestObject = request(app)
-      [method](url)
-      .set("Cookie", cookie)
-      .type("multipart/form-data")
-      .field("body", body ? JSON.stringify(body) : "");
+
+    let requestObject = getDefaultRequestObject();
     for (const image of imageArray) {
       requestObject = requestObject.attach(fieldName, image);
     }
 
     await requestObject.expect(400);
-
-    // await request(app)
-    //   [method](url)
-    //   .set("Cookie", cookie)
-    //   .field(body, JSON.stringify(body))
-    //   .attach("image", getImagePath("350kb.webp"))
-    //   .expect(400);
   });
   it("return 400 when size exceed MAX_SIZE", async () => {
     const imageArray = [
       ...Array(maxImageCount - 1).fill(getImagePath("350kb.webp")),
       getImagePath("2mb.webp"),
     ];
-    let requestObject = request(app)
-      [method](url)
-      .set("Cookie", cookie)
-      .type("multipart/form-data")
-      .field("body", body ? JSON.stringify(body) : "");
+
+    let requestObject = getDefaultRequestObject();
 
     for (const image of imageArray) {
       requestObject = requestObject.attach(fieldName, image);
@@ -58,11 +48,7 @@ export default function imageInputTests(
       getImagePath("nonwebp.jpg"),
     ];
 
-    let requestObject = request(app)
-      [method](url)
-      .set("Cookie", cookie)
-      .type("multipart/form-data")
-      .field("body", body ? JSON.stringify(body) : "");
+    let requestObject = getDefaultRequestObject();
 
     for (const image of imageArray) {
       requestObject = requestObject.attach(fieldName, image);

@@ -17,10 +17,10 @@ interface ItemImageCreationAttribute {
 
 @Table
 class ItemImage extends Model<ItemImageCreationAttribute> {
-  // @Index({
-  //   name: "unq-order-idx",
-  //   type: "UNIQUE",
-  // })
+  @Index({
+    name: "unq-order-idx",
+    type: "UNIQUE",
+  })
   @ForeignKey(() => Item)
   @Column({
     type: DataType.UUID,
@@ -35,10 +35,10 @@ class ItemImage extends Model<ItemImageCreationAttribute> {
   })
   imageName!: string;
 
-  // @Index({
-  //   name: "unq-order-idx",
-  //   type: "UNIQUE",
-  // })
+  @Index({
+    name: "unq-order-idx",
+    type: "UNIQUE",
+  })
   @Column({
     type: DataType.INTEGER,
     allowNull: false,
