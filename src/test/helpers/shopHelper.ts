@@ -32,11 +32,11 @@ export const createShop = async (
   const records = await Promise.all(
     shopDatas.map(async (shopData) => {
       await createUser([{ id: shopData.userId }]);
-      const pair = await Shop.findOrCreate({
+      const [shop, created] = await Shop.findOrCreate({
         where: { id: shopData.id },
         defaults: shopData,
       });
-      return pair[0];
+      return shop;
     })
   );
 

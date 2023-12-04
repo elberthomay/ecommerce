@@ -42,18 +42,16 @@ export const createUser = async (
     });
   else userDatas = creationData.map((data) => userDataCreateFunction(data)());
 
-  const transaction = await sequelize.transaction();
   const records = await Promise.all(
-    userDatas.map((userData) =>
-      User.findOrCreate({
+    userDatas.map(async (userData) => {
+      const [user, created] = await User.findOrCreate({
         where: { id: userData.id },
-        transaction,
         defaults: { ..._.omit(userData, "password") },
-      })
-    )
+      });
+      return user;
+    })
   );
-  await transaction.commit();
-  return { users: records.map((record) => record[0]), userDatas: userDatas };
+  return { users: records, userDatas: userDatas };
 };
 
 /**
