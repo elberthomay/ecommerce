@@ -12,6 +12,7 @@ import {
   defaultShop,
 } from "../../../test/helpers/shopHelper";
 import _ from "lodash";
+import { invalidShopNames } from "../../../test/helpers/shop/shopData";
 
 const url = "/api/shop";
 
@@ -19,12 +20,11 @@ describe("should return 401 with failed authentication", () => {
   authenticationTests(app, url, "post");
 });
 
-it("should return 400 if name is empty, doesn't exist, or more than 255 character", async () => {
-  const invalidNames = [undefined, "", "a".repeat(256)];
+it("should return 400 with invalid shop names", async () => {
   await createDefaultUser();
 
   await Promise.all(
-    invalidNames.map((name) =>
+    invalidShopNames.map((name) =>
       request(app)
         .post(url)
         .set("Cookie", defaultCookie())

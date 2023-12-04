@@ -5,16 +5,18 @@ import validator from "../middlewares/validator";
 import {
   ShopQuerySchema,
   shopCreateSchema,
+  shopNameCheckSchema,
   shopParamSchema,
 } from "../schemas.ts/shopSchema";
 import User, { UserCreationAttribute } from "../models/User";
 import Shop, { ShopCreationAttribute } from "../models/Shop";
-import fetch from "../middlewares/fetch";
+import fetch, { fetchCurrentUser } from "../middlewares/fetch";
 import Item, { ItemCreationAttribute } from "../models/Item";
 import { ParamsDictionary } from "express-serve-static-core";
 import { TokenTypes } from "../types/TokenTypes";
 import {
   ShopCreateType,
+  ShopNameCheckType,
   ShopParamType,
   ShopQueryType,
 } from "../types/shopTypes";
@@ -59,6 +61,38 @@ router.get(
       res.json(items);
     }
   )
+);
+
+router.get(
+  "/checkName/:name",
+  validator({ params: shopNameCheckSchema }),
+  fetch<ShopCreationAttribute, ShopNameCheckType>({
+    model: Shop,
+    key: "name",
+    location: "params",
+  }),
+  (req: Request, res: Response, next: NextFunction) => {
+    const shop: Shop | undefined = (req as any)[Shop.name];
+
+    res.status(200).json({ exist: !!shop });
+  }
+);
+
+router.get(
+  "/myShop/",
+  authenticate(true),
+  fetchCurrentUser,
+  fetch<ShopCreationAttribute, TokenTypes>({
+    model: Shop,
+    key: ["userId", "id"],
+    location: "tokenData",
+    force: "exist",
+  }),
+  (req: Request, res: Response, next: NextFunction) => {
+    const shop: Shop = (req as any)[Shop.name];
+
+    res.status(200).json(shop);
+  }
 );
 
 /** activate shop */

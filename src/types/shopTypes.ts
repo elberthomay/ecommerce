@@ -3,6 +3,9 @@ import Shop from "../models/Shop";
 export interface ShopCreateType {
   name: Shop["name"];
 }
+export interface ShopNameCheckType {
+  name: Shop["name"];
+}
 
 export interface ShopParamType {
   shopId: Shop["id"];
