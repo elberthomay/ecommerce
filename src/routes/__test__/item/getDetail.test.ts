@@ -1,7 +1,7 @@
 import request from "supertest";
 import app from "../../../app";
 import { createItem, defaultItem } from "../../../test/helpers/item/itemHelper";
-import { defaultShop } from "../../../test/helpers/shopHelper";
+import { defaultShop } from "../../../test/helpers/shop/shopHelper";
 import Item from "../../../models/Item";
 import _ from "lodash";
 import ItemImage from "../../../models/ItemImage";

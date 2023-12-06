@@ -3,18 +3,21 @@ import {
   Column,
   DataType,
   ForeignKey,
+  HasOne,
   Model,
   Table,
 } from "sequelize-typescript";
 import Subdistrict from "./Subdistrict";
+import UserAddress from "./UserAddress";
+import ShopAddress from "./ShopAddress";
 
-interface AddressCreationAttribute {
+export interface AddressCreationAttribute {
   id: string;
   longitude: number;
   latitude: number;
   postCode?: string;
   detail?: string;
-  subdistrictId: number;
+  subdistrictId?: number;
 }
 
 @Table
@@ -35,6 +38,7 @@ class Address extends Model<AddressCreationAttribute> {
 
   @Column({
     type: DataType.DECIMAL(7, 4),
+
     allowNull: false,
     validate: { min: -180, max: 180 },
   })
@@ -47,11 +51,17 @@ class Address extends Model<AddressCreationAttribute> {
   detail!: string;
 
   @ForeignKey(() => Subdistrict)
-  @Column({ type: DataType.INTEGER, allowNull: false })
+  @Column({ type: DataType.INTEGER, allowNull: true })
   subdistrictId!: number;
 
   @BelongsTo(() => Subdistrict)
-  subdistrict!: Subdistrict;
+  subdistrict!: Subdistrict | null;
+
+  @HasOne(() => UserAddress, { onDelete: "CASCADE" })
+  userAddress!: UserAddress | null;
+
+  @HasOne(() => ShopAddress, { onDelete: "CASCADE" })
+  shopAddress!: ShopAddress | null;
 }
 
 export default Address;

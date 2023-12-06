@@ -7,7 +7,7 @@ import {
   forgeCookie,
 } from "../../../test/helpers/user/userHelper";
 import { createItem, defaultItem } from "../../../test/helpers/item/itemHelper";
-import { createShop, defaultShop } from "../../../test/helpers/shopHelper";
+import { createShop, defaultShop } from "../../../test/helpers/shop/shopHelper";
 import { pick, omit } from "lodash";
 import {
   defaultCreateItem,

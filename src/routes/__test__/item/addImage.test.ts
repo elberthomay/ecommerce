@@ -12,7 +12,7 @@ import {
 import { MAX_IMAGE_COUNT } from "../../../var/constants";
 import Item from "../../../models/Item";
 import ItemImage from "../../../models/ItemImage";
-import { defaultShop } from "../../../test/helpers/shopHelper";
+import { defaultShop } from "../../../test/helpers/shop/shopHelper";
 
 const createUrl = (itemId: string) => `/api/item/${itemId}/images`;
 const defaultUrl = createUrl(defaultItem.id!);

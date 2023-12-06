@@ -10,7 +10,7 @@ import {
   createDefaultShop,
   createShop,
   defaultShop,
-} from "../../../test/helpers/shopHelper";
+} from "../../../test/helpers/shop/shopHelper";
 import _ from "lodash";
 import { invalidShopNames } from "../../../test/helpers/shop/shopData";
 

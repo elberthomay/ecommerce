@@ -1,7 +1,7 @@
 import Item, { ItemCreationAttribute } from "../../../models/Item";
 import { ShopCreationAttribute } from "../../../models/Shop";
 import { faker } from "@faker-js/faker";
-import { createShop, defaultShop } from "../shopHelper";
+import { createShop, defaultShop } from "../shop/shopHelper";
 
 /**
  * create items using count or array of fragmented item data.

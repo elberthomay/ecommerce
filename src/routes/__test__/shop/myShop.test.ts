@@ -9,7 +9,7 @@ import {
 import {
   createDefaultShop,
   defaultShop,
-} from "../../../test/helpers/shopHelper";
+} from "../../../test/helpers/shop/shopHelper";
 import Shop from "../../../models/Shop";
 
 const url = "/api/shop/myShop";

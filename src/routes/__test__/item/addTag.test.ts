@@ -2,7 +2,7 @@ import request from "supertest";
 import app from "../../../app";
 import authenticationTests from "../../../test/authenticationTests.test";
 import { createItem, defaultItem } from "../../../test/helpers/item/itemHelper";
-import { defaultShop } from "../../../test/helpers/shopHelper";
+import { defaultShop } from "../../../test/helpers/shop/shopHelper";
 import {
   createUser,
   defaultCookie,

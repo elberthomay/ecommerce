@@ -9,7 +9,7 @@ import {
 import Item from "../../../models/Item";
 import { ItemUpdateType } from "../../../types/itemTypes";
 import { createItem, defaultItem } from "../../../test/helpers/item/itemHelper";
-import { createShop, defaultShop } from "../../../test/helpers/shopHelper";
+import { createShop, defaultShop } from "../../../test/helpers/shop/shopHelper";
 import { invalidUuid } from "../../../test/helpers/commonData";
 import _ from "lodash";
 import { defaultRootUser } from "../../../test/helpers/user/userData";

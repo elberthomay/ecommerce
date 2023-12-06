@@ -7,7 +7,7 @@ import {
 } from "../../../test/helpers/user/userHelper";
 import Item from "../../../models/Item";
 import { createItem, defaultItem } from "../../../test/helpers/item/itemHelper";
-import { defaultShop } from "../../../test/helpers/shopHelper";
+import { defaultShop } from "../../../test/helpers/shop/shopHelper";
 import authenticationTests from "../../../test/authenticationTests.test";
 import { invalidUuid } from "../../../test/helpers/commonData";
 import { faker } from "@faker-js/faker";

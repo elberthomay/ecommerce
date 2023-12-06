@@ -16,7 +16,7 @@ import {
 import Shop, { ShopCreationAttribute } from "./Shop";
 import Item, { ItemCreationAttribute } from "./Item";
 import Cart from "./Cart";
-import Address from "./Address";
+import Address from "./address";
 import UserAddress from "./UserAddress";
 
 export interface UserCreationAttribute {
@@ -25,6 +25,7 @@ export interface UserCreationAttribute {
   email: string;
   hash: string;
   shop?: ShopCreationAttribute;
+  selectedAddressId?: string;
   itemsInCart?: ItemCreationAttribute[];
   privilege?: 0 | 1 | 2;
 }
@@ -67,7 +68,7 @@ class User extends Model<UserCreationAttribute> {
   })
   selectedAddress!: Address | null;
 
-  @HasOne(() => Shop)
+  @HasOne(() => Shop, { onDelete: "CASCADE" })
   shop!: Shop | null;
 
   @BelongsToMany(() => Item, () => Cart)

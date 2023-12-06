@@ -3,7 +3,7 @@ import app from "../../../app";
 import pagingAndLimitTests from "../../../test/pagingAndLimitTests.test";
 import Tag from "../../../models/Tag";
 import { createItem } from "../../../test/helpers/item/itemHelper";
-import { defaultShop } from "../../../test/helpers/shopHelper";
+import { defaultShop } from "../../../test/helpers/shop/shopHelper";
 import Item, { ItemCreationAttribute } from "../../../models/Item";
 import { itemGetOutputSchema } from "../../../schemas.ts/itemSchema";
 import { faker } from "@faker-js/faker";

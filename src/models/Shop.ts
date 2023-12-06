@@ -15,7 +15,7 @@ import {
 } from "sequelize-typescript";
 import User, { UserCreationAttribute } from "./User";
 import Item, { ItemCreationAttribute } from "./Item";
-import Address from "./Address";
+import Address from "./address";
 import ShopAddress from "./ShopAddress";
 
 export interface ShopCreationAttribute {

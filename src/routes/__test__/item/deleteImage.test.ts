@@ -2,7 +2,7 @@ import app from "../../../app";
 import { createItem, defaultItem } from "../../../test/helpers/item/itemHelper";
 import request from "supertest";
 import { defaultCookie } from "../../../test/helpers/user/userHelper";
-import { defaultShop } from "../../../test/helpers/shopHelper";
+import { defaultShop } from "../../../test/helpers/shop/shopHelper";
 import { BUCKET_NAME, MAX_IMAGE_COUNT } from "../../../var/constants";
 import ItemImage from "../../../models/ItemImage";
 import authenticationTests from "../../../test/authenticationTests.test";

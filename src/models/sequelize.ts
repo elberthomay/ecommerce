@@ -5,7 +5,7 @@ import Item from "./Item";
 import Tag from "./Tag";
 import ItemTag from "./ItemTag";
 import Cart from "./Cart";
-import Address from "./Address";
+import Address from "./address";
 import City from "./City";
 import Subdistrict from "./Subdistrict";
 import UserAddress from "./UserAddress";
@@ -15,6 +15,9 @@ import ItemImage from "./ItemImage";
 const sequelize = new Sequelize({
   database: process.env.NODE_ENV === "test" ? "ecommerce_test" : "ecommerce",
   dialect: "mysql",
+  dialectOptions: {
+    decimalNumbers: true,
+  },
   username: "root",
   password: "123456",
   host: "localhost",

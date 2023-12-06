@@ -6,7 +6,7 @@ import orderNameEnum from "../var/orderNameEnum";
 export const shopSchema = {
   id: uuidSchema,
   name: Joi.string()
-    .max(255)
+    .max(60)
     .min(5)
     .pattern(/^[a-zA-Z0-9][a-zA-Z0-9_ \-,]*$/)
     .messages({

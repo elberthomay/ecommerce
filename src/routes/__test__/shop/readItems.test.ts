@@ -1,6 +1,6 @@
 import app from "../../../app";
 import pagingAndLimitTests from "../../../test/pagingAndLimitTests.test";
-import { defaultShop } from "../../../test/helpers/shopHelper";
+import { defaultShop } from "../../../test/helpers/shop/shopHelper";
 import { createItem } from "../../../test/helpers/item/itemHelper";
 import request from "supertest";
 import Item, { ItemCreationAttribute } from "../../../models/Item";

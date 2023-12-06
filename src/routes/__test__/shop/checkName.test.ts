@@ -4,7 +4,7 @@ import { invalidShopNames } from "../../../test/helpers/shop/shopData";
 import {
   createDefaultShop,
   defaultShop,
-} from "../../../test/helpers/shopHelper";
+} from "../../../test/helpers/shop/shopHelper";
 
 const createUrl = (itemName: string) =>
   `/api/shop/checkName/${encodeURIComponent(itemName)}`;

@@ -5,9 +5,10 @@ import {
   ForeignKey,
   Model,
   Table,
+  Unique,
 } from "sequelize-typescript";
 import User from "./User";
-import Address from "./Address";
+import Address from "./address";
 
 interface UserAddressCreationAttribute {
   userId: string;
@@ -20,6 +21,7 @@ class UserAddress extends Model<UserAddressCreationAttribute> {
   @Column({ type: DataType.UUID })
   userId!: string;
 
+  @Unique //address could only belong to one user
   @ForeignKey(() => Address)
   @Column({ type: DataType.UUID, unique: true })
   addressId!: string;
