@@ -93,11 +93,11 @@ it("return 200 if accessed by admin", async () => {
     .expect(200);
 });
 
-it("return 200 when adding no image", async () => {
+it("return 400 when adding no image", async () => {
   await request(app)
     .post(defaultUrl)
     .set("Cookie", defaultCookie())
-    .expect(200);
+    .expect(400);
 });
 
 it("return 200 and successfuly added image", async () => {

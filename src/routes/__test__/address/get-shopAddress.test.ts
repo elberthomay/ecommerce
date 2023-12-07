@@ -8,7 +8,7 @@ import {
 } from "../../../test/helpers/user/userHelper";
 import { createAddress } from "../../../test/helpers/address/addressHelper";
 import { createDefaultShop } from "../../../test/helpers/shop/shopHelper";
-import { createShop } from "../../../test/helpers/shopHelper";
+import { createShop } from "../../../test/helpers/shop/shopHelper";
 
 const url = "/api/address/shop";
 const method = "get";

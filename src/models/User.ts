@@ -24,6 +24,7 @@ export interface UserCreationAttribute {
   name: string;
   email: string;
   hash: string;
+  avatar?: string;
   shop?: ShopCreationAttribute;
   selectedAddressId?: string;
   itemsInCart?: ItemCreationAttribute[];
@@ -55,6 +56,10 @@ class User extends Model<UserCreationAttribute> {
   @Validate({ isIn: [[0, 1, 2]] })
   @Column(DataType.INTEGER)
   privilege!: number;
+
+  @AllowNull(true)
+  @Column(DataType.STRING)
+  avatar!: string | null;
 
   @ForeignKey(() => Address)
   @AllowNull(true)

@@ -272,7 +272,7 @@ router.post(
     location: "tokenData",
     force: "exist",
   }),
-  processImage(),
+  processImage(false, MAX_IMAGE_COUNT),
   validator({ body: itemCreateSchema }),
   catchAsync(
     async (
@@ -433,7 +433,7 @@ router.delete(
 router.post(
   "/:itemId/images",
   authenticate(true),
-  processImage(),
+  processImage("hasPicture", MAX_IMAGE_COUNT),
   validator({ params: itemParamSchema }),
   fetchCurrentUser,
   fetch<ItemCreationAttribute, { itemId: string }>({

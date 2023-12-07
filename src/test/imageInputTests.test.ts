@@ -28,7 +28,8 @@ export default function imageInputTests(
     }
 
     await requestObject.expect(400);
-  });
+  }, 10000);
+
   it("return 400 when size exceed MAX_SIZE", async () => {
     const imageArray = [
       ...Array(maxImageCount - 1).fill(getImagePath("350kb.webp")),

@@ -4,13 +4,19 @@ import validator from "../middlewares/validator";
 import User, { UserCreationAttribute } from "../models/User";
 import catchAsync from "../middlewares/catchAsync";
 import bcrypt from "bcrypt";
-import fetch from "../middlewares/fetch";
+import fetch, { fetchCurrentUser } from "../middlewares/fetch";
 import InvalidLoginError from "../errors/InvalidLoginError";
 import jwt from "jsonwebtoken";
 import { TokenTypes } from "../types/TokenTypes";
 import authenticate from "../middlewares/authenticate";
 import { UserLoginType, UserRegisterType } from "../types/userTypes";
 import { AuthorizationError } from "../errors/AuthorizationError";
+import processImage from "../middlewares/processImage";
+import ImageError from "../errors/ImageError";
+import s3Client from "../helper/s3Client";
+import { DeleteObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
+import { BUCKET_NAME } from "../var/constants";
+import { v4 as uuid } from "uuid";
 
 const router = Router();
 
@@ -114,6 +120,37 @@ router.get(
       const user = await User.findByPk(tokenData.id);
       res.json(user);
     } else res.json({});
+  })
+);
+
+//upload new avatar image
+router.post(
+  "/avatar",
+  authenticate(true),
+  processImage("hasPicture", 1),
+  fetchCurrentUser,
+  catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+    const currentUser: User = (req as any).currentUser;
+    const images = req.files as Express.Multer.File[];
+    const imageName = `${uuid()}.webp`;
+    const currentAvatar = currentUser.avatar ?? "undefined";
+
+    await Promise.all(
+      [
+        new PutObjectCommand({
+          Bucket: BUCKET_NAME,
+          Key: imageName,
+          Body: images[0].buffer,
+        }),
+        new DeleteObjectCommand({
+          Bucket: BUCKET_NAME,
+          Key: currentAvatar,
+        }),
+      ].map((command) => s3Client.send(command))
+    );
+
+    await currentUser.update({ avatar: imageName });
+    res.status(200).json({ status: "success" });
   })
 );
 
