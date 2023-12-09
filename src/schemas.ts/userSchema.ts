@@ -12,6 +12,9 @@ export const userSchema = {
     "string.email": "{#label} must be a valid email address",
     "any.required": "{#label} is required",
   }),
+  privilege: Joi.valid(...[0, 1, 2]),
+  selectedAddressId: Joi.string().uuid().allow(null),
+  avatar: Joi.string().allow(null),
   password: Joi.string().min(8).max(90).label("Password").messages({
     "string.min": "{#label} must be at least {#limit} characters long",
     "string.max": "{#label} must be shorter than {#limit} characters",
@@ -35,3 +38,15 @@ export const loginSchema = Joi.object<UserLoginType>({
 })
   .required()
   .unknown(false);
+
+export const currentUserOutputSchema = Joi.object({
+  id: userSchema.id.required(),
+  name: userSchema.name.required(),
+  email: userSchema.email.required(),
+  privilege: userSchema.privilege.required(),
+  selectedAddressId: userSchema.selectedAddressId.required(),
+  avatar: userSchema.avatar.required(),
+  cartCount: Joi.number().integer().positive().required(),
+})
+  .unknown(false)
+  .required();

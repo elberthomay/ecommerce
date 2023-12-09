@@ -11,3 +11,15 @@ export interface UserLoginType {
   password: string;
   rememberMe: boolean;
 }
+
+export type currentUserOutputType =
+  | Record<string, never>
+  | {
+      id: User["id"];
+      name: User["name"];
+      email: User["email"];
+      privilege: User["privilege"];
+      selectedAddressId: User["selectedAddressId"];
+      avatar: User["avatar"];
+      cartCount: number;
+    };

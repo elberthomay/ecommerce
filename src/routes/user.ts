@@ -17,6 +17,7 @@ import s3Client from "../helper/s3Client";
 import { DeleteObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
 import { BUCKET_NAME } from "../var/constants";
 import { v4 as uuid } from "uuid";
+import Cart from "../models/Cart";
 
 const router = Router();
 
@@ -117,8 +118,25 @@ router.get(
   catchAsync(async (req: Request, res: Response, next: NextFunction) => {
     const tokenData = (req as any).tokenData as TokenTypes | null;
     if (tokenData) {
-      const user = await User.findByPk(tokenData.id);
-      res.json(user);
+      const currentUser = await User.findByPk(tokenData.id, {
+        attributes: [
+          "id",
+          "name",
+          "email",
+          "privilege",
+          "avatar",
+          "selectedAddressId",
+        ],
+        raw: true,
+      });
+      if (!currentUser)
+        throw Error(
+          `Valid token with id ${tokenData.id} exist with no account`
+        );
+
+      const cartCount = await Cart.count({ where: { userId: currentUser.id } });
+      const result = { ...currentUser, cartCount };
+      res.json(result);
     } else res.json({});
   })
 );
