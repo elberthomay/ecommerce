@@ -40,6 +40,7 @@ export const cartOutputSchema = Joi.object<cartOutputType>({
   name: itemSchema.name.required(),
   price: itemSchema.price.required(),
   quantity: cartSchema.quantity.required(),
+  image: Joi.string().allow(null),
   selected: cartSchema.selected.required(),
   shopId: shopSchema.id.required(),
   shopName: shopSchema.name.required(),

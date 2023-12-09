@@ -21,6 +21,7 @@ import NotFoundError from "../errors/NotFoundError";
 import InventoryError from "../errors/InventoryError";
 import Item, { ItemCreationAttribute } from "../models/Item";
 import _ from "lodash";
+import ItemImage from "../models/ItemImage";
 
 const router = Router();
 
@@ -79,7 +80,15 @@ router.get(
         {
           model: Item,
           attributes: ["quantity", "name", "price", "shopId"],
-          include: [{ model: Shop, attributes: ["name"] }],
+          include: [
+            { model: Shop, attributes: ["name"] },
+            {
+              model: ItemImage,
+              attributes: ["imageName"],
+              where: { order: 0 },
+              required: false,
+            },
+          ],
         },
       ],
     });
@@ -89,6 +98,7 @@ router.get(
       selected,
       inventory: item?.quantity,
       name: item?.name,
+      image: item?.images ? item?.images[0]?.imageName ?? null : null,
       price: item?.price,
       shopId: item?.shopId,
       shopName: item?.shop?.name,

@@ -1,5 +1,6 @@
 import Cart from "../models/Cart";
 import Item from "../models/Item";
+import ItemImage from "../models/ItemImage";
 import Shop from "../models/Shop";
 
 export interface cartCreateType {
@@ -23,6 +24,7 @@ export interface cartOutputType {
   itemId: Item["id"];
   name: Item["name"];
   price: Item["price"];
+  image: ItemImage["imageName"] | null;
   quantity: Cart["quantity"];
   selected: Cart["selected"];
   shopId: Shop["id"];
