@@ -22,13 +22,27 @@ import {
   ShopQueryType,
   ShopUpdateType,
 } from "../types/shopTypes";
-import { Sequelize, Op, FindOptions } from "sequelize";
+import { FindOptions } from "sequelize";
 import orderNameEnum from "../var/orderNameEnum";
 import queryOptionToLimitOffset from "../helper/queryOptionToLimitOffset";
 import sequelize from "../models/sequelize";
 import DuplicateDataError from "../errors/DuplicateDataError";
+import authorize, { authorization } from "../middlewares/authorize";
 
 const router = Router();
+
+const authorizeStaffOrOwner = authorization(
+  [
+    0,
+    1,
+    (req: Request) => {
+      const currentUser: User = (req as any).currentUser;
+      const shop: Shop = (req as any)[Shop.name];
+      return shop && currentUser && shop.userId === currentUser.id;
+    },
+  ],
+  "shop"
+);
 
 /**
  * GET list of item from provided shopId
@@ -103,7 +117,7 @@ router.get(
   "/:shopId",
   validator({ params: shopParamSchema }),
   //shop must exist
-  fetch<ShopCreationAttribute, { shopId: string }>({
+  fetch<ShopCreationAttribute, ShopParamType>({
     model: Shop,
     key: ["id", "shopId"],
     location: "params",
@@ -111,7 +125,7 @@ router.get(
   }),
   catchAsync(
     async (
-      req: Request<ParamsDictionary | { shopId: string }>,
+      req: Request<ParamsDictionary | ShopParamType>,
       res: Response,
       next: NextFunction
     ) => {
@@ -157,17 +171,18 @@ router.post(
 
 /** update shop */
 router.patch(
-  "/",
+  "/:shopId",
   authenticate(true),
-  validator({ body: shopUpdateSchema }),
+  validator({ params: shopParamSchema, body: shopUpdateSchema }),
   //user must have a shop
-  fetch<ShopCreationAttribute, TokenTypes>({
+  fetch<ShopCreationAttribute, ShopParamType>({
     model: Shop,
-    key: ["userId", "id"],
-    location: "tokenData",
+    key: ["id", "shopId"],
+    location: "params",
     force: "exist",
   }),
   fetchCurrentUser,
+  authorizeStaffOrOwner,
   catchAsync(
     async (
       req: Request<ParamsDictionary, unknown, ShopUpdateType>,
@@ -175,8 +190,8 @@ router.patch(
       next: NextFunction
     ) => {
       const shopUpdateData = req.body;
-      const currentUser: User = (req as any).currentUser;
       const shop: Shop = (req as any)[Shop.name];
+
       if (shopUpdateData.name) {
         const duplicateName = await Shop.findOne({
           where: { name: shopUpdateData.name },

@@ -2,6 +2,7 @@ import { faker } from "@faker-js/faker";
 import Shop, { ShopCreationAttribute } from "../../../models/Shop";
 import { createUser } from "../user/userHelper";
 import { defaultUser } from "../user/userData";
+import { ShopUpdateType } from "../../../types/shopTypes";
 
 /**
  * Create Shop from number or array of fragmented(or whole) user data.
@@ -61,6 +62,11 @@ export const defaultShop: ShopCreationAttribute = {
   description:
     "this is a new shop i created, it's called default shop.\n isn't it fantastic?",
   userId: defaultUser.id,
+};
+
+export const defaultShopUpdate: ShopUpdateType = {
+  name: faker.company.name(),
+  description: generateShopDescription(faker.company.name()),
 };
 
 export const createDefaultShop = () => createShop([defaultShop]);
