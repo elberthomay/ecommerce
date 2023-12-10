@@ -4,6 +4,9 @@ export interface ShopCreateType {
   name: Shop["name"];
   description?: Shop["description"];
 }
+
+export type ShopUpdateType = Partial<ShopCreateType>;
+
 export interface ShopNameCheckType {
   name: Shop["name"];
 }

@@ -7,6 +7,7 @@ import {
   shopCreateSchema,
   shopNameCheckSchema,
   shopParamSchema,
+  shopUpdateSchema,
 } from "../schemas.ts/shopSchema";
 import User, { UserCreationAttribute } from "../models/User";
 import Shop, { ShopCreationAttribute } from "../models/Shop";
@@ -19,11 +20,13 @@ import {
   ShopNameCheckType,
   ShopParamType,
   ShopQueryType,
+  ShopUpdateType,
 } from "../types/shopTypes";
 import { Sequelize, Op, FindOptions } from "sequelize";
 import orderNameEnum from "../var/orderNameEnum";
 import queryOptionToLimitOffset from "../helper/queryOptionToLimitOffset";
 import sequelize from "../models/sequelize";
+import DuplicateDataError from "../errors/DuplicateDataError";
 
 const router = Router();
 
@@ -95,6 +98,29 @@ router.get(
   }
 );
 
+/** get shop */
+router.get(
+  "/:shopId",
+  validator({ params: shopParamSchema }),
+  //shop must exist
+  fetch<ShopCreationAttribute, { shopId: string }>({
+    model: Shop,
+    key: ["id", "shopId"],
+    location: "params",
+    force: "exist",
+  }),
+  catchAsync(
+    async (
+      req: Request<ParamsDictionary | { shopId: string }>,
+      res: Response,
+      next: NextFunction
+    ) => {
+      const shop: Shop = (req as any)[Shop.name];
+      res.status(200).json(shop);
+    }
+  )
+);
+
 /** activate shop */
 router.post(
   "/",
@@ -123,10 +149,42 @@ router.post(
     ) => {
       const shopData = req.body;
       const currentUser: User = (req as any).currentUser;
-      // const userId = ((req as any).currentUser as User).id;
-      // const newShop = await Shop.create({ ...shopData, userId });
       const newShop = await currentUser.$create("shop", shopData);
       res.status(201).json(newShop);
+    }
+  )
+);
+
+/** update shop */
+router.patch(
+  "/",
+  authenticate(true),
+  validator({ body: shopUpdateSchema }),
+  //user must have a shop
+  fetch<ShopCreationAttribute, TokenTypes>({
+    model: Shop,
+    key: ["userId", "id"],
+    location: "tokenData",
+    force: "exist",
+  }),
+  fetchCurrentUser,
+  catchAsync(
+    async (
+      req: Request<ParamsDictionary, unknown, ShopUpdateType>,
+      res: Response,
+      next: NextFunction
+    ) => {
+      const shopUpdateData = req.body;
+      const currentUser: User = (req as any).currentUser;
+      const shop: Shop = (req as any)[Shop.name];
+      if (shopUpdateData.name) {
+        const duplicateName = await Shop.findOne({
+          where: { name: shopUpdateData.name },
+        });
+        if (duplicateName) throw new DuplicateDataError("name");
+      }
+      const updatedShop = await shop.update(shopUpdateData);
+      res.status(200).json(updatedShop);
     }
   )
 );

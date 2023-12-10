@@ -1,5 +1,9 @@
 import Joi from "joi";
-import { ShopCreateType, ShopParamType } from "../types/shopTypes";
+import {
+  ShopCreateType,
+  ShopParamType,
+  ShopUpdateType,
+} from "../types/shopTypes";
 import { paginationSchema, uuidSchema } from "./commonSchema";
 import orderNameEnum from "../var/orderNameEnum";
 
@@ -26,6 +30,14 @@ export const shopCreateSchema = Joi.object<ShopCreateType>({
   description: shopSchema.description.optional(),
 })
   .required()
+  .unknown(false);
+
+export const shopUpdateSchema = Joi.object<ShopUpdateType>({
+  name: shopSchema.name.optional(),
+  description: shopSchema.description.optional(),
+})
+  .required()
+  .empty({})
   .unknown(false);
 
 export const shopNameCheckSchema = Joi.object<ShopCreateType>({
