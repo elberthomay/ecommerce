@@ -18,6 +18,9 @@ export const createShop = async (
       return {
         id: creationData?.id ?? faker.string.uuid(),
         name: creationData?.name ?? faker.company.name(),
+        description:
+          creationData?.description ??
+          generateShopDescription(creationData?.name ?? faker.company.name()),
         userId: creationData?.userId ?? faker.string.uuid(),
       };
     };
@@ -43,9 +46,20 @@ export const createShop = async (
   return records;
 };
 
+function generateShopDescription(name: string) {
+  const catchPhrase = faker.company.catchPhrase();
+  const industry = faker.company.catchPhraseNoun();
+  const buzzwords = Array.from({ length: 6 }, () =>
+    faker.company.buzzNoun()
+  ).join(", ");
+  return `${name} is a leading ${industry} company that specializes in ${buzzwords}. ${catchPhrase}`;
+}
+
 export const defaultShop: ShopCreationAttribute = {
   id: "3cff9666-acc7-416b-8ad8-70c8fac437f0",
   name: "default shop",
+  description:
+    "this is a new shop i created, it's called default shop.\n isn't it fantastic?",
   userId: defaultUser.id,
 };
 

@@ -100,25 +100,21 @@ router.post(
   "/",
   authenticate(true),
   validator({ body: shopCreateSchema }),
+  //check if user already has shop
   fetch<ShopCreationAttribute, TokenTypes>({
     model: Shop,
     key: ["userId", "id"],
     location: "tokenData",
     force: "absent",
   }),
+  //check name duplicate
   fetch<ShopCreationAttribute, ShopCreateType>({
     model: Shop,
     key: "name",
     location: "body",
     force: "absent",
   }),
-  fetch<UserCreationAttribute, TokenTypes>({
-    model: User,
-    key: "id",
-    location: "tokenData",
-    force: "exist",
-    destination: "currentUser",
-  }),
+  fetchCurrentUser,
   catchAsync(
     async (
       req: Request<ParamsDictionary, unknown, ShopCreateType>,
@@ -126,8 +122,10 @@ router.post(
       next: NextFunction
     ) => {
       const shopData = req.body;
-      const userId = ((req as any).currentUser as User).id;
-      const newShop = await Shop.create({ ...shopData, userId });
+      const currentUser: User = (req as any).currentUser;
+      // const userId = ((req as any).currentUser as User).id;
+      // const newShop = await Shop.create({ ...shopData, userId });
+      const newShop = await currentUser.$create("shop", shopData);
       res.status(201).json(newShop);
     }
   )

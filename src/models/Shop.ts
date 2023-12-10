@@ -21,6 +21,7 @@ import ShopAddress from "./ShopAddress";
 export interface ShopCreationAttribute {
   id?: string;
   name: string;
+  description?: string | null;
   userId?: string;
   user?: UserCreationAttribute;
   items?: ItemCreationAttribute[];
@@ -36,6 +37,10 @@ class Shop extends Model<ShopCreationAttribute> {
   @AllowNull(false)
   @Column(DataType.STRING)
   name!: string;
+
+  @AllowNull(true)
+  @Column(DataType.STRING)
+  description!: string | null;
 
   @ForeignKey(() => User)
   @Unique

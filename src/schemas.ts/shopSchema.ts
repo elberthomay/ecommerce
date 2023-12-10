@@ -16,10 +16,14 @@ export const shopSchema = {
         "{#label} must start with letter or number, and contain only letter, number, underscore or dash",
       "any.required": "{#label} is required",
     }),
+  description: Joi.string().max(1000).messages({
+    "string.min": "{#label} must be longer than {#limit} characters",
+  }),
 };
 
 export const shopCreateSchema = Joi.object<ShopCreateType>({
   name: shopSchema.name.required(),
+  description: shopSchema.description.optional(),
 })
   .required()
   .unknown(false);
