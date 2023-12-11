@@ -252,7 +252,7 @@ router.get(
             quantity,
             shopId,
             shopName: shop?.name,
-            image: images[0]?.imageName,
+            image: images[0]?.imageName ?? null,
           })
         ),
       };

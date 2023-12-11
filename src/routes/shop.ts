@@ -103,7 +103,7 @@ router.get(
           name,
           price,
           quantity,
-          image: images[0]?.imageName,
+          image: images[0]?.imageName ?? null,
         })),
       };
       res.json(result);

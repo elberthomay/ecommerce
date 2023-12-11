@@ -166,7 +166,7 @@ it("sort by price descending when corresponding query option is used", async () 
 it("return item and shop data with determined format", async () => {
   const items = await createItem(20);
   await Promise.all(
-    items.map(({ id: itemId }) =>
+    items.slice(0, 10).map(({ id: itemId }) =>
       ItemImage.bulkCreate([
         { itemId, imageName: "http://image.com/2", order: 1 },
         { itemId, imageName: "http://image.com/3", order: 2 },
@@ -180,11 +180,14 @@ it("return item and shop data with determined format", async () => {
     .send()
     .expect(200)
     .expect(async ({ body: { count, rows } }) => {
-      expect(itemGetOutputSchema.validateAsync(rows)).resolves;
+      const { value, error } = itemGetOutputSchema.validate(rows);
+      expect(error).toBe(undefined);
       expect(
-        rows.every(
-          (item: ItemGetOutputType) => item.image === "http://image.com/1"
-        )
+        rows
+          .filter(({ image }: { image: string | null }) => image)
+          .every(
+            (item: ItemGetOutputType) => item.image === "http://image.com/1"
+          )
       ).toBeTruthy();
     });
 });

@@ -8,7 +8,6 @@ import {
 } from "../types/itemTypes";
 import { searchSchema, uuidSchema } from "./commonSchema";
 import { tagSchema } from "./tagSchema";
-import orderNameEnum from "../var/orderNameEnum";
 import { shopSchema } from "./shopSchema";
 import { MAX_IMAGE_COUNT } from "../var/constants";
 
@@ -85,7 +84,7 @@ export const itemGetOutputSchema = Joi.array()
       quantity: itemSchema.quantity.required(),
       shopId: shopSchema.id.required(),
       shopName: shopSchema.name.required(),
-      image: Joi.string().optional(),
+      image: Joi.string().allow(null).required(),
     })
       .unknown(false)
       .required()
@@ -115,3 +114,17 @@ export const itemImageOrdersSchema = Joi.array()
   .required()
   .min(1)
   .max(MAX_IMAGE_COUNT);
+
+export const shopItemGetOutputSchema = Joi.array()
+  .items(
+    Joi.object({
+      id: itemSchema.id.required(),
+      name: itemSchema.name.required(),
+      price: itemSchema.price.required(),
+      quantity: itemSchema.quantity.required(),
+      image: Joi.string().allow(null).required(),
+    })
+      .unknown(false)
+      .required()
+  )
+  .required();

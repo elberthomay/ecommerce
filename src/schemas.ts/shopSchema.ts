@@ -5,7 +5,6 @@ import {
   ShopUpdateType,
 } from "../types/shopTypes";
 import { searchSchema, uuidSchema } from "./commonSchema";
-import orderNameEnum from "../var/orderNameEnum";
 
 export const shopSchema = {
   id: uuidSchema,

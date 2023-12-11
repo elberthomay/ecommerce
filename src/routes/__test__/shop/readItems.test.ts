@@ -3,12 +3,13 @@ import pagingAndLimitTests from "../../../test/pagingAndLimitTests.test";
 import { defaultShop } from "../../../test/helpers/shop/shopHelper";
 import { createItem } from "../../../test/helpers/item/itemHelper";
 import request from "supertest";
-import Item, { ItemCreationAttribute } from "../../../models/Item";
 import {
   ItemGetOutputType,
   ShopItemGetOutputType,
 } from "../../../types/itemTypes";
 import { faker } from "@faker-js/faker";
+import ItemImage from "../../../models/ItemImage";
+import { shopItemGetOutputSchema } from "../../../schemas.ts/itemSchema";
 
 const url = "/api/shop/" + defaultShop.id + "/item";
 
@@ -150,5 +151,34 @@ it("search by string when search query is provided", async () => {
       expect(rows.every(({ name }) => name.includes(keyWord))).toBe(true);
 
       expect(rows.every(isInStock)).toBe(true);
+    });
+});
+
+it("return item data with determined format", async () => {
+  const items = await createItem(20, defaultShop);
+  await Promise.all(
+    items.slice(0, 10).map(({ id: itemId }) =>
+      ItemImage.bulkCreate([
+        { itemId, imageName: "http://image.com/2", order: 1 },
+        { itemId, imageName: "http://image.com/3", order: 2 },
+        { itemId, imageName: "http://image.com/1", order: 0 },
+        { itemId, imageName: "http://image.com/4", order: 3 },
+      ])
+    )
+  );
+  await request(app)
+    .get(url)
+    .send()
+    .expect(200)
+    .expect(async ({ body: { count, rows } }) => {
+      const { value, error } = shopItemGetOutputSchema.validate(rows);
+      expect(error).toBe(undefined);
+      expect(
+        rows
+          .filter(({ image }: { image: string | null }) => image)
+          .every(
+            (item: ItemGetOutputType) => item.image === "http://image.com/1"
+          )
+      ).toBeTruthy();
     });
 });
