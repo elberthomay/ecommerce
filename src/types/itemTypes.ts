@@ -41,6 +41,11 @@ export interface ItemGetOutputType {
   image?: ItemImage["imageName"];
 }
 
+export type ShopItemGetOutputType = Pick<
+  ItemGetOutputType,
+  "id" | "name" | "price" | "quantity" | "image"
+>;
+
 export interface ItemDetailsOutputType {
   id: Item["id"];
   name: Item["name"];

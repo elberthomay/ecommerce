@@ -12,7 +12,8 @@ import {
   defaultShop,
 } from "../../../test/helpers/shop/shopHelper";
 import _ from "lodash";
-import { invalidShopNames } from "../../../test/helpers/shop/shopData";
+import { invalidShopValue } from "../../../test/helpers/shop/shopData";
+import validationTest from "../../../test/helpers/validationTest.test";
 
 const url = "/api/shop";
 const getRequest = () => request(app).post(url).set("Cookie", defaultCookie());
@@ -23,9 +24,10 @@ describe("should return 401 with failed authentication", () => {
 
 it("should return 400 with invalid shop names", async () => {
   await createDefaultUser();
-
-  await Promise.all(
-    invalidShopNames.map((name) => getRequest().send({ name }).expect(400))
+  await validationTest(
+    getRequest,
+    { name: defaultShop.name },
+    invalidShopValue
   );
 });
 

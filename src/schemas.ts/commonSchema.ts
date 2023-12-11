@@ -1,4 +1,5 @@
 import Joi from "joi";
+import orderNameEnum from "../var/orderNameEnum";
 
 export const uuidSchema = Joi.string().uuid({
   version: "uuidv4",
@@ -7,9 +8,14 @@ export const uuidSchema = Joi.string().uuid({
 
 export const numericIdSchema = Joi.number().integer().min(1);
 
-export const paginationSchema = {
+export const searchSchema = {
+  search: Joi.string()
+    .pattern(/[a-zA-Z0-9_\-., ]+/)
+    .max(60)
+    .empty(""),
   limit: Joi.number().min(1).max(500),
   page: Joi.number().min(1).max(5000),
+  orderBy: Joi.string().valid(...Object.keys(orderNameEnum)),
 };
 
 export const longitudeSchema = Joi.number()

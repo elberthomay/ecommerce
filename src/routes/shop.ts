@@ -22,12 +22,13 @@ import {
   ShopQueryType,
   ShopUpdateType,
 } from "../types/shopTypes";
-import { FindOptions } from "sequelize";
+import { FindOptions, Op, Order, Sequelize } from "sequelize";
 import orderNameEnum from "../var/orderNameEnum";
 import queryOptionToLimitOffset from "../helper/queryOptionToLimitOffset";
 import sequelize from "../models/sequelize";
 import DuplicateDataError from "../errors/DuplicateDataError";
 import authorize, { authorization } from "../middlewares/authorize";
+import ItemImage from "../models/ItemImage";
 
 const router = Router();
 
@@ -62,20 +63,50 @@ router.get(
       next: NextFunction
     ) => {
       const options = req.query;
+      const { orderBy, search } = options;
       const shopId = req.params.shopId;
 
+      const defaultOrder: Order = [
+        [sequelize.literal("(quantity != 0)"), "DESC"],
+      ];
+
       const findOption: FindOptions<ItemCreationAttribute> = {
-        attributes: ["id", "name", "price", "quantity"],
-        where: { shopId },
         ...queryOptionToLimitOffset(options),
-        order: [[sequelize.literal("(quantity != 0)"), "DESC"]],
+        include: [
+          {
+            model: ItemImage,
+            attributes: ["imageName", "order"],
+            where: { order: 0 },
+            required: false,
+          },
+        ],
+        attributes: ["id", "name", "price", "quantity"],
+        where: search
+          ? Sequelize.and(
+              Sequelize.literal(
+                "MATCH(item.name) AGAINST(:name IN NATURAL LANGUAGE MODE)"
+              ),
+              { shopId }
+            )
+          : { shopId },
+        order: orderBy
+          ? [...defaultOrder, orderNameEnum[orderBy]]
+          : defaultOrder,
+        replacements: search ? { name: search } : undefined,
       };
 
-      if (options.orderBy)
-        (findOption.order as any[]).push(orderNameEnum[options.orderBy]);
-
       const items = await Item.findAndCountAll(findOption);
-      res.json(items);
+      const result = {
+        ...items,
+        rows: items.rows.map(({ id, name, price, quantity, images }) => ({
+          id,
+          name,
+          price,
+          quantity,
+          image: images[0]?.imageName,
+        })),
+      };
+      res.json(result);
     }
   )
 );

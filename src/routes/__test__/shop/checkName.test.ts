@@ -1,10 +1,11 @@
 import app from "../../../app";
 import request from "supertest";
-import { invalidShopNames } from "../../../test/helpers/shop/shopData";
+import { invalidShopValue } from "../../../test/helpers/shop/shopData";
 import {
   createDefaultShop,
   defaultShop,
 } from "../../../test/helpers/shop/shopHelper";
+import validationTest from "../../../test/helpers/validationTest.test";
 
 const createUrl = (itemName: string) =>
   `/api/shop/checkName/${encodeURIComponent(itemName)}`;
@@ -13,7 +14,7 @@ const createRequest = (url: string) => request(app).get(url).send();
 
 it("return 400 when given invalid shop name", async () => {
   await Promise.all(
-    invalidShopNames
+    invalidShopValue.name
       .filter((n) => !!n)
       .map((shopName) => createRequest(createUrl(shopName!)).expect(400))
   );

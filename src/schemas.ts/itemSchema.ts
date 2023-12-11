@@ -6,7 +6,7 @@ import {
   ItemTagEditType,
   ItemUpdateType,
 } from "../types/itemTypes";
-import { paginationSchema, uuidSchema } from "./commonSchema";
+import { searchSchema, uuidSchema } from "./commonSchema";
 import { tagSchema } from "./tagSchema";
 import orderNameEnum from "../var/orderNameEnum";
 import { shopSchema } from "./shopSchema";
@@ -53,19 +53,13 @@ export const itemParamSchema = Joi.object<ItemParamType>({
   .unknown(false);
 
 export const itemQuerySchema = Joi.object<ItemQueryType>({
-  search: Joi.string()
-    .pattern(/[a-zA-Z0-9_\-., ]+/)
-    .max(60)
-    .empty("")
-    .optional(),
-  limit: paginationSchema.limit.optional(),
-  page: paginationSchema.page.optional(),
+  search: searchSchema.search.optional(),
+  limit: searchSchema.limit.optional(),
+  page: searchSchema.page.optional(),
   tagIds: Joi.string()
     .pattern(/^\d+(,\d+)*$/) //numbers separated by comma
     .optional(), //Joi.array().items(tagSchema.id).optional(),
-  orderBy: Joi.string()
-    .valid(...Object.keys(orderNameEnum))
-    .optional(),
+  orderBy: searchSchema.orderBy.optional(),
 }).unknown(false);
 
 export const itemUpdateSchema = Joi.object<ItemUpdateType>({

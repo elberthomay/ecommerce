@@ -16,6 +16,7 @@ export interface ShopParamType {
 }
 
 export interface ShopQueryType {
+  search?: string;
   limit?: number;
   page?: number;
   orderBy?: string;
