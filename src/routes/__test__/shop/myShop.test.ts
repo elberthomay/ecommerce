@@ -25,8 +25,10 @@ describe("should pass authentication test", () => {
   authenticationTests(app, url, method);
 });
 
-it("return 404 if user's shop not activated", async () => {
-  await createDefaultRequest().expect(404);
+it("return 200 with empty object if user's shop not activated", async () => {
+  await createDefaultRequest()
+    .expect(200)
+    .expect(({ body }) => expect(body).toEqual({}));
 });
 
 it("return 200 with correct shop data if user shop is activated", async () => {

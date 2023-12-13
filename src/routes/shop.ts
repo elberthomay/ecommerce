@@ -134,12 +134,11 @@ router.get(
     model: Shop,
     key: ["userId", "id"],
     location: "tokenData",
-    force: "exist",
   }),
   (req: Request, res: Response, next: NextFunction) => {
     const shop: Shop = (req as any)[Shop.name];
-
-    res.status(200).json(shop);
+    if (shop) res.status(200).json(shop);
+    else res.status(200).json({});
   }
 );
 
