@@ -1,20 +1,29 @@
 import { pick } from "lodash";
 
-export const invalidEmails = [
-  "invalid@mistake", // invalid TLD
-  "invalidmistake.com", // no @
-  "@mistake.com", // no identifier
-  "inval/id@mis?take.com", // invalid character
-];
-
-export const invalidPasswords = [
-  "1234567", // Password less than 8 characters
-  "a".repeat(91), // Password more than 90 characters
-];
-
-export const invalidName = [
-  "a".repeat(256), //more than 256 character
-];
+export const invalidUserValue = {
+  email: [
+    undefined,
+    "", //empty
+    "invalid@mistake", // no TLD
+    "invalidmistake.com", // no @
+    "@mistake.com", // no identifier
+    "inval/id@mis?take.com", // invalid character
+    `${"a".repeat(65)}@gmail.com`, // local address longer than 64 character
+    `blueshark@${"a".repeat(252)}.com`, // complete domain longer than 255 character
+    `blueshark@gmail.co${"m".repeat(62)}`, // domain name longer than 63 character
+  ],
+  name: [
+    undefined,
+    "",
+    "a".repeat(256), //more than 256 character
+  ],
+  password: [
+    undefined,
+    "",
+    "1234567", // Password less than 8 characters
+    "a".repeat(91), // Password more than 90 characters
+  ],
+};
 
 export const defaultUser = {
   id: "3ad3bf2c-6a47-4ce3-ba64-afed197160e0",

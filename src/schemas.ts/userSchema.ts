@@ -5,7 +5,7 @@ import { uuidSchema } from "./commonSchema";
 export const userSchema = {
   id: uuidSchema,
   name: Joi.string()
-    .max(255)
+    .max(60)
     .label("Name")
     .messages({ "any.required": "{#label} is required" }),
   email: Joi.string().email().label("Email").messages({

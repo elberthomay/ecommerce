@@ -1,33 +1,28 @@
 import request from "supertest";
 import app from "../../../app";
 import User from "../../../models/User";
-import { omit } from "lodash";
 import { createDefaultUser } from "../../../test/helpers/user/userHelper";
-import { defaultRegisterData } from "../../../test/helpers/user/userData";
 import {
-  emailTest,
-  nameTest,
-  passwordTest,
-  registerPropertyTest,
-} from "../../../test/helpers/user/userSuite";
+  defaultRegisterData,
+  invalidUserValue,
+} from "../../../test/helpers/user/userData";
+import validationTest from "../../../test/helpers/validationTest.test";
 
 const url = "/api/user/register";
+const getRequest = () => request(app).post(url);
 
 const userEmpty = async (): Promise<boolean> => {
   const user = await User.findOne();
   return user ? false : true;
 };
 
-describe("return 400 for validation errors", () => {
-  passwordTest(app, url);
-  emailTest(app, url);
-  nameTest(app, url);
-  registerPropertyTest(app, url);
+it("return 400 for validation errors", async () => {
+  await validationTest(getRequest, defaultRegisterData, invalidUserValue);
 });
 
 it("should return 409 if email already exists", async () => {
   await createDefaultUser();
-  await request(app).post(url).send(defaultRegisterData).expect(409);
+  await getRequest().send(defaultRegisterData).expect(409);
 });
 
 it("should return 201 if data is correct and email is not in the database", async () => {
@@ -50,7 +45,7 @@ it("should return 201 if data is correct and email is not in the database", asyn
     defaultRegisterData,
   ];
   await Promise.all(
-    validBodies.map((body) => request(app).post(url).send(body).expect(201))
+    validBodies.map((body) => getRequest().send(body).expect(201))
   );
 
   expect(await User.count()).toEqual(5); //root user created in setup.ts

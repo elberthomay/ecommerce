@@ -3,63 +3,44 @@ import {
   forgeCookie,
   tokenEqualityTest,
 } from "../../../test/helpers/user/userHelper";
-import { defaultUser } from "../../../test/helpers/user/userData";
+import {
+  defaultUser,
+  invalidUserValue,
+} from "../../../test/helpers/user/userData";
 import request from "supertest";
 import app from "../../../app";
-import _ from "lodash";
-import { emailTest, passwordTest } from "../../../test/helpers/user/userSuite";
+import _, { pick } from "lodash";
+import validationTest from "../../../test/helpers/validationTest.test";
 
 const url = "/api/user/login";
+const getRequest = () => request(app).post(url);
 
 const defaultLoginData = _.pick(defaultUser, ["email", "password"]);
 
-describe("return 400 for validation errors", () => {
-  it("should return 400 if any required property is missing", async () => {
-    const invalidLoginDatas = [
-      _.omit(defaultLoginData, "email"), //no email
-      _.omit(defaultLoginData, "password"), //no password
-      {}, //no anything
-    ];
+it("return 400 for validation errors", async () => {
+  await validationTest(
+    getRequest,
+    defaultLoginData,
+    pick(invalidUserValue, ["email", "password"])
+  );
+});
 
-    await Promise.all(
-      invalidLoginDatas.map((invalidLoginData) =>
-        request(app).post(url).send(invalidLoginData).expect(400)
-      )
-    );
-  });
+it("should return 400 with invalid property", async () => {
+  const invalidLoginDatas = [
+    { ...defaultLoginData, invalid: "property" }, // an invalid property
+  ];
 
-  it("should return 400 if any property is empty", async () => {
-    const invalidLoginDatas = [
-      { ...defaultLoginData, email: "" }, //empty email
-      { ...defaultLoginData, password: "" }, //empty password
-    ];
-
-    await Promise.all(
-      invalidLoginDatas.map((invalidLoginData) =>
-        request(app).post(url).send(invalidLoginData).expect(400)
-      )
-    );
-  });
-
-  it("should return 400 with invalid property", async () => {
-    const invalidLoginDatas = [
-      { ...defaultLoginData, invalid: "property" }, // an invalid property
-    ];
-
-    await Promise.all(
-      invalidLoginDatas.map((invalidLoginData) =>
-        request(app).post(url).send(invalidLoginData).expect(400)
-      )
-    );
-  });
-  passwordTest(app, url);
-  emailTest(app, url);
+  await Promise.all(
+    invalidLoginDatas.map((invalidLoginData) =>
+      getRequest().send(invalidLoginData).expect(400)
+    )
+  );
 });
 
 it("should return 401 if account doesn't exist in db", async () => {
   const users = await createUser(3);
 
-  await request(app).post(url).send(defaultLoginData).expect(401);
+  await getRequest().send(defaultLoginData).expect(401);
 });
 
 it("should return 401 if password doesn't match", async () => {
@@ -69,7 +50,7 @@ it("should return 401 if password doesn't match", async () => {
     password: users.userDatas[0].password + "1",
   };
 
-  await request(app).post(url).send(loginData).expect(401);
+  await getRequest().send(loginData).expect(401);
 });
 
 it("should return 200 if email and password match and correct expiration period", async () => {
@@ -77,8 +58,7 @@ it("should return 200 if email and password match and correct expiration period"
   const users = await createUser([defaultUser, {}, {}]); // create 3 user with one of them default user
 
   //remember me false
-  await request(app)
-    .post(url)
+  await getRequest()
     .send({ ...defaultLoginData, rememberMe: false })
     .expect(200)
     .expect(
@@ -90,8 +70,7 @@ it("should return 200 if email and password match and correct expiration period"
     );
 
   //remember me true
-  await request(app)
-    .post(url)
+  await getRequest()
     .send({ ...defaultLoginData, rememberMe: true })
     .expect(200)
     .expect(
