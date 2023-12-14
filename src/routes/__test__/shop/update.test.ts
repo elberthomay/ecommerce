@@ -46,7 +46,9 @@ it("return 400 from invalid body", async () => {
 });
 
 it("return 404 when shop does not exist", async () => {
-  await defaultRequest({ shopId: faker.string.uuid() }).expect(404);
+  await defaultRequest({ shopId: faker.string.uuid() })
+    .expect(({ body }) => console.log(body))
+    .expect(404);
 });
 
 it("return 403 when accessing shop not created by the user", async () => {

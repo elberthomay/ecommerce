@@ -18,7 +18,7 @@ const createDefaultRequest = () =>
   request(app).get(url).set("Cookie", defaultCookie()).send();
 
 beforeEach(async () => {
-  createDefaultUser();
+  await createDefaultUser();
 });
 
 describe("should pass authentication test", () => {
@@ -27,6 +27,7 @@ describe("should pass authentication test", () => {
 
 it("return 200 with empty object if user's shop not activated", async () => {
   await createDefaultRequest()
+    .expect(({ body }) => console.log(body))
     .expect(200)
     .expect(({ body }) => expect(body).toEqual({}));
 });

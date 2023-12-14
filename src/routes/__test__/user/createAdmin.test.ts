@@ -5,28 +5,23 @@ import { createUser, forgeCookie } from "../../../test/helpers/user/userHelper";
 import {
   defaultRegisterData,
   defaultRootUser,
+  invalidUserValue,
 } from "../../../test/helpers/user/userData";
-import {
-  emailTest,
-  nameTest,
-  passwordTest,
-  registerPropertyTest,
-} from "../../../test/helpers/user/userSuite";
 import User from "../../../models/User";
+import validationTest from "../../../test/helpers/validationTest.test";
 
 const url = "/api/user/createAdmin";
 
 const method = "post";
 
+const getRequest = () => request(app).post(url);
+
 describe("succeed authentication", () => {
   authenticationTests(app, url, method, defaultRegisterData);
 });
 
-describe("return 400 for validation errors", () => {
-  passwordTest(app, url);
-  emailTest(app, url);
-  nameTest(app, url);
-  registerPropertyTest(app, url);
+it("return 400 for validation errors", async () => {
+  await validationTest(getRequest, defaultRegisterData, invalidUserValue);
 });
 
 it("return 403 if not a root user", async () => {
