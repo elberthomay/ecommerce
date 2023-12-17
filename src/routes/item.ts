@@ -163,6 +163,7 @@ router.get(
     location: "params",
     force: "exist",
     include: defaultItemInclude,
+    order: [["images", "order", "ASC"]],
   }),
   (req: Request, res: Response, next: NextFunction) => {
     const item: Item = (req as any)[Item.name];
@@ -357,7 +358,37 @@ router.patch(
       const changes = req.body;
       const item: Item = (req as any)[Item.name];
       await item.set(changes).save();
-      res.json(item);
+
+      await item.reload({
+        include: [
+          { model: ItemImage, attributes: ["imageName", "order"] },
+          { model: Shop, attributes: ["name"] },
+          { model: Tag, attributes: ["id", "name"] },
+        ],
+      });
+      const {
+        id,
+        name,
+        description,
+        price,
+        quantity,
+        shop,
+        shopId,
+        tags,
+        images,
+      } = item;
+      const result = {
+        id,
+        name,
+        description,
+        price,
+        quantity,
+        shopId,
+        shopName: shop?.name,
+        tags,
+        images,
+      };
+      res.json(result);
     }
   )
 );

@@ -4,8 +4,8 @@ const orderNameEnum: {
   [key: string]: [keyof ItemCreationAttribute, "ASC" | "DESC"];
 } = {
   cheapest: ["price", "ASC"],
-  newest: ["createdAt", "ASC"],
-  oldest: ["createdAt", "DESC"],
+  newest: ["createdAt", "DESC"],
+  oldest: ["createdAt", "ASC"],
   mostExpensive: ["price", "DESC"],
 };
 export default orderNameEnum;

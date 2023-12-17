@@ -80,7 +80,7 @@ router.get(
             required: false,
           },
         ],
-        attributes: ["id", "name", "price", "quantity"],
+        attributes: ["id", "name", "price", "quantity", "createdAt"],
         where: search
           ? Sequelize.and(
               Sequelize.literal(

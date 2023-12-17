@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import catchAsync from "./catchAsync";
 import { Model, ModelCtor } from "sequelize-typescript";
 import NotFoundError from "../errors/NotFoundError";
-import { Includeable, FindAttributeOptions } from "sequelize";
+import { Includeable, FindAttributeOptions, Order } from "sequelize";
 import DuplicateDataError from "../errors/DuplicateDataError";
 import User, { UserCreationAttribute } from "../models/User";
 import { TokenTypes } from "../types/TokenTypes";
@@ -31,6 +31,7 @@ export default function fetch<M extends any, I extends any>({
   destination,
   attributes,
   include,
+  order,
   force = false,
   transformer = (data) => data,
 }: {
@@ -40,6 +41,7 @@ export default function fetch<M extends any, I extends any>({
   destination?: string;
   attributes?: FindAttributeOptions;
   include?: Includeable | Includeable[];
+  order?: Order;
   force?: false | "exist" | "absent";
   transformer?: (data: Model | null) => any;
 }) {
@@ -58,6 +60,7 @@ export default function fetch<M extends any, I extends any>({
       where: searchCondition,
       attributes: attributes,
       include: include,
+      order: order,
     });
 
     //transform data
