@@ -19,6 +19,7 @@ import {
 } from "../schemas.ts/itemSchema";
 import {
   ItemCreateType,
+  ItemDetailsOutputType,
   ItemImageOrderArray,
   ItemQueryType,
   ItemTagEditType,
@@ -153,6 +154,32 @@ async function removeTags(item: Item, tagIds: number[]) {
   });
 }
 
+async function formatItemDetailsOutput(
+  item: Item
+): Promise<ItemDetailsOutputType> {
+  await item.reload({
+    include: [
+      { model: ItemImage, attributes: ["imageName", "order"] },
+      { model: Shop, attributes: ["name"] },
+      { model: Tag, attributes: ["id", "name"] },
+    ],
+  });
+  const { id, name, description, price, quantity, shop, shopId, tags, images } =
+    item;
+  const result = {
+    id,
+    name,
+    description,
+    price,
+    quantity,
+    shopId,
+    shopName: shop?.name!,
+    tags,
+    images,
+  };
+  return result;
+}
+
 /** get item detail by itemId */
 router.get(
   "/:itemId",
@@ -165,32 +192,11 @@ router.get(
     include: defaultItemInclude,
     order: [["images", "order", "ASC"]],
   }),
-  (req: Request, res: Response, next: NextFunction) => {
+  catchAsync(async (req: Request, res: Response, next: NextFunction) => {
     const item: Item = (req as any)[Item.name];
-    const {
-      id,
-      name,
-      description,
-      price,
-      quantity,
-      shop,
-      shopId,
-      tags,
-      images,
-    } = item;
-    const result = {
-      id,
-      name,
-      description,
-      price,
-      quantity,
-      shopId,
-      shopName: shop?.name,
-      tags,
-      images: images.map((image) => pick(image, ["imageName", "order"])),
-    };
+    const result = await formatItemDetailsOutput(item);
     res.json(result);
-  }
+  })
 );
 
 /** get list of item and the count, optionally receive limit and page to handle pagination */
@@ -302,35 +308,7 @@ router.post(
           await addImages(newItem, imageBuffers, transaction);
         return newItem;
       });
-      await newItem.reload({
-        include: [
-          { model: ItemImage, attributes: ["imageName", "order"] },
-          { model: Shop, attributes: ["name"] },
-          { model: Tag, attributes: ["id", "name"] },
-        ],
-      });
-      const {
-        id,
-        name,
-        description,
-        price,
-        quantity,
-        shop,
-        shopId,
-        tags,
-        images,
-      } = newItem;
-      const result = {
-        id,
-        name,
-        description,
-        price,
-        quantity,
-        shopId,
-        shopName: shop?.name,
-        tags,
-        images,
-      };
+      const result = await formatItemDetailsOutput(newItem);
       res.status(201).json(result);
     }
   )
@@ -359,35 +337,7 @@ router.patch(
       const item: Item = (req as any)[Item.name];
       await item.set(changes).save();
 
-      await item.reload({
-        include: [
-          { model: ItemImage, attributes: ["imageName", "order"] },
-          { model: Shop, attributes: ["name"] },
-          { model: Tag, attributes: ["id", "name"] },
-        ],
-      });
-      const {
-        id,
-        name,
-        description,
-        price,
-        quantity,
-        shop,
-        shopId,
-        tags,
-        images,
-      } = item;
-      const result = {
-        id,
-        name,
-        description,
-        price,
-        quantity,
-        shopId,
-        shopName: shop?.name,
-        tags,
-        images,
-      };
+      const result = await formatItemDetailsOutput(item);
       res.json(result);
     }
   )
