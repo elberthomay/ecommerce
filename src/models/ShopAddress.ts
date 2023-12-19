@@ -10,7 +10,7 @@ import {
   Unique,
 } from "sequelize-typescript";
 import Shop from "./Shop";
-import Address from "./address";
+import Address from "./Address";
 
 interface ShopAddressCreationAttribute {
   shopId: string;

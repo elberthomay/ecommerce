@@ -12,7 +12,7 @@ import {
   Validate,
 } from "sequelize-typescript";
 import City from "./City";
-import Address from "./address";
+import Address from "./Address";
 
 interface SubdistrictCreationAttribute {
   id?: number;

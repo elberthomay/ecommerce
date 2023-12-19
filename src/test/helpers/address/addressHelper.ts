@@ -1,5 +1,5 @@
 import { Model } from "sequelize-typescript";
-import Address, { AddressCreationAttribute } from "../../../models/address";
+import Address, { AddressCreationAttribute } from "../../../models/Address";
 import { faker } from "@faker-js/faker";
 
 export interface ModelWithAddresses extends Model {

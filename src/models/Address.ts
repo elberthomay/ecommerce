@@ -13,10 +13,10 @@ import ShopAddress from "./ShopAddress";
 
 export interface AddressCreationAttribute {
   id: string;
-  longitude: number;
-  latitude: number;
+  longitude?: number;
+  latitude?: number;
   postCode?: string;
-  detail?: string;
+  detail: string;
   subdistrictId?: number;
 }
 
@@ -31,28 +31,34 @@ class Address extends Model<AddressCreationAttribute> {
 
   @Column({
     type: DataType.DECIMAL(7, 4),
-    allowNull: false,
+    allowNull: true,
     validate: { min: -90, max: 90 },
   })
-  latitude!: number;
+  latitude!: number | null;
 
   @Column({
     type: DataType.DECIMAL(7, 4),
 
-    allowNull: false,
+    allowNull: true,
     validate: { min: -180, max: 180 },
   })
-  longitude!: number;
+  longitude!: number | null;
 
-  @Column({ type: DataType.CHAR(10) })
-  postCode!: string;
+  @Column({ type: DataType.CHAR(10), allowNull: true })
+  postCode!: string | null;
 
-  @Column({ type: DataType.STRING })
+  @Column({ type: DataType.STRING, allowNull: false })
   detail!: string;
+
+  @Column({ type: DataType.DATE(6) })
+  createdAt?: string;
+
+  @Column({ type: DataType.DATE(6) })
+  updatedAt?: string;
 
   @ForeignKey(() => Subdistrict)
   @Column({ type: DataType.INTEGER, allowNull: true })
-  subdistrictId!: number;
+  subdistrictId!: number | null;
 
   @BelongsTo(() => Subdistrict)
   subdistrict!: Subdistrict | null;

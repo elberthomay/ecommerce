@@ -16,7 +16,7 @@ import {
 import Shop, { ShopCreationAttribute } from "./Shop";
 import Item, { ItemCreationAttribute } from "./Item";
 import Cart from "./Cart";
-import Address from "./address";
+import Address from "./Address";
 import UserAddress from "./UserAddress";
 
 export interface UserCreationAttribute {

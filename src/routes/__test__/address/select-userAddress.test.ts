@@ -10,7 +10,7 @@ import authenticationTests from "../../../test/authenticationTests.test";
 import User from "../../../models/User";
 import { createAddress } from "../../../test/helpers/address/addressHelper";
 import { invalidUuid } from "../../../test/helpers/commonData";
-import Address from "../../../models/address";
+import Address from "../../../models/Address";
 import { createDefaultShop } from "../../../test/helpers/shop/shopHelper";
 
 const getUrl = (addressId: string) => `/api/address/select/${addressId}`;

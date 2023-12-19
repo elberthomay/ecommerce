@@ -16,7 +16,7 @@ import {
   defaultCookie,
   forgeCookie,
 } from "../../../test/helpers/user/userHelper";
-import Address from "../../../models/address";
+import Address from "../../../models/Address";
 import { pick } from "lodash";
 import { invalidUuid } from "../../../test/helpers/commonData";
 

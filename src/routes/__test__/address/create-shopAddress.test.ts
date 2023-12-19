@@ -2,17 +2,13 @@ import request from "supertest";
 import app from "../../../app";
 import authenticationTests from "../../../test/authenticationTests.test";
 import { createAddress } from "../../../test/helpers/address/addressHelper";
-import { AddressCreationAttribute } from "../../../models/address";
+import { AddressCreationAttribute } from "../../../models/Address";
 import {
   defaultAddressCreateObject,
   invalidAddressValues,
 } from "../../../test/helpers/address/addressData";
 import { AddressCreateType } from "../../../types/addressType";
-import {
-  createDefaultUser,
-  defaultCookie,
-} from "../../../test/helpers/user/userHelper";
-import User from "../../../models/User";
+import { defaultCookie } from "../../../test/helpers/user/userHelper";
 import { defaultUser } from "../../../test/helpers/user/userData";
 import { pick } from "lodash";
 import validationTest from "../../../test/helpers/validationTest.test";

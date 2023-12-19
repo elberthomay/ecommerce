@@ -5,7 +5,7 @@ import {
   createAddress,
   createAddressData,
 } from "../../../test/helpers/address/addressHelper";
-import { AddressCreationAttribute } from "../../../models/address";
+import { AddressCreationAttribute } from "../../../models/Address";
 import {
   defaultAddressCreateObject,
   invalidAddressValues,
@@ -39,12 +39,32 @@ it("return 400 for invalid address creation data", async () => {
     defaultAddressCreateObject,
     invalidAddressValues
   );
+  //validation error when latitude xor longitude is missing, or detail is missing
+  await getDefaultRequest()
+    .send({ ...defaultAddressCreateObject, latitude: undefined })
+    .expect(400);
+  await getDefaultRequest()
+    .send({ ...defaultAddressCreateObject, longitude: undefined })
+    .expect(400);
+  await getDefaultRequest()
+    .send({ ...defaultAddressCreateObject, detail: undefined })
+    .expect(400);
 });
 
 it("return 409 if address exceed limit", async () => {
   const user = await User.findByPk(defaultUser.id!);
   await createAddress(10, user!);
   await getDefaultRequest().send(defaultAddressCreateObject).expect(409);
+});
+
+it("successfuly create new address without coordinates", async () => {
+  await getDefaultRequest()
+    .send({
+      ...defaultAddressCreateObject,
+      latitude: undefined,
+      longitude: undefined,
+    })
+    .expect(201);
 });
 
 it("successfuly create new address for user", async () => {

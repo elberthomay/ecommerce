@@ -6,7 +6,7 @@ import catchAsync from "../middlewares/catchAsync";
 import User from "../models/User";
 import ShopAddress from "../models/ShopAddress";
 import Shop from "../models/Shop";
-import Address, { AddressCreationAttribute } from "../models/address";
+import Address, { AddressCreationAttribute } from "../models/Address";
 import validator from "../middlewares/validator";
 import AddressLimitError from "../errors/AddressLimitError";
 import { authorization } from "../middlewares/authorize";
@@ -23,6 +23,7 @@ import {
 } from "../schemas.ts/addressSchema";
 import NotFoundError from "../errors/NotFoundError";
 import { ModelWithAddresses } from "../test/helpers/address/addressHelper";
+import sequelize from "../models/sequelize";
 
 const router = Router();
 
@@ -82,8 +83,38 @@ router.get(
   fetchCurrentUser,
   catchAsync(async (req: Request, res: Response, next: NextFunction) => {
     const currentUser: User = (req as any).currentUser;
-    const addresses = await currentUser.$get("addresses");
-    res.status(200).json(addresses);
+    // put selectedId on top, followed by the rest by last updated timestamp
+    const addresses = await currentUser.$get("addresses", {
+      order: [
+        [
+          sequelize.literal(
+            `(id = ${
+              currentUser.selectedAddressId
+                ? `'${currentUser.selectedAddressId}'`
+                : null
+            })`
+          ),
+          "DESC",
+        ],
+        ["updatedAt", "DESC"],
+      ],
+    });
+
+    const result = addresses.map((address) => {
+      const { id, latitude, longitude, postCode, detail, subdistrictId } =
+        address;
+      return {
+        id,
+        latitude,
+        longitude,
+        postCode,
+        detail,
+        subdistrictId,
+        selected: id === currentUser.selectedAddressId,
+      };
+    });
+
+    res.status(200).json(result);
   })
 );
 
@@ -94,16 +125,31 @@ router.get(
   fetchCurrentUser,
   catchAsync(async (req: Request, res: Response, next: NextFunction) => {
     const currentUser: User = (req as any).currentUser;
+    // put selected address on top, followed by the rest by last updated timestamp
     const shopAddress = await ShopAddress.findAll({
       include: [
         { model: Shop, where: { userId: currentUser.id } },
         { model: Address },
       ],
+      order: [
+        ["selected", "DESC"],
+        ["address", "updatedAt", "DESC"],
+      ],
     });
-    const result = shopAddress.map((shopAddress) => ({
-      ...shopAddress.address,
-      selected: shopAddress.selected,
-    }));
+
+    const result = shopAddress.map((shopAddress) => {
+      const { id, latitude, longitude, postCode, detail, subdistrictId } =
+        shopAddress.address;
+      return {
+        id,
+        latitude,
+        longitude,
+        postCode,
+        detail,
+        subdistrictId,
+        selected: shopAddress.selected,
+      };
+    });
     res.status(200).json(result);
   })
 );

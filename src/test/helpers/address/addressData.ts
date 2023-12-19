@@ -1,5 +1,5 @@
 import { omit } from "lodash";
-import { AddressCreationAttribute } from "../../../models/address";
+import { AddressCreationAttribute } from "../../../models/Address";
 import { AddressCreateType } from "../../../types/addressType";
 
 export const invalidAddressValues = {

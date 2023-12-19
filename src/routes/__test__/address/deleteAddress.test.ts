@@ -15,7 +15,7 @@ import { createDefaultShop } from "../../../test/helpers/shop/shopHelper";
 import Shop from "../../../models/Shop";
 import User from "../../../models/User";
 import { createAddress } from "../../../test/helpers/address/addressHelper";
-import Address from "../../../models/address";
+import Address from "../../../models/Address";
 import UserAddress from "../../../models/UserAddress";
 import { assert } from "console";
 import ShopAddress from "../../../models/ShopAddress";

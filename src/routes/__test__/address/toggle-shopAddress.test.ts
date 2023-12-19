@@ -9,7 +9,7 @@ import {
 import authenticationTests from "../../../test/authenticationTests.test";
 import { createAddress } from "../../../test/helpers/address/addressHelper";
 import { invalidUuid } from "../../../test/helpers/commonData";
-import Address from "../../../models/address";
+import Address from "../../../models/Address";
 import {
   createDefaultShop,
   createShop,

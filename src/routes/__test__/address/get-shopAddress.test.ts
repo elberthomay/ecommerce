@@ -9,18 +9,24 @@ import {
 import { createAddress } from "../../../test/helpers/address/addressHelper";
 import { createDefaultShop } from "../../../test/helpers/shop/shopHelper";
 import { createShop } from "../../../test/helpers/shop/shopHelper";
+import Shop from "../../../models/Shop";
+import ShopAddress from "../../../models/ShopAddress";
+import { addressOutputArraySchema } from "../../../schemas.ts/addressSchema";
 
 const url = "/api/address/shop";
 const method = "get";
+let defaultShop: Shop;
 const getDefaultRequest = () =>
   request(app).get(url).set("Cookie", defaultCookie());
 
 describe("passes authentication tests", () => {
   authenticationTests(app, url, method);
 });
+beforeEach(async () => {
+  defaultShop = (await createDefaultShop())[0];
+});
 
 it("return [] when there's no address in user's shop", async () => {
-  await createDefaultShop();
   const [shop] = await createShop(1);
   await createAddress(5, shop);
   await getDefaultRequest()
@@ -31,11 +37,42 @@ it("return [] when there's no address in user's shop", async () => {
 
 it("return 5 addresses when there's 5 address in user's shop", async () => {
   const [shop] = await createShop(1);
-  const [defaultShop] = await createDefaultShop();
+
   await createAddress(5, shop);
   await createAddress(5, defaultShop);
   await getDefaultRequest()
     .send()
     .expect(200)
     .expect(({ body }) => expect(body).toHaveLength(5));
+});
+
+it("return selected address first, followed by the rest ordered descending by last updated", async () => {
+  const addresses = await createAddress(5, defaultShop);
+  await Promise.all(
+    addresses.map((address) => address.reload({ include: ShopAddress }))
+  );
+  await addresses[0].shopAddress?.update({ selected: false });
+  await new Promise((resolve) => setTimeout(resolve, 100)); //wait 100ms
+
+  await addresses[2].update({ postCode: "94838" });
+  await getDefaultRequest()
+    .send()
+    .expect(200)
+    .expect(({ body }) => {
+      expect(body).toHaveLength(5);
+      expect(body[4].id).toBe(addresses[0].id);
+      expect(body[0].id).toBe(addresses[2].id);
+    });
+});
+
+it("return address with required schema", async () => {
+  await createAddress(5, defaultShop);
+  defaultShop.$create("address", { detail: "a house on the hill" });
+  await getDefaultRequest()
+    .send()
+    .expect(200)
+    .expect(({ body }) => {
+      const { value, error } = addressOutputArraySchema.validate(body);
+      expect(error).toBe(undefined);
+    });
 });

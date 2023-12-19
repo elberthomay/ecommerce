@@ -8,7 +8,7 @@ import {
   Unique,
 } from "sequelize-typescript";
 import User from "./User";
-import Address from "./address";
+import Address from "./Address";
 
 interface UserAddressCreationAttribute {
   userId: string;

@@ -5,7 +5,7 @@ import Item from "../models/Item";
 import Tag from "../models/Tag";
 import ItemTag from "../models/ItemTag";
 import Cart from "../models/Cart";
-import Address from "../models/address";
+import Address from "../models/Address";
 import City from "../models/City";
 import Subdistrict from "../models/Subdistrict";
 import UserAddress from "../models/UserAddress";
