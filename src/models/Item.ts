@@ -10,6 +10,8 @@ import {
   HasMany,
   Default,
   Index,
+  AllowNull,
+  Sequelize,
 } from "sequelize-typescript";
 import Shop, { ShopCreationAttribute } from "./Shop";
 import Tag, { TagCreationAttribute } from "./Tag";
@@ -75,6 +77,18 @@ class Item extends Model<ItemCreationAttribute> {
     allowNull: false,
   })
   shopId!: string;
+
+  @Column({
+    allowNull: false,
+    type: DataType.DATE(6),
+  })
+  createdAt?: string;
+
+  @Column({
+    allowNull: false,
+    type: DataType.DATE(6),
+  })
+  updatedAt?: string;
 
   @HasMany(() => ItemImage)
   images!: ItemImage[];

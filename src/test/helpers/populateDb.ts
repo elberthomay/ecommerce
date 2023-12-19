@@ -1,16 +1,23 @@
 import Tag from "../../models/Tag";
 import sequelize from "../../models/sequelize";
 import { createItem } from "./item/itemHelper";
+import { createShop } from "./shop/shopHelper";
 
 async function sequelizetry() {
   try {
     await sequelize.sync({ force: true });
     //create 4 shops each with 200 item
-    const items0 = await createItem(200);
-    const items1 = await createItem(200);
-    const items2 = await createItem(200);
-    const items3 = await createItem(200);
-    const itemsList = [items0, items1, items2, items3];
+    const shops = await createShop(4);
+    const itemsList = await Promise.all(
+      shops.map(async (shop) => {
+        const items = await Promise.all(
+          Array(200)
+            .fill(null)
+            .map(async (_) => (await createItem(1, { id: shop.id }))[0])
+        );
+        return items;
+      })
+    );
     //create tags
     const tags = await Tag.bulkCreate(
       ["food", "clothing", "jars", "vehicle"].map((name) => ({ name }))
