@@ -19,6 +19,7 @@ import User from "../../../models/User";
 import { defaultUser } from "../../../test/helpers/user/userData";
 import { pick } from "lodash";
 import validationTest from "../../../test/helpers/validationTest.test";
+import { addressOutputSchema } from "../../../schemas.ts/addressSchema";
 const url = "/api/address/user";
 const method = "post";
 
@@ -92,4 +93,14 @@ it("added created address id to selected address if there was no address before"
   expect(user?.selectedAddressId).toBeTruthy();
   expect(body?.id).toBeTruthy();
   expect(user?.selectedAddressId).toEqual(body?.id);
+});
+
+it("return address with required schema", async () => {
+  await getDefaultRequest()
+    .send(defaultAddressCreateObject)
+    .expect(201)
+    .expect(({ body }) => {
+      const { value, error } = addressOutputSchema.validate(body);
+      expect(error).toBe(undefined);
+    });
 });

@@ -4,13 +4,7 @@ export interface AddressParamType {
   addressId: Address["id"];
 }
 
-export interface AddressCreateType {
-  longitude: AddressCreationAttribute["longitude"];
-  latitude: AddressCreationAttribute["latitude"];
-  postCode: AddressCreationAttribute["postCode"];
-  detail: AddressCreationAttribute["detail"];
-  subdistrictId: AddressCreationAttribute["subdistrictId"];
-}
+export type AddressCreateType = Omit<AddressCreationAttribute, "id">;
 
 export type AddressUpdateType = Partial<AddressCreateType>;
 

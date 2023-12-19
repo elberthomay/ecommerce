@@ -9,20 +9,21 @@ import {
 } from "../../../test/helpers/address/addressData";
 import { AddressCreateType } from "../../../types/addressType";
 import { defaultCookie } from "../../../test/helpers/user/userHelper";
-import { defaultUser } from "../../../test/helpers/user/userData";
 import { pick } from "lodash";
 import validationTest from "../../../test/helpers/validationTest.test";
 import Shop from "../../../models/Shop";
 import { createDefaultShop } from "../../../test/helpers/shop/shopHelper";
+import { addressOutputSchema } from "../../../schemas.ts/addressSchema";
 
 const url = "/api/address/shop";
 const method = "post";
+let defaultShop: Shop;
 
 const getDefaultRequest = () =>
   request(app).post(url).set("Cookie", defaultCookie());
 
 beforeEach(async () => {
-  await createDefaultShop();
+  defaultShop = (await createDefaultShop())[0];
 });
 
 describe("passes authentication test", () => {
@@ -38,20 +39,17 @@ it("return 400 for invalid address creation data", async () => {
 });
 
 it("return 409 if address exceed limit", async () => {
-  const shop = await Shop.findOne({ where: { userId: defaultUser.id! } });
-  await createAddress(20, shop!);
+  await createAddress(20, defaultShop);
   await getDefaultRequest().send(defaultAddressCreateObject).expect(409);
 });
 
 it("return 404 if authenticated user has no shop", async () => {
-  const shop = await Shop.findOne({ where: { userId: defaultUser.id! } });
-  await shop?.destroy();
+  await defaultShop?.destroy();
   await getDefaultRequest().send(defaultAddressCreateObject).expect(404);
 });
 
 it("successfuly create new address for shop", async () => {
-  const shop = await Shop.findOne({ where: { userId: defaultUser.id! } });
-  await createAddress(5, shop!);
+  await createAddress(5, defaultShop);
 
   await getDefaultRequest()
     .send(defaultAddressCreateObject)
@@ -62,6 +60,16 @@ it("successfuly create new address for shop", async () => {
       ).toEqual(defaultAddressCreateObject);
     });
 
-  const addresses = await shop?.$get("addresses");
+  const addresses = await defaultShop?.$get("addresses");
   expect(addresses).toHaveLength(6);
+});
+
+it("return address with required schema", async () => {
+  await getDefaultRequest()
+    .send(defaultAddressCreateObject)
+    .expect(201)
+    .expect(({ body }) => {
+      const { value, error } = addressOutputSchema.validate(body);
+      expect(error).toBe(undefined);
+    });
 });

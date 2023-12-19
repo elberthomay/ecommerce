@@ -73,6 +73,7 @@ async function createAddress<T extends ModelWithAddresses>(
     "address",
     addressData
   );
+  await newAddress.reload({ include: [UserAddress, ShopAddress] });
   return newAddress;
 }
 
@@ -180,7 +181,21 @@ router.post(
       //   });
       if (!currentUser.selectedAddressId)
         await currentUser.update({ selectedAddressId: newAddress.id });
-      res.status(201).json(newAddress);
+
+      const { id, latitude, longitude, postCode, detail, subdistrictId } =
+        newAddress;
+
+      const result = {
+        id,
+        latitude,
+        longitude,
+        postCode,
+        detail,
+        subdistrictId,
+        selected: id === currentUser.selectedAddressId,
+      };
+
+      res.status(201).json(result);
     }
   )
 );
@@ -202,7 +217,28 @@ router.post(
       if (!currentUser.shop) throw new NotFoundError("Shop");
       const addressData = req.body;
       const newAddress = await createAddress(currentUser.shop, addressData, 20);
-      res.status(201).json(newAddress);
+
+      const {
+        id,
+        latitude,
+        longitude,
+        postCode,
+        detail,
+        subdistrictId,
+        shopAddress,
+      } = newAddress;
+
+      const result = {
+        id,
+        latitude,
+        longitude,
+        postCode,
+        detail,
+        subdistrictId,
+        selected: shopAddress?.selected,
+      };
+
+      res.status(201).json(result);
     }
   )
 );
