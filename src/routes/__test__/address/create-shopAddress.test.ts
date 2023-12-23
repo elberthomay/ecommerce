@@ -7,9 +7,12 @@ import {
   defaultAddressCreateObject,
   invalidAddressValues,
 } from "../../../test/helpers/address/addressData";
-import { AddressCreateType } from "../../../types/addressType";
+import {
+  AddressCreateType,
+  AddressOutputType,
+} from "../../../types/addressType";
 import { defaultCookie } from "../../../test/helpers/user/userHelper";
-import { pick } from "lodash";
+import { omit, pick } from "lodash";
 import validationTest from "../../../test/helpers/validationTest.test";
 import Shop from "../../../models/Shop";
 import { createDefaultShop } from "../../../test/helpers/shop/shopHelper";
@@ -54,10 +57,10 @@ it("successfuly create new address for shop", async () => {
   await getDefaultRequest()
     .send(defaultAddressCreateObject)
     .expect(201)
-    .expect(({ body }: { body: AddressCreationAttribute }) => {
-      expect(
-        pick(body, ["latitude", "longitude", "postCode", "detail"])
-      ).toEqual(defaultAddressCreateObject);
+    .expect(({ body }: { body: AddressOutputType }) => {
+      expect(omit(body, ["id", "selected", "subdistrictId"])).toEqual(
+        defaultAddressCreateObject
+      );
     });
 
   const addresses = await defaultShop?.$get("addresses");

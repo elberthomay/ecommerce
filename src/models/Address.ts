@@ -13,10 +13,18 @@ import ShopAddress from "./ShopAddress";
 
 export interface AddressCreationAttribute {
   id: string;
+  name: string;
+  phoneNumber: string;
   longitude?: number;
   latitude?: number;
   postCode?: string;
   detail: string;
+  village?: string;
+  district?: string;
+  city: string;
+  province: string;
+  country: string;
+  recipient: string;
   subdistrictId?: number;
 }
 
@@ -28,6 +36,18 @@ class Address extends Model<AddressCreationAttribute> {
     defaultValue: DataType.UUIDV4,
   })
   id!: string;
+
+  @Column({
+    type: DataType.STRING(40),
+    allowNull: false,
+  })
+  name!: string;
+
+  @Column({
+    type: DataType.STRING(25),
+    allowNull: false,
+  })
+  phoneNumber!: string;
 
   @Column({
     type: DataType.DECIMAL(7, 4),
@@ -44,10 +64,46 @@ class Address extends Model<AddressCreationAttribute> {
   })
   longitude!: number | null;
 
+  @Column({
+    type: DataType.STRING(50),
+    allowNull: true,
+  })
+  village!: string | null;
+
+  @Column({
+    type: DataType.STRING(50),
+    allowNull: true,
+  })
+  district!: string | null;
+
+  @Column({
+    type: DataType.STRING(50),
+    allowNull: false,
+  })
+  city!: string;
+
+  @Column({
+    type: DataType.STRING(50),
+    allowNull: false,
+  })
+  province!: string;
+
+  @Column({
+    type: DataType.STRING(50),
+    allowNull: false,
+  })
+  country!: string;
+
+  @Column({
+    type: DataType.STRING(60),
+    allowNull: false,
+  })
+  recipient!: string;
+
   @Column({ type: DataType.CHAR(10), allowNull: true })
   postCode!: string | null;
 
-  @Column({ type: DataType.STRING, allowNull: false })
+  @Column({ type: DataType.STRING(200), allowNull: false })
   detail!: string;
 
   @Column({ type: DataType.DATE(6) })

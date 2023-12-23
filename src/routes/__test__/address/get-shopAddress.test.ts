@@ -67,7 +67,6 @@ it("return selected address first, followed by the rest ordered descending by la
 
 it("return address with required schema", async () => {
   await createAddress(5, defaultShop);
-  defaultShop.$create("address", { detail: "a house on the hill" });
   await getDefaultRequest()
     .send()
     .expect(200)

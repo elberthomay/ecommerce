@@ -12,13 +12,18 @@ import { defaultUser } from "../../../test/helpers/user/userData";
 import { createAddress } from "../../../test/helpers/address/addressHelper";
 import validationTest from "../../../test/helpers/validationTest.test";
 import {
+  createDefaultUser,
   createUser,
   defaultCookie,
   forgeCookie,
 } from "../../../test/helpers/user/userHelper";
 import Address from "../../../models/Address";
-import { pick } from "lodash";
+import { omit, pick } from "lodash";
 import { invalidUuid } from "../../../test/helpers/commonData";
+import {
+  addressOutputArraySchema,
+  addressOutputSchema,
+} from "../../../schemas.ts/addressSchema";
 
 const getUrl = (addressId: string) => `/api/address/${addressId}`;
 const defaultUrl = getUrl(defaultAddress.id);
@@ -32,9 +37,17 @@ const defaultShopAddressId = "f1603913-57a5-45f2-8a56-b4a1703f5528";
 
 beforeEach(async () => {
   const [defaultShop] = await createDefaultShop();
-  const user = await User.findByPk(defaultUser.id!);
-  await createAddress([{ id: defaultAddress.id }], user!);
-  await createAddress([{ id: defaultShopAddressId }], defaultShop);
+  const user = await createDefaultUser();
+  try {
+    const [userAddress] = await createAddress(
+      [{ id: defaultAddress.id }],
+      user
+    );
+    await user?.update({ selectedAddressId: userAddress.id });
+    await createAddress([{ id: defaultShopAddressId }], defaultShop);
+  } catch (e) {
+    console.log(e);
+  }
 });
 
 describe("passes authentication tests", () => {
@@ -79,16 +92,29 @@ it("return 200 when updated by admin or root", async () => {
 
 it("return 200 when updating address owned by the user", async () => {
   await getDefaultRequest().send(defaultAddressCreateObject).expect(200);
-  const userAddress = await Address.findByPk(defaultAddress.id);
+  const userAddress = await Address.findByPk(defaultAddress.id, { raw: true });
   expect(
-    pick(userAddress, ["latitude", "longitude", "postCode", "detail"])
+    omit(userAddress, ["id", "createdAt", "updatedAt", "subdistrictId"])
   ).toEqual(defaultAddressCreateObject);
 
   await getRequest(getUrl(defaultShopAddressId), defaultCookie())
     .send(defaultAddressCreateObject)
     .expect(200);
-  const shopAddress = await Address.findByPk(defaultShopAddressId);
+  const shopAddress = await Address.findByPk(defaultShopAddressId, {
+    raw: true,
+  });
   expect(
-    pick(shopAddress, ["latitude", "longitude", "postCode", "detail"])
+    omit(shopAddress, ["id", "createdAt", "updatedAt", "subdistrictId"])
   ).toEqual(defaultAddressCreateObject);
+});
+
+it("return address with required schema", async () => {
+  await getDefaultRequest()
+    .send(defaultAddressCreateObject)
+    .expect(200)
+    .expect(({ body }) => {
+      console.log(body);
+      const { value, error } = addressOutputSchema.validate(body);
+      expect(error).toBe(undefined);
+    });
 });

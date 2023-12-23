@@ -11,8 +11,24 @@ export const createAddressData =
   (): AddressCreationAttribute => {
     return {
       id: data?.id ?? faker.string.uuid(),
+      name: data?.name ?? "My Residence",
+      phoneNumber:
+        data?.phoneNumber ??
+        // +{3 number}{space}{7-15 number that does not start with 0}
+        `+${faker.string.numeric(3)} ${faker.string.numeric({
+          length: 1,
+          exclude: ["0"],
+        })}${faker.string.numeric({
+          length: { min: 6, max: 14 },
+        })}`,
       longitude: data?.longitude ?? faker.location.longitude(),
       latitude: data?.latitude ?? faker.location.latitude(),
+      village: data?.village ?? faker.location.street().slice(0, 50),
+      district: data?.district ?? faker.location.county().slice(0, 50),
+      city: data?.city ?? faker.location.city().slice(0, 50),
+      province: data?.city ?? faker.location.state().slice(0, 50),
+      country: data?.country ?? faker.location.country().slice(0, 50),
+      recipient: data?.recipient ?? faker.person.fullName().slice(0, 60),
       postCode:
         data?.postCode ??
         faker.number.int({ min: 10000, max: 99999 }).toString(),

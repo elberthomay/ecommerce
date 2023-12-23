@@ -10,14 +10,17 @@ import {
   defaultAddressCreateObject,
   invalidAddressValues,
 } from "../../../test/helpers/address/addressData";
-import { AddressCreateType } from "../../../types/addressType";
+import {
+  AddressCreateType,
+  AddressOutputType,
+} from "../../../types/addressType";
 import {
   createDefaultUser,
   defaultCookie,
 } from "../../../test/helpers/user/userHelper";
 import User from "../../../models/User";
 import { defaultUser } from "../../../test/helpers/user/userData";
-import { pick } from "lodash";
+import { omit, pick } from "lodash";
 import validationTest from "../../../test/helpers/validationTest.test";
 import { addressOutputSchema } from "../../../schemas.ts/addressSchema";
 const url = "/api/address/user";
@@ -74,10 +77,10 @@ it("successfuly create new address for user", async () => {
   await getDefaultRequest()
     .send(defaultAddressCreateObject)
     .expect(201)
-    .expect(({ body }: { body: AddressCreationAttribute }) => {
-      expect(
-        pick(body, ["latitude", "longitude", "postCode", "detail"])
-      ).toEqual(defaultAddressCreateObject);
+    .expect(({ body }: { body: AddressOutputType }) => {
+      expect(omit(body, ["id", "selected", "subdistrictId"])).toEqual(
+        defaultAddressCreateObject
+      );
     });
 
   const addresses = await user?.$get("addresses");

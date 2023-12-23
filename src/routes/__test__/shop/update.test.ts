@@ -47,7 +47,7 @@ it("return 400 from invalid body", async () => {
 
 it("return 404 when shop does not exist", async () => {
   await defaultRequest({ shopId: faker.string.uuid() })
-    .expect(({ body }) => console.log(body))
+    .expect(({ body }) => console.log(JSON.stringify(body)))
     .expect(404);
 });
 

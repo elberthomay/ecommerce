@@ -61,8 +61,6 @@ it("return 403 if address is not owned by the user", async () => {
   const [address] = await createAddress(1, user);
   await getRequest(getUrl(address.id), defaultCookie()).expect(403);
   const result = await address.reload();
-  console.log(result);
-  console.log(address);
 });
 
 it("return 200 when accessed by admin or root", async () => {

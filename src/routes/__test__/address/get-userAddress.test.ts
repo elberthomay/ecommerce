@@ -57,7 +57,6 @@ it("return selected address first, followed by the rest ordered descending by la
     .send()
     .expect(200)
     .expect(({ body }) => {
-      console.log(body);
       expect(body[0].id).toBe(defaultUser.selectedAddressId);
       expect(body[1].id).toBe(addresses[3].id);
     });
@@ -65,7 +64,6 @@ it("return selected address first, followed by the rest ordered descending by la
 
 it("return address with required schema", async () => {
   await createAddress(5, defaultUser);
-  defaultUser.$create("address", { detail: "a house on the hill" });
   await getDefaultRequest()
     .send()
     .expect(200)

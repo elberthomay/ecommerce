@@ -12,6 +12,7 @@ import AddressLimitError from "../errors/AddressLimitError";
 import { authorization } from "../middlewares/authorize";
 import {
   AddressCreateType,
+  AddressOutputType,
   AddressParamType,
   AddressUpdateType,
 } from "../types/addressType";
@@ -77,6 +78,51 @@ async function createAddress<T extends ModelWithAddresses>(
   return newAddress;
 }
 
+function formatAddress(
+  address: Address,
+  selectedAddressId?: string
+): AddressOutputType {
+  const {
+    id,
+    name,
+    phoneNumber,
+    latitude,
+    longitude,
+    postCode,
+    detail,
+    village,
+    district,
+    city,
+    province,
+    country,
+    recipient,
+    shopAddress,
+    subdistrictId,
+  } = address;
+  if (selectedAddressId === undefined && !shopAddress)
+    throw new Error("addressFormat, ShopAddress data not provided");
+  return {
+    id,
+    name,
+    phoneNumber,
+    latitude,
+    longitude,
+    village,
+    district,
+    city,
+    province,
+    country,
+    recipient,
+    postCode,
+    detail,
+    subdistrictId,
+    selected:
+      selectedAddressId !== undefined
+        ? id === selectedAddressId
+        : shopAddress?.selected ?? false,
+  };
+}
+
 // get user addresses
 router.get(
   "/user",
@@ -101,19 +147,9 @@ router.get(
       ],
     });
 
-    const result = addresses.map((address) => {
-      const { id, latitude, longitude, postCode, detail, subdistrictId } =
-        address;
-      return {
-        id,
-        latitude,
-        longitude,
-        postCode,
-        detail,
-        subdistrictId,
-        selected: id === currentUser.selectedAddressId,
-      };
-    });
+    const result = addresses.map((address) =>
+      formatAddress(address, currentUser.selectedAddressId)
+    );
 
     res.status(200).json(result);
   })
@@ -126,32 +162,21 @@ router.get(
   fetchCurrentUser,
   catchAsync(async (req: Request, res: Response, next: NextFunction) => {
     const currentUser: User = (req as any).currentUser;
-    // put selected address on top, followed by the rest by last updated timestamp
-    const shopAddress = await ShopAddress.findAll({
-      include: [
-        { model: Shop, where: { userId: currentUser.id } },
-        { model: Address },
-      ],
-      order: [
-        ["selected", "DESC"],
-        ["address", "updatedAt", "DESC"],
-      ],
-    });
+    await currentUser.reload({ include: Shop });
+    if (!currentUser.shop) return res.status(200).json([]);
+    else {
+      const addresses = await Address.findAll({
+        include: { model: ShopAddress, where: { shopId: currentUser.shop.id } },
+        order: [
+          // put selected addresses on top, followed by the rest by last updated timestamp
+          ["shopAddress", "selected", "DESC"],
+          ["updatedAt", "DESC"],
+        ],
+      });
 
-    const result = shopAddress.map((shopAddress) => {
-      const { id, latitude, longitude, postCode, detail, subdistrictId } =
-        shopAddress.address;
-      return {
-        id,
-        latitude,
-        longitude,
-        postCode,
-        detail,
-        subdistrictId,
-        selected: shopAddress.selected,
-      };
-    });
-    res.status(200).json(result);
+      const result = addresses.map((address) => formatAddress(address));
+      return res.status(200).json(result);
+    }
   })
 );
 
@@ -171,29 +196,10 @@ router.post(
       const addressData: AddressCreateType = req.body;
 
       const newAddress = await createAddress(currentUser, addressData, 10);
-      //   const addresses = await currentUser.$get("addresses");
-      //   if (addresses.length >= 10)
-      //     throw new AddressLimitError("User cannot have more than 10 addresses");
-      //   const newAddressId = uuid();
-      //   const newAddress = await currentUser.$create<Address>("addresses", {
-      //     ...addressData,
-      //     id: newAddressId,
-      //   });
       if (!currentUser.selectedAddressId)
         await currentUser.update({ selectedAddressId: newAddress.id });
 
-      const { id, latitude, longitude, postCode, detail, subdistrictId } =
-        newAddress;
-
-      const result = {
-        id,
-        latitude,
-        longitude,
-        postCode,
-        detail,
-        subdistrictId,
-        selected: id === currentUser.selectedAddressId,
-      };
+      const result = formatAddress(newAddress, currentUser.selectedAddressId);
 
       res.status(201).json(result);
     }
@@ -217,26 +223,8 @@ router.post(
       if (!currentUser.shop) throw new NotFoundError("Shop");
       const addressData = req.body;
       const newAddress = await createAddress(currentUser.shop, addressData, 20);
-
-      const {
-        id,
-        latitude,
-        longitude,
-        postCode,
-        detail,
-        subdistrictId,
-        shopAddress,
-      } = newAddress;
-
-      const result = {
-        id,
-        latitude,
-        longitude,
-        postCode,
-        detail,
-        subdistrictId,
-        selected: shopAddress?.selected,
-      };
+      await newAddress.reload({ include: ShopAddress });
+      const result = formatAddress(newAddress);
 
       res.status(201).json(result);
     }
@@ -254,6 +242,7 @@ router.patch(
     location: "params",
     key: ["id", "addressId"],
     force: "exist",
+    include: [{ model: ShopAddress }, { model: UserAddress, include: [User] }],
   }),
   getAllAddresses,
   authorizeStaffOrAddressOwner,
@@ -268,9 +257,16 @@ router.patch(
       next: NextFunction
     ) => {
       const address: Address = (req as any)[Address.name];
+      const ownerSelectedAddressId: string | null | undefined =
+        address.userAddress?.user.selectedAddressId;
+
       const addressUpdate = req.body;
       await address.update(addressUpdate);
-      res.status(200).json(address);
+
+      const result = address.userAddress
+        ? formatAddress(address, ownerSelectedAddressId) // a user address
+        : formatAddress(address); //a shop address
+      res.status(200).json(result);
     }
   )
 );
@@ -372,12 +368,12 @@ router.post(
       const address: Address = (req as any)[Address.name];
       const shopAddress = address.shopAddress;
 
-      if (!currentShop) throw new NotFoundError("Shop");
+      if (!currentShop) throw new NotFoundError("Shop"); // user has no shop
 
       if (shopAddress && shopAddress.shopId === currentShop.id) {
         await shopAddress.update({ selected: !shopAddress.selected });
         res.status(200).json({ status: "success" });
-      } else throw new NotFoundError("ShopAddress");
+      } else throw new NotFoundError("ShopAddress"); // shop isn't a shop id or address is not user's shop address
     }
   )
 );
