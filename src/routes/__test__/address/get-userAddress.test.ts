@@ -1,4 +1,5 @@
 import request from "supertest";
+import { omit } from "lodash";
 import authenticationTests from "../../../test/authenticationTests.test";
 import app from "../../../app";
 import {
@@ -9,6 +10,7 @@ import {
 import { createAddress } from "../../../test/helpers/address/addressHelper";
 import User from "../../../models/User";
 import { addressOutputArraySchema } from "../../../schemas.ts/addressSchema";
+import { defaultAddressCreateObject } from "../../../test/helpers/address/addressData";
 
 const url = "/api/address/user";
 const method = "get";
@@ -64,6 +66,10 @@ it("return selected address first, followed by the rest ordered descending by la
 
 it("return address with required schema", async () => {
   await createAddress(5, defaultUser);
+  await createAddress(
+    [{ ...omit(defaultAddressCreateObject, ["longitude", "latitude"]) }],
+    defaultUser
+  );
   await getDefaultRequest()
     .send()
     .expect(200)

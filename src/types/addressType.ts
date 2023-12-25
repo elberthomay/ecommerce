@@ -9,19 +9,19 @@ export type AddressCreateType = Omit<AddressCreationAttribute, "id">;
 export type AddressUpdateType = Partial<AddressCreateType>;
 
 export interface AddressOutputType {
-  id: Address["id"];
-  name: Address["name"];
-  phoneNumber: Address["phoneNumber"];
-  longitude: Address["longitude"];
-  latitude: Address["latitude"];
-  postCode: Address["postCode"];
-  detail: Address["detail"];
-  village: Address["village"];
-  district: Address["district"];
-  city: Address["city"];
-  province: Address["province"];
-  country: Address["country"];
-  recipient: Address["recipient"];
-  subdistrictId: Address["subdistrictId"];
+  id: AddressCreationAttribute["id"];
+  name: AddressCreationAttribute["name"];
+  phoneNumber: AddressCreationAttribute["phoneNumber"];
+  longitude: AddressCreationAttribute["longitude"];
+  latitude: AddressCreationAttribute["latitude"];
+  postCode: AddressCreationAttribute["postCode"];
+  detail: AddressCreationAttribute["detail"];
+  village: AddressCreationAttribute["village"];
+  district: AddressCreationAttribute["district"];
+  city: AddressCreationAttribute["city"];
+  province: AddressCreationAttribute["province"];
+  country: AddressCreationAttribute["country"];
+  recipient: AddressCreationAttribute["recipient"];
+  subdistrictId: AddressCreationAttribute["subdistrictId"];
   selected: boolean;
 }

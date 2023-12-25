@@ -18,7 +18,7 @@ import {
   forgeCookie,
 } from "../../../test/helpers/user/userHelper";
 import Address from "../../../models/Address";
-import { omit, pick } from "lodash";
+import { omit } from "lodash";
 import { invalidUuid } from "../../../test/helpers/commonData";
 import {
   addressOutputArraySchema,
@@ -110,7 +110,7 @@ it("return 200 when updating address owned by the user", async () => {
 
 it("return address with required schema", async () => {
   await getDefaultRequest()
-    .send(defaultAddressCreateObject)
+    .send(omit(defaultAddressCreateObject, ["latitude", "longitude"]))
     .expect(200)
     .expect(({ body }) => {
       console.log(body);

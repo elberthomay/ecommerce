@@ -1,17 +1,15 @@
 import request from "supertest";
+import { omit } from "lodash";
 import authenticationTests from "../../../test/authenticationTests.test";
 import app from "../../../app";
-import {
-  createDefaultUser,
-  createUser,
-  defaultCookie,
-} from "../../../test/helpers/user/userHelper";
+import { defaultCookie } from "../../../test/helpers/user/userHelper";
 import { createAddress } from "../../../test/helpers/address/addressHelper";
 import { createDefaultShop } from "../../../test/helpers/shop/shopHelper";
 import { createShop } from "../../../test/helpers/shop/shopHelper";
 import Shop from "../../../models/Shop";
 import ShopAddress from "../../../models/ShopAddress";
 import { addressOutputArraySchema } from "../../../schemas.ts/addressSchema";
+import { defaultAddressCreateObject } from "../../../test/helpers/address/addressData";
 
 const url = "/api/address/shop";
 const method = "get";
@@ -67,6 +65,11 @@ it("return selected address first, followed by the rest ordered descending by la
 
 it("return address with required schema", async () => {
   await createAddress(5, defaultShop);
+  //check if undefined return follow schema
+  await createAddress(
+    [{ ...omit(defaultAddressCreateObject, ["longitude", "latitude"]) }],
+    defaultShop
+  );
   await getDefaultRequest()
     .send()
     .expect(200)

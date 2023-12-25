@@ -25,6 +25,7 @@ import {
 import NotFoundError from "../errors/NotFoundError";
 import { ModelWithAddresses } from "../test/helpers/address/addressHelper";
 import sequelize from "../models/sequelize";
+import { isNull, omitBy } from "lodash";
 
 const router = Router();
 
@@ -101,7 +102,7 @@ function formatAddress(
   } = address;
   if (selectedAddressId === undefined && !shopAddress)
     throw new Error("addressFormat, ShopAddress data not provided");
-  return {
+  const addressOutput = {
     id,
     name,
     phoneNumber,
@@ -121,6 +122,7 @@ function formatAddress(
         ? id === selectedAddressId
         : shopAddress?.selected ?? false,
   };
+  return omitBy(addressOutput, isNull) as unknown as AddressOutputType;
 }
 
 // get user addresses
