@@ -14,8 +14,8 @@ export const addressSchema = {
     .message("Invalid phone number format"),
   latitude: Joi.number().min(-90).max(90),
   longitude: Joi.number().min(-180).max(180),
-  village: Joi.string().max(50),
-  district: Joi.string().max(50),
+  village: Joi.string().max(50).allow(null),
+  district: Joi.string().max(50).allow(null),
   city: Joi.string().max(50),
   province: Joi.string().max(50),
   country: Joi.string().max(50),
@@ -67,6 +67,7 @@ export const addressUpdateSchema = Joi.object<AddressUpdateType>({
 })
   .required()
   .and("latitude", "longitude")
+  .and("country", "province", "city", "district", "village")
   .unknown(false)
   .empty({});
 

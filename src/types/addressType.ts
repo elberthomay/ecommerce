@@ -6,7 +6,10 @@ export interface AddressParamType {
 
 export type AddressCreateType = Omit<AddressCreationAttribute, "id">;
 
-export type AddressUpdateType = Partial<AddressCreateType>;
+export type AddressUpdateType = Partial<AddressCreateType> & {
+  village: AddressCreationAttribute["village"] | null;
+  district: AddressCreationAttribute["district"] | null;
+};
 
 export interface AddressOutputType {
   id: AddressCreationAttribute["id"];

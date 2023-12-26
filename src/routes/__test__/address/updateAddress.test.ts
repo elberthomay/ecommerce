@@ -7,8 +7,6 @@ import {
   invalidAddressValues,
 } from "../../../test/helpers/address/addressData";
 import { createDefaultShop } from "../../../test/helpers/shop/shopHelper";
-import User from "../../../models/User";
-import { defaultUser } from "../../../test/helpers/user/userData";
 import { createAddress } from "../../../test/helpers/address/addressHelper";
 import validationTest from "../../../test/helpers/validationTest.test";
 import {
@@ -24,6 +22,7 @@ import {
   addressOutputArraySchema,
   addressOutputSchema,
 } from "../../../schemas.ts/addressSchema";
+import { AddressOutputType } from "../../../types/addressType";
 
 const getUrl = (addressId: string) => `/api/address/${addressId}`;
 const defaultUrl = getUrl(defaultAddress.id);
@@ -68,6 +67,23 @@ it("return 400 on validation error", async () => {
   await validationTest(getDefaultRequest, {}, invalidAddressValues);
 });
 
+it("return 400 when administrative address keys does not appear together", async () => {
+  const administrativeAddressKeys = [
+    "country",
+    "province",
+    "city",
+    "district",
+    "village",
+  ];
+  await Promise.all(
+    administrativeAddressKeys.map((key) =>
+      getDefaultRequest()
+        .send(omit(defaultAddressCreateObject, [key]))
+        .expect(400)
+    )
+  );
+});
+
 it("return 403 when updating address not owned by user", async () => {
   const {
     users: [user],
@@ -76,6 +92,28 @@ it("return 403 when updating address not owned by user", async () => {
   await getRequest(getUrl(addresses[0].id), defaultCookie())
     .send(defaultAddressCreateObject)
     .expect(403);
+});
+
+it("return 200, when district or village is null", async () => {
+  await getDefaultRequest()
+    .send({ ...defaultAddressCreateObject, village: null })
+    .expect(200)
+    .expect(({ body }: { body: AddressOutputType }) => {
+      expect(body.village).toBeUndefined();
+    });
+  await getDefaultRequest()
+    .send({ ...defaultAddressCreateObject, district: null })
+    .expect(200)
+    .expect(({ body }: { body: AddressOutputType }) => {
+      expect(body.district).toBeUndefined();
+    });
+  await getDefaultRequest()
+    .send({ ...defaultAddressCreateObject, village: null, district: null })
+    .expect(200)
+    .expect(({ body }: { body: AddressOutputType }) => {
+      expect(body.village).toBeUndefined();
+      expect(body.district).toBeUndefined();
+    });
 });
 
 it("return 200 when updated by admin or root", async () => {
