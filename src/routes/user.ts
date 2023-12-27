@@ -136,14 +136,14 @@ router.get(
         ],
         raw: true,
       });
-      if (!currentUser)
-        throw Error(
-          `Valid token with id ${tokenData.id} exist with no account`
-        );
-
-      const cartCount = await Cart.count({ where: { userId: currentUser.id } });
-      const result = { ...currentUser, cartCount };
-      res.json(result);
+      if (!currentUser) return res.clearCookie("jwt").json({});
+      else {
+        const cartCount = await Cart.count({
+          where: { userId: currentUser.id },
+        });
+        const result = { ...currentUser, cartCount };
+        return res.json(result);
+      }
     } else res.json({});
   })
 );

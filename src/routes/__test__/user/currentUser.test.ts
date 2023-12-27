@@ -3,6 +3,7 @@ import app from "../../../app";
 import {
   createDefaultUser,
   defaultCookie,
+  tokenEqualityTest,
 } from "../../../test/helpers/user/userHelper";
 import { currentUserOutputSchema } from "../../../schemas.ts/userSchema";
 import { omit, pick } from "lodash";
@@ -23,6 +24,10 @@ it("should return empty object if not logged in", async () => {
     .expect(({ body }) => {
       expect(body).toEqual({});
     });
+});
+
+it("empty jwt cookie when using valid token without corresponding user in db", async () => {
+  await getRequest(defaultCookie()).expect(200).expect(tokenEqualityTest(""));
 });
 
 it("should return user information with correct schema if user is logged in", async () => {
