@@ -15,6 +15,8 @@ export const invalidUserValue = {
   name: [
     undefined,
     "",
+    "a",
+    "bb", // less than 3 character
     "a".repeat(256), //more than 256 character
   ],
   password: [

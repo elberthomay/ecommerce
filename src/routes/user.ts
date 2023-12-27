@@ -1,5 +1,9 @@
 import { Router, Request, Response, NextFunction } from "express";
-import { loginSchema, registerSchema } from "../schemas.ts/userSchema";
+import {
+  UserUpdateSchema,
+  loginSchema,
+  registerSchema,
+} from "../schemas.ts/userSchema";
 import validator from "../middlewares/validator";
 import User, { UserCreationAttribute } from "../models/User";
 import catchAsync from "../middlewares/catchAsync";
@@ -9,10 +13,13 @@ import InvalidLoginError from "../errors/InvalidLoginError";
 import jwt from "jsonwebtoken";
 import { TokenTypes } from "../types/TokenTypes";
 import authenticate from "../middlewares/authenticate";
-import { UserLoginType, UserRegisterType } from "../types/userTypes";
+import {
+  UserLoginType,
+  UserRegisterType,
+  UserUpdateType,
+} from "../types/userTypes";
 import { AuthorizationError } from "../errors/AuthorizationError";
 import processImage from "../middlewares/processImage";
-import ImageError from "../errors/ImageError";
 import s3Client from "../helper/s3Client";
 import { DeleteObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
 import { BUCKET_NAME } from "../var/constants";
@@ -170,6 +177,45 @@ router.post(
     await currentUser.update({ avatar: imageName });
     res.status(200).json({ status: "success" });
   })
+);
+
+//update normal user data
+router.patch(
+  "/",
+  authenticate(true),
+  validator({ body: UserUpdateSchema }),
+  fetchCurrentUser,
+  catchAsync(
+    async (
+      req: Request<unknown, unknown, UserUpdateType>,
+      res: Response,
+      next: NextFunction
+    ) => {
+      const currentUser: User = (req as any).currentUser;
+      const updateData = req.body;
+      const fields: "name"[] = ["name"];
+      //access fields one by one
+      fields.forEach((field) => {
+        if (field in updateData)
+          currentUser.set({ [field]: updateData[field] });
+      });
+      await currentUser.save();
+
+      const { id, name, email, privilege, avatar, selectedAddressId } =
+        currentUser;
+      const cartCount = await Cart.count({ where: { userId: currentUser.id } });
+      const result = {
+        id,
+        name,
+        email,
+        privilege,
+        avatar,
+        selectedAddressId,
+        cartCount,
+      };
+      res.status(200).json(result);
+    }
+  )
 );
 
 export default router;

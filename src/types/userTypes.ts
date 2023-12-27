@@ -12,7 +12,11 @@ export interface UserLoginType {
   rememberMe: boolean;
 }
 
-export type currentUserOutputType =
+export interface UserUpdateType {
+  name: User["name"];
+}
+
+export type CurrentUserOutputType =
   | Record<string, never>
   | {
       id: User["id"];

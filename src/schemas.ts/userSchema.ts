@@ -1,13 +1,18 @@
 import Joi from "joi";
-import { UserLoginType, UserRegisterType } from "../types/userTypes";
+import {
+  UserLoginType,
+  UserRegisterType,
+  UserUpdateType,
+} from "../types/userTypes";
 import { uuidSchema } from "./commonSchema";
 
 export const userSchema = {
   id: uuidSchema,
-  name: Joi.string()
-    .max(60)
-    .label("Name")
-    .messages({ "any.required": "{#label} is required" }),
+  name: Joi.string().min(3).max(60).label("Name").messages({
+    "string.min": "{#label} must be at least {#limit} characters long",
+    "string.max": "{#label} must be shorter than {#limit} characters",
+    "any.required": "{#label} is required",
+  }),
   email: Joi.string().email().label("Email").messages({
     "string.email": "{#label} must be a valid email address",
     "any.required": "{#label} is required",
@@ -46,7 +51,14 @@ export const currentUserOutputSchema = Joi.object({
   privilege: userSchema.privilege.required(),
   selectedAddressId: userSchema.selectedAddressId.required(),
   avatar: userSchema.avatar.required(),
-  cartCount: Joi.number().integer().positive().required(),
+  cartCount: Joi.number().integer().positive().allow(0).required(),
 })
   .unknown(false)
+  .required();
+
+export const UserUpdateSchema = Joi.object<UserUpdateType>({
+  name: userSchema.name.optional(),
+})
+  .unknown(false)
+  .empty({})
   .required();

@@ -6,7 +6,7 @@ import {
 } from "../../../test/helpers/user/userHelper";
 import { currentUserOutputSchema } from "../../../schemas.ts/userSchema";
 import { omit, pick } from "lodash";
-import { currentUserOutputType } from "../../../types/userTypes";
+import { CurrentUserOutputType } from "../../../types/userTypes";
 import { defaultUser } from "../../../test/helpers/user/userData";
 import { createItem } from "../../../test/helpers/item/itemHelper";
 
@@ -32,8 +32,7 @@ it("should return user information with correct schema if user is logged in", as
 
   await getRequest(defaultCookie())
     .expect(200)
-    .expect(({ body }: { body: currentUserOutputType }) => {
-      console.log(body);
+    .expect(({ body }: { body: CurrentUserOutputType }) => {
       const { value, error } = currentUserOutputSchema.validate(body);
       expect(error).toBe(undefined);
       expect(pick(body, ["id", "name", "email"])).toEqual(
