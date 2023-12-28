@@ -12,7 +12,8 @@ const upload = multer({
 });
 
 /**
- * Process images of type webp from multipart request
+ * Process images of type webp from multipart request using multer
+ * images might be available at req.files
  * @param force
  *  true : throw error if request is not of type multipart/form-data
  * "hasPicture": throw error if no picture is sent

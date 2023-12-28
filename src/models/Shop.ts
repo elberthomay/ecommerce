@@ -21,7 +21,8 @@ import ShopAddress from "./ShopAddress";
 export interface ShopCreationAttribute {
   id?: string;
   name: string;
-  description?: string | null;
+  avatar?: string;
+  description?: string;
   userId?: string;
   user?: UserCreationAttribute;
   items?: ItemCreationAttribute[];
@@ -37,6 +38,10 @@ class Shop extends Model<ShopCreationAttribute> {
   @AllowNull(false)
   @Column(DataType.STRING)
   name!: string;
+
+  @AllowNull(true)
+  @Column(DataType.STRING)
+  avatar!: string | null;
 
   @AllowNull(true)
   @Column(DataType.STRING)

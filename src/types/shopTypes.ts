@@ -1,8 +1,8 @@
-import Shop from "../models/Shop";
+import Shop, { ShopCreationAttribute } from "../models/Shop";
 
 export interface ShopCreateType {
-  name: Shop["name"];
-  description?: Shop["description"];
+  name: ShopCreationAttribute["name"];
+  description?: ShopCreationAttribute["description"];
 }
 
 export type ShopUpdateType = Partial<ShopCreateType>;

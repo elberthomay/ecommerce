@@ -27,8 +27,13 @@ import orderNameEnum from "../var/orderNameEnum";
 import queryOptionToLimitOffset from "../helper/queryOptionToLimitOffset";
 import sequelize from "../models/sequelize";
 import DuplicateDataError from "../errors/DuplicateDataError";
-import authorize, { authorization } from "../middlewares/authorize";
+import { authorization } from "../middlewares/authorize";
 import ItemImage from "../models/ItemImage";
+import processImage from "../middlewares/processImage";
+import { v4 as uuid } from "uuid";
+import { DeleteObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
+import { BUCKET_NAME } from "../var/constants";
+import s3Client from "../helper/s3Client";
 
 const router = Router();
 
@@ -169,6 +174,7 @@ router.get(
 router.post(
   "/",
   authenticate(true),
+
   validator({ body: shopCreateSchema }),
   //check if user already has shop
   fetch<ShopCreationAttribute, TokenTypes>({
@@ -232,6 +238,42 @@ router.patch(
       res.status(200).json(updatedShop);
     }
   )
+);
+
+router.post(
+  "/avatar",
+  authenticate(true),
+  fetchCurrentUser,
+  fetch<ShopCreationAttribute, TokenTypes>({
+    model: Shop,
+    key: ["userId", "id"],
+    location: "tokenData",
+    force: "exist",
+  }),
+  processImage("hasPicture", 1),
+  catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+    const shop: Shop = (req as any)[Shop.name];
+    const images = req.files as Express.Multer.File[];
+    const imageName = `${uuid()}.webp`;
+    const currentAvatar = shop.avatar ?? "undefined";
+
+    await Promise.all(
+      [
+        new PutObjectCommand({
+          Bucket: BUCKET_NAME,
+          Key: imageName,
+          Body: images[0].buffer,
+        }),
+        new DeleteObjectCommand({
+          Bucket: BUCKET_NAME,
+          Key: currentAvatar,
+        }),
+      ].map((command) => s3Client.send(command))
+    );
+
+    await shop.update({ avatar: imageName });
+    res.status(200).json({ status: "success" });
+  })
 );
 
 export default router;
