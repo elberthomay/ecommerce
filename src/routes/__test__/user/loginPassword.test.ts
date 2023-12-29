@@ -11,8 +11,9 @@ import request from "supertest";
 import app from "../../../app";
 import _, { pick } from "lodash";
 import validationTest from "../../../test/helpers/validationTest.test";
+import { printedExpect } from "../../../test/helpers/assertionHelper";
 
-const url = "/api/user/login";
+const url = "/api/user/login/password";
 const getRequest = () => request(app).post(url);
 
 const defaultLoginData = _.pick(defaultUser, ["email", "password"]);
@@ -32,7 +33,7 @@ it("should return 400 with invalid property", async () => {
 
   await Promise.all(
     invalidLoginDatas.map((invalidLoginData) =>
-      getRequest().send(invalidLoginData).expect(400)
+      getRequest().send(invalidLoginData).expect(printedExpect(400))
     )
   );
 });
@@ -40,7 +41,7 @@ it("should return 400 with invalid property", async () => {
 it("should return 401 if account doesn't exist in db", async () => {
   const users = await createUser(3);
 
-  await getRequest().send(defaultLoginData).expect(401);
+  await getRequest().send(defaultLoginData).expect(printedExpect(401));
 });
 
 it("should return 401 if password doesn't match", async () => {
@@ -50,7 +51,7 @@ it("should return 401 if password doesn't match", async () => {
     password: users.userDatas[0].password + "1",
   };
 
-  await getRequest().send(loginData).expect(401);
+  await getRequest().send(loginData).expect(printedExpect(401));
 });
 
 it("should return 200 if email and password match and correct expiration period", async () => {
@@ -60,7 +61,7 @@ it("should return 200 if email and password match and correct expiration period"
   //remember me false
   await getRequest()
     .send({ ...defaultLoginData, rememberMe: false })
-    .expect(200)
+    .expect(printedExpect(200))
     .expect(
       tokenEqualityTest(
         forgeCookie(defaultUser, {
@@ -72,7 +73,7 @@ it("should return 200 if email and password match and correct expiration period"
   //remember me true
   await getRequest()
     .send({ ...defaultLoginData, rememberMe: true })
-    .expect(200)
+    .expect(printedExpect(200))
     .expect(
       tokenEqualityTest(
         forgeCookie(defaultUser, {

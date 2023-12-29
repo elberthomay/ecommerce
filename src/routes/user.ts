@@ -25,6 +25,34 @@ import { DeleteObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
 import { BUCKET_NAME } from "../var/constants";
 import { v4 as uuid } from "uuid";
 import Cart from "../models/Cart";
+import passport from "passport";
+
+import { Strategy as LocalStrategy } from "passport-local";
+import PasswordUnsetError from "../errors/PasswordUnsetError";
+import createToken from "../middlewares/createToken";
+
+const localStrategy = new LocalStrategy(
+  {
+    usernameField: "email",
+    passwordField: "password",
+    session: false,
+  },
+  async (email, password, done) => {
+    try {
+      const user = await User.findOne({ where: { email } });
+      if (user && user.hash) {
+        const match = await bcrypt.compare(password, user.hash);
+        if (match) return done(null, user);
+        else return done(new InvalidLoginError());
+      } else if (user) return done(new PasswordUnsetError());
+      else return done(new InvalidLoginError());
+    } catch (e) {
+      return done(e);
+    }
+  }
+);
+
+passport.use("local", localStrategy);
 
 const router = Router();
 
@@ -82,37 +110,10 @@ router.post(
 // router.post("/verify")
 
 router.post(
-  "/login",
+  "/login/password",
   validator({ body: loginSchema }),
-  fetch<UserCreationAttribute, UserLoginType>({
-    model: User,
-    key: "email",
-    location: "body",
-    transformer: (user) => {
-      //doesn't use force: "exist" to throw custom error type
-      if (!user) throw new InvalidLoginError();
-      return user;
-    },
-  }),
-  catchAsync(
-    async (req: Request<unknown, unknown, UserLoginType>, res: Response) => {
-      const user: User = (req as any)[User.name];
-      const loginData = req.body;
-      const match = await bcrypt.compare(loginData.password, user.hash);
-      if (match) {
-        const tokenData: TokenTypes = { id: user.id };
-        const tokenAge = loginData.rememberMe ? 2592000000 : 86400000; //one month or 1 day
-        const token = jwt.sign(tokenData, process.env.JWT_SECRET!, {
-          expiresIn: tokenAge.toString(),
-        });
-        res
-          .cookie("jwt", token, { httpOnly: true, maxAge: tokenAge })
-          .json({ status: "success" });
-      } else {
-        throw new InvalidLoginError();
-      }
-    }
-  )
+  passport.authenticate("local", { session: false }),
+  createToken
 );
 
 router.post("/logout", (req: Request, res: Response, next: NextFunction) => {
