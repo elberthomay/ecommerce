@@ -23,7 +23,7 @@ export interface UserCreationAttribute {
   id?: string;
   name: string;
   email: string;
-  hash: string;
+  hash?: string;
   avatar?: string;
   shop?: ShopCreationAttribute;
   selectedAddressId?: string;
@@ -47,7 +47,7 @@ class User extends Model<UserCreationAttribute> {
   @Column(DataType.STRING)
   email!: string;
 
-  @AllowNull(false)
+  @AllowNull(true)
   @Column(DataType.CHAR(60))
   hash!: string;
 

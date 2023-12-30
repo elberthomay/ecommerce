@@ -10,7 +10,7 @@ export default class DuplicateDataError extends CustomError {
   serializeError(): FormattedError {
     return {
       message: this.message,
-      errors: [{ field: this.field, error: this.message }],
+      errors: [{ field: this.field, message: this.message }],
     };
   }
 }

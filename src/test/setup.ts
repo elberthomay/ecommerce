@@ -2,11 +2,10 @@ import sequelize from "../models/sequelize";
 import { createUser } from "./helpers/user/userHelper";
 import { defaultRootUser } from "./helpers/user/userData";
 import "dotenv/config";
+process.env.JWT_SECRET = "secret";
+process.env.NODE_ENV = "test";
 
 beforeAll(async () => {
-  process.env.JWT_SECRET = "secret";
-  process.env.NODE_ENV = "test";
-
   try {
     await sequelize.sync({ force: true });
   } catch (err) {

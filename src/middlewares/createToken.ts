@@ -17,9 +17,8 @@ const createToken = (
     const token = jwt.sign(tokenData, process.env.JWT_SECRET!, {
       expiresIn: tokenAge.toString(),
     });
-    return res
-      .cookie("jwt", token, { httpOnly: true, maxAge: tokenAge })
-      .json({ status: "success" });
+    res.cookie("jwt", token, { httpOnly: true, maxAge: tokenAge });
+    return next();
   } else return next(new Error("tokenCreate middleware called without user"));
 };
 

@@ -10,14 +10,9 @@ import catchAsync from "../middlewares/catchAsync";
 import bcrypt from "bcrypt";
 import fetch, { fetchCurrentUser } from "../middlewares/fetch";
 import InvalidLoginError from "../errors/InvalidLoginError";
-import jwt from "jsonwebtoken";
 import { TokenTypes } from "../types/TokenTypes";
 import authenticate from "../middlewares/authenticate";
-import {
-  UserLoginType,
-  UserRegisterType,
-  UserUpdateType,
-} from "../types/userTypes";
+import { UserRegisterType, UserUpdateType } from "../types/userTypes";
 import { AuthorizationError } from "../errors/AuthorizationError";
 import processImage from "../middlewares/processImage";
 import s3Client from "../helper/s3Client";
@@ -28,8 +23,12 @@ import Cart from "../models/Cart";
 import passport from "passport";
 
 import { Strategy as LocalStrategy } from "passport-local";
+import { Strategy as GoogleStrategy } from "passport-google-oauth2";
 import PasswordUnsetError from "../errors/PasswordUnsetError";
 import createToken from "../middlewares/createToken";
+import { VerifyCallback } from "jsonwebtoken";
+import { GoogleProfileType } from "../types/authType";
+import oauth2ErrorHandler from "../middlewares/oauth2ErrorHandler";
 
 const localStrategy = new LocalStrategy(
   {
@@ -52,7 +51,35 @@ const localStrategy = new LocalStrategy(
   }
 );
 
+const oauth2Strategy = new GoogleStrategy(
+  {
+    clientID: process.env.GOOGLE_CLIENT_ID!,
+    clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+    scope: ["email", "profile"],
+    callbackURL: process.env.GOOGLE_CALLBACK_URL!,
+  },
+  async (
+    accessToken: string,
+    refreshToken: string,
+    profile: GoogleProfileType,
+    done: VerifyCallback<User>
+  ) => {
+    const { displayName, email } = profile;
+
+    const user = await User.findOne({ where: { email } });
+    if (user) return done(null, user);
+    else {
+      const newUser = await User.create({
+        email,
+        name: displayName.slice(0, 60),
+      });
+      return done(null, newUser);
+    }
+  }
+);
+
 passport.use("local", localStrategy);
+passport.use("oauth2", oauth2Strategy);
 
 const router = Router();
 
@@ -113,7 +140,20 @@ router.post(
   "/login/password",
   validator({ body: loginSchema }),
   passport.authenticate("local", { session: false }),
-  createToken
+  createToken,
+  (req: Request, res: Response) => res.json({ status: "success" })
+);
+
+router.get("/login/auth", passport.authenticate("oauth2"));
+
+router.get(
+  "/login/auth/callback",
+  passport.authenticate("oauth2", {
+    session: false,
+  }),
+  createToken,
+  (req: Request, res: Response) =>
+    res.redirect("http://localhost:5173/auth/check")
 );
 
 router.post("/logout", (req: Request, res: Response, next: NextFunction) => {
@@ -218,5 +258,7 @@ router.patch(
     }
   )
 );
+
+router.use(oauth2ErrorHandler);
 
 export default router;
