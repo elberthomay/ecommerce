@@ -1,0 +1,91 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ecommerce-depl
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: ecommerce
+  template:
+    metadata:
+      labels:
+        app: ecommerce
+    spec:
+      containers:
+        - name: ecommerce
+          image: elberthomax/ecommerce
+          env:
+            - name: NODE_ENV
+              value: production
+            - name: DB_HOST
+              value: "ecommerce-db-srv"
+
+            #db env
+            - name: DB_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: ecommerce-db-secret
+                  key: DB_NAME
+            - name: BACKEND_DB_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: ecommerce-db-secret
+                  key: BACKEND_DB_USERNAME
+            - name: BACKEND_DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: ecommerce-db-secret
+                  key: BACKEND_DB_PASSWORD
+
+            # aws and google keys
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: ecommerce-secret
+                  key: AWS_ACCESS_KEY_ID
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: ecommerce-secret
+                  key: AWS_SECRET_ACCESS_KEY
+            - name: GOOGLE_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: ecommerce-secret
+                  key: GOOGLE_CLIENT_SECRET
+            - name: GOOGLE_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: ecommerce-secret
+                  key: GOOGLE_CLIENT_ID
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: ecommerce-secret
+                  key: JWT_SECRET
+
+            # urls
+            - name: GOOGLE_CALLBACK_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: ecommerce-data
+                  key: GOOGLE_CALLBACK_URL
+            - name: CLIENT_HOST_NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: ecommerce-data
+                  key: CLIENT_HOST_NAME
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ecommerce-srv
+spec:
+  selector:
+    app: ecommerce
+  ports:
+    - name: ecommerce
+      protocol: TCP
+      port: 3000
+      targetPort: 3000

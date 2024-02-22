@@ -242,7 +242,7 @@ router.get(
           : defaultOrder,
         where: search
           ? Sequelize.literal(
-              "MATCH(item.name) AGAINST(:name IN NATURAL LANGUAGE MODE)"
+              `MATCH(${Item.name}.name) AGAINST(:name IN NATURAL LANGUAGE MODE)`
             )
           : undefined,
         replacements: search ? { name: options.search } : undefined,

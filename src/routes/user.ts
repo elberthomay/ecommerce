@@ -17,7 +17,7 @@ import { AuthorizationError } from "../errors/AuthorizationError";
 import processImage from "../middlewares/processImage";
 import s3Client from "../helper/s3Client";
 import { DeleteObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
-import { BUCKET_NAME } from "../var/constants";
+import { BUCKET_NAME, CLIENT_HOST_NAME } from "../var/constants";
 import { v4 as uuid } from "uuid";
 import Cart from "../models/Cart";
 import passport from "passport";
@@ -153,7 +153,7 @@ router.get(
   }),
   createToken,
   (req: Request, res: Response) =>
-    res.redirect("http://localhost:5173/auth/check")
+    res.redirect(new URL("auth/check", CLIENT_HOST_NAME).toString())
 );
 
 router.post("/logout", (req: Request, res: Response, next: NextFunction) => {

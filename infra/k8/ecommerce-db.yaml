@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ecommerce-db-depl
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ecommerce-db
+  template:
+    metadata:
+      labels:
+        app: ecommerce-db
+    spec:
+      containers:
+        - name: ecommerce-db
+          image: mysql
+          env:
+            - name: MYSQL_DATABASE
+              valueFrom:
+                secretKeyRef:
+                  name: ecommerce-db-secret
+                  key: DB_NAME
+            - name: MYSQL_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: ecommerce-db-secret
+                  key: ROOT_PASSWORD
+            - name: MYSQL_USER
+              valueFrom:
+                secretKeyRef:
+                  name: ecommerce-db-secret
+                  key: BACKEND_DB_USERNAME
+            - name: MYSQL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: ecommerce-db-secret
+                  key: BACKEND_DB_PASSWORD
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ecommerce-db-srv
+spec:
+  selector:
+    app: ecommerce-db
+  ports:
+    - name: ecommerce-db
+      protocol: TCP
+      port: 3306
+      targetPort: 3306

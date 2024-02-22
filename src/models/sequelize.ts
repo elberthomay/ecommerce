@@ -13,14 +13,17 @@ import ShopAddress from "./ShopAddress";
 import ItemImage from "./ItemImage";
 
 const sequelize = new Sequelize({
-  database: process.env.NODE_ENV === "test" ? "ecommerce_test" : "ecommerce",
+  database:
+    process.env.NODE_ENV === "test"
+      ? "ecommerce_test"
+      : process.env.DB_NAME ?? "ecommerce",
   dialect: "mysql",
   dialectOptions: {
     decimalNumbers: true,
   },
-  username: "root",
-  password: "123456",
-  host: "localhost",
+  username: process.env.DB_USERNAME ?? "root",
+  password: process.env.DB_PASSWORD ?? "123456",
+  host: process.env.DB_HOST ?? "ecommerce-db-srv",
   models: [
     User,
     Shop,

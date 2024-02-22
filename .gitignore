@@ -1,2 +1,5 @@
 node_modules
 .env
+ecommerce-secret.yaml
+ecommerce-secret-test.yaml
+ecommerce-db-secret.yaml

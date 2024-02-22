@@ -12,13 +12,14 @@ import cookieParser from "cookie-parser";
 import cors from "cors";
 import databaseErrorHandler from "./middlewares/databaseErrorHandler";
 import multerErrorHandler from "./middlewares/multerErrorHandler";
+import { CLIENT_HOST_NAME } from "./var/constants";
 
 const app = express();
 app.use(express.json());
 app.use(cookieParser());
 app.use(
   cors({
-    origin: "http://localhost:5173",
+    origin: CLIENT_HOST_NAME,
     credentials: true,
     methods: ["GET", "POST", "PATCH", "DELETE"],
   })
@@ -27,7 +28,7 @@ app.use(
 app.options(
   "*",
   cors({
-    origin: "http://localhost:5173",
+    origin: CLIENT_HOST_NAME,
     credentials: true,
     methods: ["GET", "POST", "PATCH", "DELETE"],
   })

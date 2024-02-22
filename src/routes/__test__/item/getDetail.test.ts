@@ -117,12 +117,10 @@ it("expects images to be sorted ascending by order", async () => {
       expect(error).toBe(undefined);
       expect(body.images).toHaveLength(6);
 
-      const orderIsAscending = (
-        body.images as ItemDetailsOutputType["images"]
-      ).every(({ order }, index, array) => {
-        //every price must be higher than the last, first one compare with -1
-        return order > (index === 0 ? -1 : array[index - 1].order);
-      });
+      //order must equal index(ascending with no gap)
+      const orderIsAscending = body.images.every(
+        ({ order }, index) => order === index
+      );
       expect(orderIsAscending).toBe(true);
     });
 });

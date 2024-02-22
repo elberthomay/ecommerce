@@ -1,0 +1,33 @@
+apiVersion: skaffold/v2alpha3
+kind: Config
+deploy:
+  kubectl:
+    manifests:
+      - ./infra/k8/*
+      - ./infra/test/*
+build:
+  local:
+    push: false
+  artifacts:
+    - image: elberthomax/ecommerce
+      context: .
+      docker:
+        dockerfile: Dockerfile
+      sync:
+        manual:
+          - src: "src/**/*.ts"
+            dest: .
+    - image: elberthomax/ecommerce-react-test
+      context: ../e-commerce-react
+      docker:
+        dockerfile: Dockerfile.test
+      sync:
+        manual:
+          - src: "**/*.ts"
+            dest: .
+          - src: "**/*.tsx"
+            dest: .
+          - src: "**/*.html"
+            dest: .
+          - src: "public/*.*"
+            dest: .
