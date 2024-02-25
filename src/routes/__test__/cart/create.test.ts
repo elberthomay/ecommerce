@@ -2,7 +2,6 @@ import authenticationTests from "../../../test/authenticationTests.test";
 import app from "../../../app";
 import request from "supertest";
 import { faker } from "@faker-js/faker";
-import User from "../../../models/User";
 import {
   createDefaultUser,
   createUser,

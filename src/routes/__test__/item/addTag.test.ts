@@ -8,10 +8,8 @@ import {
   defaultCookie,
   forgeCookie,
 } from "../../../test/helpers/user/userHelper";
-import { invalidUuid } from "../../../test/helpers/commonData";
 import Tag from "../../../models/Tag";
 import { faker } from "@faker-js/faker";
-import { invalidTagIds } from "../../../test/helpers/Tag/tagData";
 import ItemTag from "../../../models/ItemTag";
 import {
   invalidTagsTest,
@@ -19,6 +17,7 @@ import {
   noTagsTest,
 } from "../../../test/helpers/item/itemSuite";
 import { defaultRootUser } from "../../../test/helpers/user/userData";
+import { printedExpect } from "../../../test/helpers/assertionHelper";
 
 const url = (id: string) => `/api/item/${id}/tag`;
 const defaultUrl = url(defaultItem.id!);
@@ -47,7 +46,7 @@ it("should return 404 not found error when itemId does not exist in db", async (
     .post(url(faker.string.uuid()))
     .set("Cookie", defaultCookie())
     .send(defaultBody)
-    .expect(404);
+    .expect(printedExpect(404));
 });
 
 it("return 200 when accessed by the root or admin", async () => {
@@ -62,7 +61,7 @@ it("return 200 when accessed by the root or admin", async () => {
     .post(defaultUrl)
     .set("Cookie", forgeCookie(admin))
     .send({ tags: tagIds })
-    .expect(200)
+    .expect(printedExpect(200))
     .expect(({ body }) => {
       expect(body?.tags).toHaveLength(5);
     });
@@ -71,7 +70,7 @@ it("return 200 when accessed by the root or admin", async () => {
     .post(defaultUrl)
     .set("Cookie", forgeCookie(defaultRootUser))
     .send({ tags: tagIds })
-    .expect(200);
+    .expect(printedExpect(200));
 });
 
 it("return 403 when not accessed by the creator", async () => {
@@ -82,7 +81,7 @@ it("return 403 when not accessed by the creator", async () => {
     .post(defaultUrl)
     .set("Cookie", forgeCookie(user))
     .send(defaultBody)
-    .expect(403);
+    .expect(printedExpect(403));
 });
 
 it("should return 200 on successful add", async () => {
@@ -93,7 +92,7 @@ it("should return 200 on successful add", async () => {
     .post(defaultUrl)
     .set("Cookie", defaultCookie())
     .send({ tags: tagIds.slice(0, 3) })
-    .expect(200)
+    .expect(printedExpect(200))
     .expect(({ body }) => {
       expect(body?.tags).toHaveLength(3);
     });
@@ -122,7 +121,7 @@ it("should ignore tag that has been added or does not exist", async () => {
     .post(defaultUrl)
     .set("Cookie", defaultCookie())
     .send({ tags: [...tagIds, 444, 333] })
-    .expect(200)
+    .expect(printedExpect(200))
     .expect(({ body }) => {
       expect(body?.tags).toHaveLength(5);
     });

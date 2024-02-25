@@ -13,10 +13,7 @@ import ShopAddress from "./ShopAddress";
 import ItemImage from "./ItemImage";
 
 const sequelize = new Sequelize({
-  database:
-    process.env.NODE_ENV === "test"
-      ? "ecommerce_test"
-      : process.env.DB_NAME ?? "ecommerce",
+  database: process.env.DB_NAME ?? "ecommerce_test",
   dialect: "mysql",
   dialectOptions: {
     decimalNumbers: true,

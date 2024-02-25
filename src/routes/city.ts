@@ -8,9 +8,9 @@ import {
   cityCreateSchema,
   cityIdSchema,
   cityUpdateSchema,
-} from "../schemas.ts/citySchema";
-import { cityCreateType, cityIdType, cityUpdateType } from "../types/cityType";
+} from "../schemas/citySchema";
 import { authorization } from "../middlewares/authorize";
+import { z } from "zod";
 
 const router = Router();
 
@@ -28,7 +28,7 @@ router.get(
 router.get(
   "/:cityId",
   validator({ params: cityIdSchema }),
-  fetch<cityCreationAttribute, cityIdType>({
+  fetch<cityCreationAttribute, z.infer<typeof cityIdSchema>>({
     model: City,
     location: "params",
     key: ["id", "cityId"],
@@ -45,17 +45,22 @@ router.post(
   authenticate(true),
   authorizeStaffOnly,
   validator({ body: cityCreateSchema }),
-  fetch<cityCreationAttribute, cityCreateType>({
+  fetch<cityCreationAttribute, z.infer<typeof cityCreateSchema>>({
     model: City,
     location: "body",
     key: "name",
     force: "absent",
   }),
-  catchAsync(async (req: Request<unknown, unknown, cityCreateType>, res) => {
-    const newCityData = req.body;
-    const newCity = await City.create(newCityData);
-    res.json(newCity);
-  })
+  catchAsync(
+    async (
+      req: Request<unknown, unknown, z.infer<typeof cityCreateSchema>>,
+      res
+    ) => {
+      const newCityData = req.body;
+      const newCity = await City.create(newCityData);
+      res.json(newCity);
+    }
+  )
 );
 
 router.patch(
@@ -63,24 +68,29 @@ router.patch(
   authenticate(true),
   authorizeStaffOnly,
   validator({ params: cityIdSchema, body: cityUpdateSchema }),
-  fetch<cityCreationAttribute, cityIdType>({
+  fetch<cityCreationAttribute, z.infer<typeof cityIdSchema>>({
     model: City,
     location: "params",
     key: ["id", "cityId"],
     force: "exist",
   }),
-  fetch<cityCreationAttribute, cityUpdateType>({
+  fetch<cityCreationAttribute, z.infer<typeof cityUpdateSchema>>({
     model: City,
     location: "body",
     key: "name",
     force: "absent",
   }),
-  catchAsync(async (req: Request<unknown, unknown, cityUpdateType>, res) => {
-    const city: City = (req as any)[City.name];
-    const cityUpdateData = req.body;
-    const updatedCity = await city.set(cityUpdateData).save();
-    res.json(updatedCity);
-  })
+  catchAsync(
+    async (
+      req: Request<unknown, unknown, z.infer<typeof cityUpdateSchema>>,
+      res
+    ) => {
+      const city: City = (req as any)[City.name];
+      const cityUpdateData = req.body;
+      const updatedCity = await city.set(cityUpdateData).save();
+      res.json(updatedCity);
+    }
+  )
 );
 
 router.delete(
@@ -88,7 +98,7 @@ router.delete(
   authenticate(true),
   authorizeStaffOnly,
   validator({ params: cityIdSchema }),
-  fetch<cityCreationAttribute, cityIdType>({
+  fetch<cityCreationAttribute, z.infer<typeof cityIdSchema>>({
     model: City,
     location: "params",
     key: ["id", "cityId"],

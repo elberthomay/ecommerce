@@ -44,7 +44,7 @@ class User extends Model<UserCreationAttribute> {
 
   @AllowNull(false)
   @Unique
-  @Column(DataType.STRING)
+  @Column(DataType.STRING(320))
   email!: string;
 
   @AllowNull(true)

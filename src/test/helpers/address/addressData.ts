@@ -1,6 +1,7 @@
 import { omit } from "lodash";
 import { AddressCreationAttribute } from "../../../models/Address";
-import { AddressCreateType } from "../../../types/addressType";
+import { z } from "zod";
+import { addressCreateSchema } from "../../../schemas/addressSchema";
 
 export const invalidAddressValues = {
   name: [
@@ -79,7 +80,5 @@ export const defaultAddress: AddressCreationAttribute = {
   detail: "super plint street blgr avenue, near falias mall.",
 };
 
-export const defaultAddressCreateObject: AddressCreateType = omit(
-  defaultAddress,
-  ["id"]
-);
+export const defaultAddressCreateObject: z.input<typeof addressCreateSchema> =
+  omit(defaultAddress, ["id"]);

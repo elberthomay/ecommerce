@@ -2,21 +2,20 @@ import request from "supertest";
 import app from "../../../app";
 import authenticationTests from "../../../test/authenticationTests.test";
 import { createAddress } from "../../../test/helpers/address/addressHelper";
-import { AddressCreationAttribute } from "../../../models/Address";
 import {
   defaultAddressCreateObject,
   invalidAddressValues,
 } from "../../../test/helpers/address/addressData";
-import {
-  AddressCreateType,
-  AddressOutputType,
-} from "../../../types/addressType";
 import { defaultCookie } from "../../../test/helpers/user/userHelper";
 import { omit, pick } from "lodash";
 import validationTest from "../../../test/helpers/validationTest.test";
 import Shop from "../../../models/Shop";
 import { createDefaultShop } from "../../../test/helpers/shop/shopHelper";
-import { addressOutputSchema } from "../../../schemas.ts/addressSchema";
+import {
+  addressCreateSchema,
+  addressOutputSchema,
+} from "../../../schemas/addressSchema";
+import { z } from "zod";
 
 const url = "/api/address/shop";
 const method = "post";
@@ -34,7 +33,7 @@ describe("passes authentication test", () => {
 });
 
 it("return 400 for invalid address creation data", async () => {
-  await validationTest<AddressCreateType>(
+  await validationTest<z.input<typeof addressCreateSchema>>(
     getDefaultRequest,
     defaultAddressCreateObject,
     invalidAddressValues
@@ -57,7 +56,7 @@ it("successfuly create new address for shop", async () => {
   await getDefaultRequest()
     .send(defaultAddressCreateObject)
     .expect(201)
-    .expect(({ body }: { body: AddressOutputType }) => {
+    .expect(({ body }: { body: z.infer<typeof addressOutputSchema> }) => {
       expect(omit(body, ["id", "selected", "subdistrictId"])).toEqual(
         defaultAddressCreateObject
       );
@@ -72,7 +71,7 @@ it("return address with required schema", async () => {
     .send(defaultAddressCreateObject)
     .expect(201)
     .expect(({ body }) => {
-      const { value, error } = addressOutputSchema.validate(body);
-      expect(error).toBe(undefined);
+      const validationResult = addressOutputSchema.safeParse(body);
+      expect(validationResult.success).toBe(true);
     });
 });

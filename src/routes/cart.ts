@@ -1,4 +1,4 @@
-import { Router, Request } from "express";
+import { Router, Request, Response } from "express";
 import authenticate from "../middlewares/authenticate";
 import fetch from "../middlewares/fetch";
 import User, { UserCreationAttribute } from "../models/User";
@@ -9,24 +9,26 @@ import validator from "../middlewares/validator";
 import {
   cartCreateSchema,
   cartDeleteSchema,
+  cartOutputListSchema,
+  cartOutputSchema,
   cartUpdateSchema,
-} from "../schemas.ts/cartSchema";
-import {
-  cartCreateType,
-  cartDeleteType,
-  cartUpdateType,
-} from "../types/cartType";
+} from "../schemas/cartSchema";
 import Cart from "../models/Cart";
 import NotFoundError from "../errors/NotFoundError";
 import InventoryError from "../errors/InventoryError";
 import Item, { ItemCreationAttribute } from "../models/Item";
 import _ from "lodash";
 import ItemImage from "../models/ItemImage";
+import { z } from "zod";
 
 const router = Router();
 
 const updateHandler = catchAsync(
-  async (req: Request<unknown, unknown, cartUpdateType>, res, next) => {
+  async (
+    req: Request<unknown, unknown, z.infer<typeof cartUpdateSchema>>,
+    res: Response,
+    next
+  ) => {
     const currentUser: User = (req as any).currentUser;
     const updateData = req.body;
     const cart = await Cart.findOne({
@@ -47,7 +49,11 @@ const updateHandler = catchAsync(
 );
 
 const deleteHandler = catchAsync(
-  async (req: Request<unknown, unknown, cartDeleteType>, res, next) => {
+  async (
+    req: Request<unknown, unknown, z.infer<typeof cartDeleteSchema>>,
+    res,
+    next
+  ) => {
     const currentUser: User = (req as any).currentUser;
     const itemId = req.body.itemId;
     const cart = await Cart.findOne({
@@ -70,41 +76,43 @@ router.get(
     destination: "currentUser",
     force: "exist",
   }),
-  catchAsync(async (req, res) => {
-    const user: User = (req as any).currentUser;
-    const cartItems = await Cart.findAll({
-      where: { userId: user.id },
-      attributes: ["itemId", "quantity", "selected"],
-      order: [["createdAt", "DESC"]],
-      include: [
-        {
-          model: Item,
-          attributes: ["quantity", "name", "price", "shopId"],
-          include: [
-            { model: Shop, attributes: ["name"] },
-            {
-              model: ItemImage,
-              attributes: ["imageName"],
-              where: { order: 0 },
-              required: false,
-            },
-          ],
-        },
-      ],
-    });
-    const result = cartItems.map(({ itemId, quantity, selected, item }) => ({
-      itemId,
-      quantity,
-      selected,
-      inventory: item?.quantity,
-      name: item?.name,
-      image: item?.images ? item?.images[0]?.imageName ?? null : null,
-      price: item?.price,
-      shopId: item?.shopId,
-      shopName: item?.shop?.name,
-    }));
-    res.json(result);
-  })
+  catchAsync(
+    async (req, res: Response<z.infer<typeof cartOutputListSchema>>) => {
+      const user: User = (req as any).currentUser;
+      const cartItems = await Cart.findAll({
+        where: { userId: user.id },
+        attributes: ["itemId", "quantity", "selected"],
+        order: [["createdAt", "DESC"]],
+        include: [
+          {
+            model: Item,
+            attributes: ["quantity", "name", "price", "shopId"],
+            include: [
+              { model: Shop, attributes: ["name"] },
+              {
+                model: ItemImage,
+                attributes: ["imageName"],
+                where: { order: 0 },
+                required: false,
+              },
+            ],
+          },
+        ],
+      });
+      const result = cartItems.map(({ itemId, quantity, selected, item }) => ({
+        itemId,
+        quantity,
+        selected,
+        inventory: item?.quantity!,
+        name: item?.name!,
+        image: item?.images ? item?.images[0]?.imageName ?? null : null,
+        price: item?.price!,
+        shopId: item?.shopId!,
+        shopName: item?.shop?.name!,
+      }));
+      res.json(result);
+    }
+  )
 );
 
 router.post(
@@ -118,14 +126,18 @@ router.post(
     force: "exist",
     destination: "currentUser",
   }),
-  fetch<ItemCreationAttribute, cartCreateType>({
+  fetch<ItemCreationAttribute, z.infer<typeof cartCreateSchema>>({
     model: Item,
     key: ["id", "itemId"],
     location: "body",
     force: "exist",
   }),
   catchAsync(
-    async (req: Request<unknown, unknown, cartCreateType>, res, next) => {
+    async (
+      req: Request<unknown, unknown, z.infer<typeof cartCreateSchema>>,
+      res,
+      next
+    ) => {
       const currentUser: User = (req as any).currentUser;
       const newCartData = req.body;
       const cart = await Cart.findOne({

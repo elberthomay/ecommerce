@@ -11,6 +11,7 @@ import {
   defaultShop,
 } from "../../../test/helpers/shop/shopHelper";
 import Shop from "../../../models/Shop";
+import { printedExpect } from "../../../test/helpers/assertionHelper";
 
 const url = "/api/shop/myShop";
 const method = "get";
@@ -27,8 +28,7 @@ describe("should pass authentication test", () => {
 
 it("return 200 with empty object if user's shop not activated", async () => {
   await createDefaultRequest()
-    .expect(({ body }) => console.log(body))
-    .expect(200)
+    .expect(printedExpect(200))
     .expect(({ body }) => expect(body).toEqual({}));
 });
 
@@ -39,7 +39,7 @@ it("return 200 with correct shop data if user shop is activated", async () => {
     console.log(e);
   }
   await createDefaultRequest()
-    .expect(200)
+    .expect(printedExpect(200))
     .expect(({ body }: { body: Shop }) => {
       expect(pick(body, ["name"])).toEqual({ name: defaultShop.name });
     });

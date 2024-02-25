@@ -11,10 +11,7 @@ import { createShop, defaultShop } from "../../../test/helpers/shop/shopHelper";
 import { pick, omit } from "lodash";
 import {
   defaultCreateItem,
-  invalidDescription,
-  invalidNames,
-  invalidPrice,
-  invalidQuantity,
+  invalidItemValues,
 } from "../../../test/helpers/item/itemData";
 import Item, { ItemCreationAttribute } from "../../../models/Item";
 import Tag from "../../../models/Tag";
@@ -22,11 +19,16 @@ import ItemTag from "../../../models/ItemTag";
 import { invalidTagIds } from "../../../test/helpers/Tag/tagData";
 import imageInputTests from "../../../test/imageInputTests.test";
 import { MAX_IMAGE_COUNT } from "../../../var/constants";
-import { ItemDetailsOutputType } from "../../../types/itemTypes";
 import { defaultUser } from "../../../test/helpers/user/userData";
 import path from "path";
 import ItemImage from "../../../models/ItemImage";
-import { itemDetailsOutputSchema } from "../../../schemas.ts/itemSchema";
+import {
+  itemCreateSchema,
+  itemDetailsOutputSchema,
+} from "../../../schemas/itemSchema";
+import { z } from "zod";
+import validationTest from "../../../test/helpers/validationTest.test";
+import { printedExpect } from "../../../test/helpers/assertionHelper";
 
 const url = "/api/item";
 
@@ -66,7 +68,7 @@ it("should return 404 when shop is unactivated", async () => {
     .post(url)
     .set("Cookie", defaultCookie())
     .send(defaultCreateItem)
-    .expect(404);
+    .expect(printedExpect(404));
 });
 
 describe("created default shop", () => {
@@ -97,55 +99,7 @@ describe("created default shop", () => {
           .post(url)
           .set("Cookie", defaultCookie())
           .send(invalidBody)
-          .expect(400)
-      )
-    );
-  });
-
-  it("should return 400 for invalid name", async () => {
-    await Promise.all(
-      invalidNames.map((name) =>
-        request(app)
-          .post(url)
-          .set("Cookie", defaultCookie())
-          .send({ ...defaultCreateItem, name })
-          .expect(400)
-      )
-    );
-  });
-
-  it("should return 400 for invalid description", async () => {
-    await Promise.all(
-      invalidDescription.map((description) =>
-        request(app)
-          .post(url)
-          .set("Cookie", defaultCookie())
-          .send({ ...defaultCreateItem, description })
-          .expect(400)
-      )
-    );
-  });
-
-  it("should return 400 for invalid price", async () => {
-    await Promise.all(
-      invalidPrice.map((price) =>
-        request(app)
-          .post(url)
-          .set("Cookie", defaultCookie())
-          .send({ ...defaultCreateItem, price })
-          .expect(400)
-      )
-    );
-  });
-
-  it("should return 400 for invalid quantity", async () => {
-    await Promise.all(
-      invalidQuantity.map((quantity) =>
-        request(app)
-          .post(url)
-          .set("Cookie", defaultCookie())
-          .send({ ...defaultCreateItem, quantity })
-          .expect(400)
+          .expect(printedExpect(400))
       )
     );
   });
@@ -157,27 +111,15 @@ describe("created default shop", () => {
       .post(url)
       .set("Cookie", defaultCookie())
       .send(invalidBody)
-      .expect(400);
+      .expect(printedExpect(400));
   });
 
-  it("should return 400 for invalid tags", async () => {
-    await Promise.all(
-      invalidTagIds.map((tagId) =>
-        request(app)
-          .post(url)
-          .set("Cookie", defaultCookie())
-          .send({ ...defaultCreateItem, tags: [tagId, 12] })
-          .expect(400)
-      )
-    );
-  });
-
-  it("should return 400 for duplicate tags", async () => {
+  it("should return 201 for duplicate tags", async () => {
     await request(app)
       .post(url)
       .set("Cookie", defaultCookie())
       .send({ ...defaultCreateItem, tags: [1, 1, 2] })
-      .expect(400);
+      .expect(printedExpect(201));
   });
 
   it("should return 201 and create item with default quantity", async () => {
@@ -186,11 +128,11 @@ describe("created default shop", () => {
       .post(url)
       .set("Cookie", defaultCookie())
       .send(omit(defaultCreateItem, "quantity"))
-      .expect(201)
+      .expect(printedExpect(201))
       .expect(
         assertItemCreationEquality({
           ...omit(defaultCreateItem, "tags"),
-          quantity: 0,
+          quantity: 1,
         })
       );
     expect(await Item.count()).toBe(6);
@@ -205,7 +147,7 @@ describe("created default shop", () => {
       .post(url)
       .set("Cookie", defaultCookie())
       .send({ ...defaultCreateItem, tags: tags.map((tag) => tag.id) })
-      .expect(201)
+      .expect(printedExpect(201))
       .expect(
         assertItemCreationEquality({
           ...omit(defaultCreateItem, "tags"),
@@ -232,7 +174,7 @@ describe("created default shop", () => {
         ...defaultCreateItem,
         tags: [...tags.map((tag) => tag.id), 356, 223],
       })
-      .expect(201)
+      .expect(printedExpect(201))
       .expect(
         assertItemCreationEquality({
           ...omit(defaultCreateItem, "tags"),
@@ -262,16 +204,16 @@ describe("created default shop", () => {
     }
 
     await requestObject
-      .expect(201)
+      .expect(printedExpect(201))
       .expect(assertItemCreationEquality(omit(defaultCreateItem, "tags")))
-      .expect(async ({ body }: { body: ItemDetailsOutputType }) => {
-        expect(body?.images?.length === 5).toBeTruthy();
-        const newItem = await Item.findByPk(body.id, { include: ItemImage });
-        expect(newItem?.images?.length === 5).toBeTruthy();
-      })
-      .expect(async ({ body }: { body: ItemDetailsOutputType }) => {
-        expect(itemDetailsOutputSchema.validateAsync(body)).resolves;
-      });
+      .expect(
+        async ({ body }: { body: z.infer<typeof itemDetailsOutputSchema> }) => {
+          expect(body?.images?.length).toBe(5);
+          const newItem = await Item.findByPk(body.id, { include: ItemImage });
+          expect(newItem?.images?.length).toBe(5);
+          expect(itemDetailsOutputSchema.safeParse(body).success).toBe(true);
+        }
+      );
     expect(await Item.count()).toBe(6);
   });
 });

@@ -5,9 +5,9 @@ import { defaultShop } from "../../../test/helpers/shop/shopHelper";
 import Item from "../../../models/Item";
 import _ from "lodash";
 import ItemImage from "../../../models/ItemImage";
-import { itemDetailsOutputSchema } from "../../../schemas.ts/itemSchema";
+import { itemDetailsOutputSchema } from "../../../schemas/itemSchema";
 import Tag from "../../../models/Tag";
-import { ItemDetailsOutputType } from "../../../types/itemTypes";
+import { validatedExpect } from "../../../test/helpers/assertionHelper";
 
 const getUrl = (itemId: string) => `/api/item/${itemId}`;
 const defaultUrl = getUrl(defaultItem.id!);
@@ -93,9 +93,11 @@ it("should return 200 with the correct schema", async () => {
   await defaultRequest()
     .expect(200)
     .expect(({ body }) => {
-      const { value, error } = itemDetailsOutputSchema.validate(body);
-      expect(error).toBe(undefined);
-      expect(body?.images).toHaveLength(6);
+      const validationResult = itemDetailsOutputSchema.safeParse(body);
+      expect(validationResult.success).toBe(true);
+      if (validationResult.success) {
+        expect(validationResult.data.images).toHaveLength(6);
+      }
     });
 });
 
@@ -112,15 +114,14 @@ it("expects images to be sorted ascending by order", async () => {
 
   await defaultRequest()
     .expect(200)
-    .expect(({ body }: { body: ItemDetailsOutputType }) => {
-      const { value, error } = itemDetailsOutputSchema.validate(body);
-      expect(error).toBe(undefined);
-      expect(body.images).toHaveLength(6);
-
-      //order must equal index(ascending with no gap)
-      const orderIsAscending = body.images.every(
-        ({ order }, index) => order === index
-      );
-      expect(orderIsAscending).toBe(true);
-    });
+    .expect(
+      validatedExpect(itemDetailsOutputSchema, (data, res) => {
+        expect(data.images).toHaveLength(6);
+        //order must equal index(ascending with no gap)
+        const orderIsAscending = data.images.every(
+          ({ order }, index) => order === index
+        );
+        expect(orderIsAscending).toBe(true);
+      })
+    );
 });

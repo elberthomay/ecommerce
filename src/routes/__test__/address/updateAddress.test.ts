@@ -18,11 +18,9 @@ import {
 import Address from "../../../models/Address";
 import { omit } from "lodash";
 import { invalidUuid } from "../../../test/helpers/commonData";
-import {
-  addressOutputArraySchema,
-  addressOutputSchema,
-} from "../../../schemas.ts/addressSchema";
-import { AddressOutputType } from "../../../types/addressType";
+import { addressOutputSchema } from "../../../schemas/addressSchema";
+import { z } from "zod";
+import { printedExpect } from "../../../test/helpers/assertionHelper";
 
 const getUrl = (addressId: string) => `/api/address/${addressId}`;
 const defaultUrl = getUrl(defaultAddress.id);
@@ -58,7 +56,7 @@ it("return 400 on invalid addressId", async () => {
     invalidUuid.map((uuid) =>
       getRequest(getUrl(uuid), defaultCookie())
         .send(defaultAddressCreateObject)
-        .expect(400)
+        .expect(printedExpect(400))
     )
   );
 });
@@ -79,7 +77,7 @@ it("return 400 when administrative address keys does not appear together", async
     administrativeAddressKeys.map((key) =>
       getDefaultRequest()
         .send(omit(defaultAddressCreateObject, [key]))
-        .expect(400)
+        .expect(printedExpect(400))
     )
   );
 });
@@ -91,26 +89,26 @@ it("return 403 when updating address not owned by user", async () => {
   const addresses = await createAddress(4, user);
   await getRequest(getUrl(addresses[0].id), defaultCookie())
     .send(defaultAddressCreateObject)
-    .expect(403);
+    .expect(printedExpect(403));
 });
 
 it("return 200, when district or village is null", async () => {
   await getDefaultRequest()
     .send({ ...defaultAddressCreateObject, village: null })
-    .expect(200)
-    .expect(({ body }: { body: AddressOutputType }) => {
+    .expect(printedExpect(200))
+    .expect(({ body }: { body: z.infer<typeof addressOutputSchema> }) => {
       expect(body.village).toBeUndefined();
     });
   await getDefaultRequest()
     .send({ ...defaultAddressCreateObject, district: null })
-    .expect(200)
-    .expect(({ body }: { body: AddressOutputType }) => {
+    .expect(printedExpect(200))
+    .expect(({ body }: { body: z.infer<typeof addressOutputSchema> }) => {
       expect(body.district).toBeUndefined();
     });
   await getDefaultRequest()
     .send({ ...defaultAddressCreateObject, village: null, district: null })
-    .expect(200)
-    .expect(({ body }: { body: AddressOutputType }) => {
+    .expect(printedExpect(200))
+    .expect(({ body }: { body: z.infer<typeof addressOutputSchema> }) => {
       expect(body.village).toBeUndefined();
       expect(body.district).toBeUndefined();
     });
@@ -123,7 +121,7 @@ it("return 200 when updated by admin or root", async () => {
     users.map((user) =>
       getRequest(defaultUrl, [forgeCookie(user)])
         .send(defaultAddressCreateObject)
-        .expect(200)
+        .expect(printedExpect(200))
     )
   );
 });
@@ -137,7 +135,7 @@ it("return 200 when updating address owned by the user", async () => {
 
   await getRequest(getUrl(defaultShopAddressId), defaultCookie())
     .send(defaultAddressCreateObject)
-    .expect(200);
+    .expect(printedExpect(200));
   const shopAddress = await Address.findByPk(defaultShopAddressId, {
     raw: true,
   });
@@ -149,10 +147,9 @@ it("return 200 when updating address owned by the user", async () => {
 it("return address with required schema", async () => {
   await getDefaultRequest()
     .send(omit(defaultAddressCreateObject, ["latitude", "longitude"]))
-    .expect(200)
+    .expect(printedExpect(200))
     .expect(({ body }) => {
-      console.log(body);
-      const { value, error } = addressOutputSchema.validate(body);
-      expect(error).toBe(undefined);
+      const validationResult = addressOutputSchema.safeParse(body);
+      expect(validationResult.success).toBe(true);
     });
 });

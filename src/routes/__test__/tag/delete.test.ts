@@ -7,6 +7,7 @@ import {
   defaultRootUser,
   defaultUser,
 } from "../../../test/helpers/user/userData";
+import { printedExpect } from "../../../test/helpers/assertionHelper";
 
 const url = "/api/tag/";
 const method = "delete";
@@ -25,7 +26,7 @@ it("should return 403 when accessed by non-admin/root", async () => {
     .delete(url + tag.id)
     .set("Cookie", forgeCookie(defaultUser))
     .send()
-    .expect(403);
+    .expect(printedExpect(403));
 
   let deletedTag = await Tag.findByPk(tag.id);
   expect(deletedTag).not.toBeNull();
@@ -38,7 +39,7 @@ it("should return 403 when accessed by non-admin/root", async () => {
     .delete(url + tag.id)
     .set("Cookie", forgeCookie(newAdmin))
     .send()
-    .expect(200);
+    .expect(printedExpect(200));
 
   deletedTag = await Tag.findByPk(tag.id);
   expect(deletedTag).toBeNull();
@@ -50,7 +51,7 @@ it("should successfuly deleted tag and return the deleted tag data", async () =>
     .delete(url + tag.id)
     .set("Cookie", forgeCookie(defaultRootUser))
     .send()
-    .expect(200)
+    .expect(printedExpect(200))
     .expect(({ body }) => {
       expect(body.id).toEqual(tag.id);
     });

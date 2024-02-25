@@ -4,15 +4,13 @@ import Tag, { TagCreationAttribute } from "../models/Tag";
 import validator from "../middlewares/validator";
 import {
   tagCreateSchema,
-  tagQuerySchema,
   tagPatchSchema,
-} from "../schemas.ts/tagSchema";
+  tagParamSchema,
+} from "../schemas/tagSchema";
 import fetch, { fetchCurrentUser } from "../middlewares/fetch";
 import authenticate from "../middlewares/authenticate";
-import User from "../models/User";
-import { AuthorizationError } from "../errors/AuthorizationError";
-import { TagCreateType, TagPatchType } from "../types/tagTypes";
 import { authorization } from "../middlewares/authorize";
+import { z } from "zod";
 
 const router = Router();
 
@@ -32,7 +30,7 @@ router.post(
   "/",
   authenticate(true),
   validator({ body: tagCreateSchema }),
-  fetch<TagCreationAttribute, { name: string }>({
+  fetch<TagCreationAttribute, z.infer<typeof tagCreateSchema>>({
     model: Tag,
     key: "name",
     location: "body",
@@ -40,21 +38,26 @@ router.post(
   }),
   fetchCurrentUser,
   authorizeStaff,
-  catchAsync(async (req: Request<unknown, unknown, TagCreateType>, res) => {
-    const data = req.body;
-    const newTag = await Tag.create(data);
-    res.status(201).json(newTag);
-  })
+  catchAsync(
+    async (
+      req: Request<unknown, unknown, z.infer<typeof tagCreateSchema>>,
+      res
+    ) => {
+      const data = req.body;
+      const newTag = await Tag.create(data);
+      res.status(201).json(newTag);
+    }
+  )
 );
 
 /** edit tag */
 router.patch(
   "/:tagId",
   authenticate(true),
-  validator({ params: tagQuerySchema, body: tagPatchSchema }),
+  validator({ params: tagParamSchema, body: tagPatchSchema }),
   fetchCurrentUser,
   authorizeStaff,
-  fetch<TagCreationAttribute, TagPatchType>({
+  fetch<TagCreationAttribute, z.infer<typeof tagPatchSchema>>({
     model: Tag,
     key: "name",
     location: "body",
@@ -66,22 +69,27 @@ router.patch(
     location: "params",
     force: "exist",
   }),
-  catchAsync(async (req: Request<unknown, unknown, TagPatchType>, res) => {
-    const tag: Tag = (req as any)[Tag.name];
-    const tagPatchData = req.body;
-    await tag.set(tagPatchData).save();
-    res.json(tag);
-  })
+  catchAsync(
+    async (
+      req: Request<unknown, unknown, z.infer<typeof tagPatchSchema>>,
+      res
+    ) => {
+      const tag: Tag = (req as any)[Tag.name];
+      const tagPatchData = req.body;
+      await tag.set(tagPatchData).save();
+      res.json(tag);
+    }
+  )
 );
 
 /** delete tag */
 router.delete(
   "/:tagId",
   authenticate(true),
-  validator({ params: tagQuerySchema }),
+  validator({ params: tagParamSchema }),
   fetchCurrentUser,
   authorizeStaff,
-  fetch<TagCreationAttribute, { tagId: number }>({
+  fetch<TagCreationAttribute, z.infer<typeof tagParamSchema>>({
     model: Tag,
     key: ["id", "tagId"],
     location: "params",

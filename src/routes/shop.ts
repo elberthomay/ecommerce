@@ -8,20 +8,13 @@ import {
   shopNameCheckSchema,
   shopParamSchema,
   shopUpdateSchema,
-} from "../schemas.ts/shopSchema";
-import User, { UserCreationAttribute } from "../models/User";
+} from "../schemas/shopSchema";
+import User from "../models/User";
 import Shop, { ShopCreationAttribute } from "../models/Shop";
 import fetch, { fetchCurrentUser } from "../middlewares/fetch";
 import Item, { ItemCreationAttribute } from "../models/Item";
 import { ParamsDictionary } from "express-serve-static-core";
 import { TokenTypes } from "../types/TokenTypes";
-import {
-  ShopCreateType,
-  ShopNameCheckType,
-  ShopParamType,
-  ShopQueryType,
-  ShopUpdateType,
-} from "../types/shopTypes";
 import { FindOptions, Op, Order, Sequelize } from "sequelize";
 import orderNameEnum from "../var/orderNameEnum";
 import queryOptionToLimitOffset from "../helper/queryOptionToLimitOffset";
@@ -34,6 +27,8 @@ import { v4 as uuid } from "uuid";
 import { DeleteObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
 import { BUCKET_NAME } from "../var/constants";
 import s3Client from "../helper/s3Client";
+import { z } from "zod";
+import { shopItemGetOutputSchema } from "../schemas/itemSchema";
 
 const router = Router();
 
@@ -63,8 +58,13 @@ router.get(
   validator({ params: shopParamSchema, query: ShopQuerySchema }),
   catchAsync(
     async (
-      req: Request<ParamsDictionary, unknown, unknown, ShopQueryType>,
-      res: Response,
+      req: Request<
+        z.infer<typeof shopParamSchema> | ParamsDictionary,
+        unknown,
+        unknown,
+        z.infer<typeof ShopQuerySchema>
+      >,
+      res: Response<z.infer<typeof shopItemGetOutputSchema>>,
       next: NextFunction
     ) => {
       const options = req.query;
@@ -89,7 +89,7 @@ router.get(
         where: search
           ? Sequelize.and(
               Sequelize.literal(
-                "MATCH(item.name) AGAINST(:name IN NATURAL LANGUAGE MODE)"
+                `MATCH(${Item.name}) AGAINST(:name IN NATURAL LANGUAGE MODE)`
               ),
               { shopId }
             )
@@ -119,7 +119,7 @@ router.get(
 router.get(
   "/checkName/:name",
   validator({ params: shopNameCheckSchema }),
-  fetch<ShopCreationAttribute, ShopNameCheckType>({
+  fetch<ShopCreationAttribute, z.infer<typeof shopNameCheckSchema>>({
     model: Shop,
     key: "name",
     location: "params",
@@ -152,7 +152,7 @@ router.get(
   "/:shopId",
   validator({ params: shopParamSchema }),
   //shop must exist
-  fetch<ShopCreationAttribute, ShopParamType>({
+  fetch<ShopCreationAttribute, z.infer<typeof shopParamSchema>>({
     model: Shop,
     key: ["id", "shopId"],
     location: "params",
@@ -160,7 +160,7 @@ router.get(
   }),
   catchAsync(
     async (
-      req: Request<ParamsDictionary | ShopParamType>,
+      req: Request<ParamsDictionary | z.infer<typeof shopParamSchema>>,
       res: Response,
       next: NextFunction
     ) => {
@@ -184,7 +184,7 @@ router.post(
     force: "absent",
   }),
   //check name duplicate
-  fetch<ShopCreationAttribute, ShopCreateType>({
+  fetch<ShopCreationAttribute, z.infer<typeof shopCreateSchema>>({
     model: Shop,
     key: "name",
     location: "body",
@@ -193,7 +193,7 @@ router.post(
   fetchCurrentUser,
   catchAsync(
     async (
-      req: Request<ParamsDictionary, unknown, ShopCreateType>,
+      req: Request<ParamsDictionary, unknown, z.infer<typeof shopCreateSchema>>,
       res: Response,
       next: NextFunction
     ) => {
@@ -211,7 +211,7 @@ router.patch(
   authenticate(true),
   validator({ params: shopParamSchema, body: shopUpdateSchema }),
   //user must have a shop
-  fetch<ShopCreationAttribute, ShopParamType>({
+  fetch<ShopCreationAttribute, z.infer<typeof shopParamSchema>>({
     model: Shop,
     key: ["id", "shopId"],
     location: "params",
@@ -221,7 +221,7 @@ router.patch(
   authorizeStaffOrOwner,
   catchAsync(
     async (
-      req: Request<ParamsDictionary, unknown, ShopUpdateType>,
+      req: Request<ParamsDictionary, unknown, z.infer<typeof shopUpdateSchema>>,
       res: Response,
       next: NextFunction
     ) => {

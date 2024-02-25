@@ -11,10 +11,6 @@ import {
   invalidAddressValues,
 } from "../../../test/helpers/address/addressData";
 import {
-  AddressCreateType,
-  AddressOutputType,
-} from "../../../types/addressType";
-import {
   createDefaultUser,
   defaultCookie,
 } from "../../../test/helpers/user/userHelper";
@@ -22,7 +18,15 @@ import User from "../../../models/User";
 import { defaultUser } from "../../../test/helpers/user/userData";
 import { omit, pick } from "lodash";
 import validationTest from "../../../test/helpers/validationTest.test";
-import { addressOutputSchema } from "../../../schemas.ts/addressSchema";
+import {
+  addressCreateSchema,
+  addressOutputSchema,
+} from "../../../schemas/addressSchema";
+import { z } from "zod";
+import {
+  printedExpect,
+  validatedExpect,
+} from "../../../test/helpers/assertionHelper";
 const url = "/api/address/user";
 const method = "post";
 
@@ -38,7 +42,7 @@ describe("passes authentication test", () => {
 });
 
 it("return 400 for invalid address creation data", async () => {
-  await validationTest<AddressCreateType>(
+  await validationTest<z.input<typeof addressCreateSchema>>(
     getDefaultRequest,
     defaultAddressCreateObject,
     invalidAddressValues
@@ -46,13 +50,13 @@ it("return 400 for invalid address creation data", async () => {
   //validation error when latitude xor longitude is missing, or detail is missing
   await getDefaultRequest()
     .send({ ...defaultAddressCreateObject, latitude: undefined })
-    .expect(400);
+    .expect(printedExpect(400));
   await getDefaultRequest()
     .send({ ...defaultAddressCreateObject, longitude: undefined })
-    .expect(400);
+    .expect(printedExpect(400));
   await getDefaultRequest()
     .send({ ...defaultAddressCreateObject, detail: undefined })
-    .expect(400);
+    .expect(printedExpect(400));
 });
 
 it("return 409 if address exceed limit", async () => {
@@ -68,7 +72,7 @@ it("successfuly create new address without coordinates", async () => {
       latitude: undefined,
       longitude: undefined,
     })
-    .expect(201);
+    .expect(printedExpect(201));
 });
 
 it("successfuly create new address for user", async () => {
@@ -76,8 +80,8 @@ it("successfuly create new address for user", async () => {
   await createAddress(5, user!);
   await getDefaultRequest()
     .send(defaultAddressCreateObject)
-    .expect(201)
-    .expect(({ body }: { body: AddressOutputType }) => {
+    .expect(printedExpect(201))
+    .expect(({ body }: { body: z.infer<typeof addressOutputSchema> }) => {
       expect(omit(body, ["id", "selected", "subdistrictId"])).toEqual(
         defaultAddressCreateObject
       );
@@ -91,7 +95,7 @@ it("added created address id to selected address if there was no address before"
   const user = await User.findByPk(defaultUser.id!);
   const { body }: { body: AddressCreationAttribute } = await getDefaultRequest()
     .send(defaultAddressCreateObject)
-    .expect(201);
+    .expect(printedExpect(201));
   await user?.reload();
   expect(user?.selectedAddressId).toBeTruthy();
   expect(body?.id).toBeTruthy();
@@ -101,9 +105,6 @@ it("added created address id to selected address if there was no address before"
 it("return address with required schema", async () => {
   await getDefaultRequest()
     .send(defaultAddressCreateObject)
-    .expect(201)
-    .expect(({ body }) => {
-      const { value, error } = addressOutputSchema.validate(body);
-      expect(error).toBe(undefined);
-    });
+    .expect(printedExpect(201))
+    .expect(validatedExpect(addressOutputSchema));
 });

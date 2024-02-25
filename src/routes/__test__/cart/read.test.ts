@@ -13,11 +13,20 @@ import _ from "lodash";
 import { createItem } from "../../../test/helpers/item/itemHelper";
 import Cart from "../../../models/Cart";
 import { faker } from "@faker-js/faker";
-import { cartOutputSchema } from "../../../schemas.ts/cartSchema";
-import { cartOutputType } from "../../../types/cartType";
-import Joi from "joi";
+import {
+  cartOutputListSchema,
+  cartOutputSchema,
+} from "../../../schemas/cartSchema";
+import { z } from "zod";
+import {
+  printedExpect,
+  validatedExpect,
+} from "../../../test/helpers/assertionHelper";
 
 const url = "/api/cart";
+const getRequest = (cookie: string[]) =>
+  request(app).get(url).set("Cookie", cookie);
+const getDefaultRequest = () => getRequest(defaultCookie());
 
 describe("require authentication", () => {
   authenticationTests(app, url, "get");
@@ -28,11 +37,9 @@ beforeEach(async () => {
 });
 
 it("return empty array if there's no item in cart", async () => {
-  await request(app)
-    .get(url)
-    .set("Cookie", defaultCookie())
+  await getDefaultRequest()
     .send()
-    .expect(200)
+    .expect(printedExpect(200))
     .expect(({ body }) => {
       expect(body).toEqual([]);
     });
@@ -44,11 +51,9 @@ it("return empty array if there's no item in user's cart", async () => {
   } = await createUser(1);
   user.$add("itemsInCart", items, { through: { quantity: 5 } });
 
-  await request(app)
-    .get(url)
-    .set("Cookie", defaultCookie())
+  await getDefaultRequest()
     .send()
-    .expect(200)
+    .expect(printedExpect(200))
     .expect(({ body }) => {
       expect(body).toEqual([]);
     });
@@ -63,11 +68,9 @@ it("return one item with cart data if there's 1 item user's cart", async () => {
   const user = await User.findByPk(defaultUser.id);
   await Cart.create({ userId: defaultUser.id, itemId: items[0].id });
 
-  await request(app)
-    .get(url)
-    .set("Cookie", defaultCookie())
+  await getDefaultRequest()
     .send()
-    .expect(200)
+    .expect(printedExpect(200))
     .expect(({ body }) => {
       expect(body).toHaveLength(1);
       expect(_.pick(body[0], ["itemId", "quantity"])).toEqual({
@@ -101,7 +104,7 @@ it("return cart item with determined schema, with correct data", async () => {
   // const user = await User.findByPk(defaultUser.id);
   // await Cart.create({ userId: defaultUser.id, itemId: items[0].id });
 
-  const expectedCartItem = {
+  const expectedCartItem: z.infer<typeof cartOutputSchema> = {
     inventory: item.quantity,
     itemId: item.id,
     name: item.name,
@@ -113,23 +116,16 @@ it("return cart item with determined schema, with correct data", async () => {
     shopName: partialShopData.name,
   };
 
-  await request(app)
-    .get(url)
-    .set("Cookie", forgeCookie(otherUser))
+  await getRequest([forgeCookie(otherUser)])
     .send()
-    .expect(200)
-    .expect(({ body }: { body: cartOutputType[] }) => {
-      expect(body).toHaveLength(2);
-      const errors = body.reduce((errors, cart) => {
-        const { value, error } = cartOutputSchema.validate(cart);
-        if (error) return [...errors, error];
-        else return errors;
-      }, [] as Joi.ValidationError[]);
-      console.log(JSON.stringify(body[0]));
-      expect(errors).toHaveLength(0);
-      expect(body[0]).toEqual(expectedCartItem);
-      expect(body[1].image).toBe(null);
-    });
+    .expect(printedExpect(200))
+    .expect(
+      validatedExpect(cartOutputListSchema, (data, { body }) => {
+        expect(body).toHaveLength(2);
+        expect(data[0]).toEqual(expectedCartItem);
+        expect(data[1].image).toBe(null);
+      })
+    );
 });
 
 it("return 10 item if there's 10 item in user's cart", async () => {
@@ -138,11 +134,9 @@ it("return 10 item if there's 10 item in user's cart", async () => {
   const user = await User.findOne({ where: { id: defaultUser.id } });
   await user?.$add("itemsInCart", items, { through: { quantity: 5 } });
 
-  await request(app)
-    .get(url)
-    .set("Cookie", defaultCookie())
+  await getDefaultRequest()
     .send()
-    .expect(200)
+    .expect(printedExpect(200))
     .expect(({ body }) => {
       expect(body).toHaveLength(10);
     });

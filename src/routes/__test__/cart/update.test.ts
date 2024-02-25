@@ -11,10 +11,7 @@ import request from "supertest";
 import Cart from "../../../models/Cart";
 import { invalidUuid } from "../../../test/helpers/commonData";
 import { createItem, defaultItem } from "../../../test/helpers/item/itemHelper";
-import {
-  invalidCartQuantity,
-  invalidCartUpdateQuantity,
-} from "../../../test/helpers/cartHelper";
+import { invalidCartUpdateQuantity } from "../../../test/helpers/cartHelper";
 import _ from "lodash";
 const url = "/api/cart";
 

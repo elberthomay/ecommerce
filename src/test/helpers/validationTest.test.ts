@@ -3,7 +3,8 @@ import request from "supertest";
 export default async function validationTest<T extends Record<string, any>>(
   getDefaultRequest: () => request.Test,
   defaultObject: T,
-  testObject: Record<keyof T, any[]>
+  testObject: Record<keyof T, any[]>,
+  expectedCode: number = 400
 ) {
   // construct invalid request bodies from defaultObject and testObject
   const testRequests = Object.entries(testObject)
@@ -14,15 +15,15 @@ export default async function validationTest<T extends Record<string, any>>(
             ...defaultObject,
             [key]: invalidValue,
           })
-          .expect((res: any) => {
-            if (res.statusCode !== 400)
-              console.error(
-                `ValidationError \nkey: ${key}, value: ${invalidValue}, error: ${JSON.stringify(
-                  res.body
-                )}`
-              );
+          .expect(({ body, statusCode }) => {
+            expect(
+              statusCode,
+              `ValidationError: key: ${key}, value: ${invalidValue}\nerror: ${JSON.stringify(
+                body
+              )}`,
+              { showPrefix: false, showStack: false }
+            ).toBe(expectedCode);
           })
-          .expect(400)
       )
     )
     .flat();

@@ -1,9 +1,9 @@
 import { Router, Request, Response, NextFunction } from "express";
 import {
-  UserUpdateSchema,
+  userUpdateSchema,
   loginSchema,
   registerSchema,
-} from "../schemas.ts/userSchema";
+} from "../schemas/userSchema";
 import validator from "../middlewares/validator";
 import User, { UserCreationAttribute } from "../models/User";
 import catchAsync from "../middlewares/catchAsync";
@@ -12,7 +12,6 @@ import fetch, { fetchCurrentUser } from "../middlewares/fetch";
 import InvalidLoginError from "../errors/InvalidLoginError";
 import { TokenTypes } from "../types/TokenTypes";
 import authenticate from "../middlewares/authenticate";
-import { UserRegisterType, UserUpdateType } from "../types/userTypes";
 import { AuthorizationError } from "../errors/AuthorizationError";
 import processImage from "../middlewares/processImage";
 import s3Client from "../helper/s3Client";
@@ -29,6 +28,7 @@ import createToken from "../middlewares/createToken";
 import { VerifyCallback } from "jsonwebtoken";
 import { GoogleProfileType } from "../types/authType";
 import oauth2ErrorHandler from "../middlewares/oauth2ErrorHandler";
+import { z } from "zod";
 
 const localStrategy = new LocalStrategy(
   {
@@ -86,14 +86,17 @@ const router = Router();
 router.post(
   "/register",
   validator({ body: registerSchema }),
-  fetch<UserCreationAttribute, UserRegisterType>({
+  fetch<UserCreationAttribute, z.infer<typeof registerSchema>>({
     model: User,
     key: "email",
     location: "body",
     force: "absent",
   }),
   catchAsync(
-    async (req: Request<unknown, unknown, UserRegisterType>, res: Response) => {
+    async (
+      req: Request<unknown, unknown, z.infer<typeof registerSchema>>,
+      res: Response
+    ) => {
       const newUserData = req.body;
       const hash = await bcrypt.hash(newUserData.password, 10);
       const newUser = await User.create({ ...newUserData, hash });
@@ -106,7 +109,7 @@ router.post(
   "/createAdmin",
   validator({ body: registerSchema }),
   authenticate(true),
-  fetch<UserCreationAttribute, UserRegisterType>({
+  fetch<UserCreationAttribute, z.infer<typeof registerSchema>>({
     model: User,
     key: "email",
     location: "body",
@@ -125,7 +128,11 @@ router.post(
     else next();
   },
   catchAsync(
-    async (req: Request<unknown, unknown, UserRegisterType>, res, next) => {
+    async (
+      req: Request<unknown, unknown, z.infer<typeof registerSchema>>,
+      res,
+      next
+    ) => {
       const newUserData = req.body;
       const hash = await bcrypt.hash(newUserData.password, 10);
       const newUser = await User.create({ ...newUserData, hash, privilege: 1 });
@@ -224,11 +231,11 @@ router.post(
 router.patch(
   "/",
   authenticate(true),
-  validator({ body: UserUpdateSchema }),
+  validator({ body: userUpdateSchema }),
   fetchCurrentUser,
   catchAsync(
     async (
-      req: Request<unknown, unknown, UserUpdateType>,
+      req: Request<unknown, unknown, z.infer<typeof userUpdateSchema>>,
       res: Response,
       next: NextFunction
     ) => {

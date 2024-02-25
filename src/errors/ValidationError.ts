@@ -1,27 +1,26 @@
-import Joi from "joi";
+import { itemCreateSchema, itemParamSchema } from "../schemas/itemSchema";
 import CustomError, { FormattedError } from "./CustomError";
-import { ValidationErrorType } from "../middlewares/validator";
-
-type SerializedError = {
-  [key in "body" | "params" | "query"]?: { field?: string; message: string }[];
-};
+import { ZodError, z } from "zod";
 
 export default class ValidationError extends CustomError {
   statusCode: number = 400;
-  errors: ValidationErrorType[];
-  constructor(errors: ValidationErrorType[]) {
+  errors: ZodError<{
+    body?: any;
+    params?: any;
+    query?: any;
+  }>;
+  constructor(
+    errors: ZodError<{
+      body?: any;
+      params?: any;
+      query?: any;
+    }>
+  ) {
     super("Error occured during validation");
     this.errors = errors;
   }
   serializeError(): FormattedError {
-    const serializedError: SerializedError = {};
-
-    for (const { key, error } of this.errors) {
-      serializedError[key] = error.details.map((detail) => ({
-        field: detail.context?.label,
-        message: detail.message,
-      }));
-    }
-    return { message: this.message, errors: serializedError };
+    const formatted = this.errors.format((issue) => issue.message);
+    return { message: this.message, errors: formatted };
   }
 }

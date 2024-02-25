@@ -17,7 +17,10 @@ spec:
           image: elberthomax/ecommerce
           env:
             - name: NODE_ENV
-              value: production
+              valueFrom:
+                configMapKeyRef:
+                  name: ecommerce-data
+                  key: NODE_ENV
             - name: DB_HOST
               value: "ecommerce-db-srv"
 

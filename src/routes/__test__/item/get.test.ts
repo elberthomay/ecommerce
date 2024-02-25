@@ -5,10 +5,11 @@ import Tag from "../../../models/Tag";
 import { createItem } from "../../../test/helpers/item/itemHelper";
 import { defaultShop } from "../../../test/helpers/shop/shopHelper";
 import Item, { ItemCreationAttribute } from "../../../models/Item";
-import { itemGetOutputSchema } from "../../../schemas.ts/itemSchema";
+import { itemGetOutputSchema } from "../../../schemas/itemSchema";
 import { faker } from "@faker-js/faker";
 import ItemImage from "../../../models/ItemImage";
-import { ItemGetOutputType } from "../../../types/itemTypes";
+import { z } from "zod";
+import { printedExpect } from "../../../test/helpers/assertionHelper";
 const url = "/api/item";
 
 describe("test basic paging and limit", () => {
@@ -25,7 +26,11 @@ it("reject search string with invalid character", async () => {
   const shopId = faker.string.uuid();
   await createItem(40, { id: shopId });
 
-  await request(app).get(url).query({ search: "/'\"" }).send().expect(400);
+  await request(app)
+    .get(url)
+    .query({ search: "/'\"" })
+    .send()
+    .expect(printedExpect(400));
 });
 
 it("should return item from all shop", async () => {
@@ -38,7 +43,7 @@ it("should return item from all shop", async () => {
     .get(url)
     .query({ limit: 120 })
     .send()
-    .expect(200)
+    .expect(printedExpect(200))
     .expect(({ body: { count, rows } }) => {
       expect(count).toEqual(120);
       expect(rows).toHaveLength(120);
@@ -47,7 +52,7 @@ it("should return item from all shop", async () => {
     .get(url)
     .query({ limit: 80 })
     .send()
-    .expect(200)
+    .expect(printedExpect(200))
     .expect(({ body: { count, rows } }) => {
       expect(rows).toHaveLength(80);
     });
@@ -77,10 +82,7 @@ it("should return items with the correct tag when using tagId query option", asy
       limit: 300,
     })
     .send()
-    .expect((res) => {
-      if (res.status != 200) console.log(res.body.errors);
-    })
-    .expect(200)
+    .expect(printedExpect(200))
     .expect(({ body: { count, rows } }) => {
       expect(rows).toHaveLength(200);
     });
@@ -99,7 +101,7 @@ it("order first by whenever item sold out or not", async () => {
   await request(app)
     .get(url)
     .send()
-    .expect(200)
+    .expect(printedExpect(200))
     .expect(({ body: { count, rows } }) => {
       //return 80 item, default limit
       expect(count).toEqual(150);
@@ -122,7 +124,7 @@ it("sort by price ascending when corresponding query option is used", async () =
   await request(app)
     .get(url)
     .query({ orderBy: "cheapest" })
-    .expect(200)
+    .expect(printedExpect(200))
     .expect(({ body: { count, rows } }) => {
       expect(rows).toHaveLength(80);
       const priceIsAscending = (rows as ItemCreationAttribute[]).every(
@@ -146,7 +148,7 @@ it("sort by price descending when corresponding query option is used", async () 
   await request(app)
     .get(url)
     .query({ orderBy: "mostExpensive" })
-    .expect(200)
+    .expect(printedExpect(200))
     .expect(({ body: { count, rows } }) => {
       expect(rows).toHaveLength(80);
       const priceIsDescending = (rows as ItemCreationAttribute[]).every(
@@ -178,17 +180,19 @@ it("return item and shop data with determined format", async () => {
   await request(app)
     .get(url)
     .send()
-    .expect(200)
-    .expect(async ({ body: { count, rows } }) => {
-      const { value, error } = itemGetOutputSchema.validate(rows);
-      expect(error).toBe(undefined);
-      expect(
-        rows
-          .filter(({ image }: { image: string | null }) => image)
-          .every(
-            (item: ItemGetOutputType) => item.image === "http://image.com/1"
-          )
-      ).toBeTruthy();
+    .expect(printedExpect(200))
+    .expect(async ({ body }: { body: z.infer<typeof itemGetOutputSchema> }) => {
+      const validationResult = itemGetOutputSchema.safeParse(body);
+      expect(validationResult.success).toBe(true);
+      if (validationResult.success) {
+        expect(validationResult.data.count).toBe(20);
+        // image is image with order 0
+        expect(
+          validationResult.data.rows
+            .filter(({ image }) => image)
+            .every(({ image }) => image === "http://image.com/1")
+        ).toBeTruthy();
+      }
     });
 });
 
@@ -209,7 +213,7 @@ it("should return item with certain string when search option is used", async ()
     .get(url)
     .query({ search: "dragon" })
     .send()
-    .expect(200)
+    .expect(printedExpect(200))
     .expect(({ body: { count, rows } }) => {
       expect(count).toEqual(3);
     });

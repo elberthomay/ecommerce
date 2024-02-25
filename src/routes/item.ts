@@ -11,20 +11,14 @@ import { TokenTypes } from "../types/TokenTypes";
 import { authorization } from "../middlewares/authorize";
 import {
   itemCreateSchema,
+  itemDetailsOutputSchema,
+  itemGetOutputSchema,
   itemImageOrdersSchema,
   itemParamSchema,
   itemQuerySchema,
   itemTagEditSchema,
   itemUpdateSchema,
-} from "../schemas.ts/itemSchema";
-import {
-  ItemCreateType,
-  ItemDetailsOutputType,
-  ItemImageOrderArray,
-  ItemQueryType,
-  ItemTagEditType,
-  ItemUpdateType,
-} from "../types/itemTypes";
+} from "../schemas/itemSchema";
 import {
   FindOptions,
   Includeable,
@@ -46,6 +40,7 @@ import { BUCKET_NAME, MAX_IMAGE_COUNT } from "../var/constants";
 import MaxImageExceeded from "../errors/MaxImageExceeded";
 import { DeleteObjectsCommand, PutObjectCommand } from "@aws-sdk/client-s3";
 import s3Client from "../helper/s3Client";
+import { z } from "zod";
 
 const router = Router();
 
@@ -88,7 +83,7 @@ async function addImages(
   item: Item,
   images: Buffer[],
   transaction?: Transaction,
-  order?: ItemImageOrderArray
+  order?: z.infer<typeof itemImageOrdersSchema>
 ) {
   const imagesMetadata = images.map((image, i) => ({
     itemId: item.id,
@@ -156,7 +151,7 @@ async function removeTags(item: Item, tagIds: number[]) {
 
 async function formatItemDetailsOutput(
   item: Item
-): Promise<ItemDetailsOutputType> {
+): Promise<z.infer<typeof itemDetailsOutputSchema>> {
   await item.reload({
     include: [
       { model: ItemImage, attributes: ["imageName", "order"] },
@@ -205,8 +200,8 @@ router.get(
   validator({ query: itemQuerySchema }),
   catchAsync(
     async (
-      req: Request<unknown, unknown, unknown, ItemQueryType>,
-      res: Response,
+      req: Request<unknown, unknown, unknown, z.infer<typeof itemQuerySchema>>,
+      res: Response<z.infer<typeof itemGetOutputSchema>>,
       next: NextFunction
     ) => {
       const options = req.query;
@@ -232,7 +227,7 @@ router.get(
               ...defaultInclude,
               {
                 model: Tag,
-                where: { id: { [Op.in]: tagIds.split(",") } },
+                where: { id: { [Op.in]: tagIds } },
               },
             ]
           : defaultInclude,
@@ -258,7 +253,7 @@ router.get(
             price,
             quantity,
             shopId,
-            shopName: shop?.name,
+            shopName: shop?.name!,
             image: images[0]?.imageName ?? null,
           })
         ),
@@ -283,7 +278,7 @@ router.post(
   validator({ body: itemCreateSchema }),
   catchAsync(
     async (
-      req: Request<unknown, unknown, ItemCreateType>,
+      req: Request<unknown, unknown, z.infer<typeof itemCreateSchema>>,
       res: Response,
       next: NextFunction
     ) => {
@@ -302,7 +297,7 @@ router.post(
           },
           { transaction }
         );
-        if (newItemData.tags && newItemData.tags.length !== 0)
+        if (newItemData.tags)
           await addTags(newItem, newItemData.tags, transaction);
         if (imageBuffers.length !== 0)
           await addImages(newItem, imageBuffers, transaction);
@@ -329,7 +324,7 @@ router.patch(
   authorizeStaffOrOwner,
   catchAsync(
     async (
-      req: Request<unknown, unknown, ItemUpdateType>,
+      req: Request<unknown, unknown, z.infer<typeof itemUpdateSchema>>,
       res: Response,
       next: NextFunction
     ) => {
@@ -377,7 +372,11 @@ router.post(
   }),
   authorizeStaffOrOwner,
   catchAsync(
-    async (req: Request<unknown, unknown, ItemTagEditType>, res, next) => {
+    async (
+      req: Request<unknown, unknown, z.infer<typeof itemTagEditSchema>>,
+      res,
+      next
+    ) => {
       const item: Item = (req as any)[Item.name];
       const tags = req.body.tags;
       await addTags(item, tags);
@@ -401,7 +400,11 @@ router.delete(
   }),
   authorizeStaffOrOwner,
   catchAsync(
-    async (req: Request<unknown, unknown, ItemTagEditType>, res, next) => {
+    async (
+      req: Request<unknown, unknown, z.infer<typeof itemTagEditSchema>>,
+      res,
+      next
+    ) => {
       const item: Item = (req as any)[Item.name];
       const tags = req.body.tags;
       await removeTags(item, tags);
@@ -472,7 +475,7 @@ router.patch(
   authorizeStaffOrOwner,
   catchAsync(
     async (
-      req: Request<unknown, unknown, ItemImageOrderArray>,
+      req: Request<unknown, unknown, z.infer<typeof itemImageOrdersSchema>>,
       res: Response,
       next
     ) => {
@@ -519,7 +522,7 @@ router.delete(
   authorizeStaffOrOwner,
   catchAsync(
     async (
-      req: Request<unknown, unknown, ItemImageOrderArray>,
+      req: Request<unknown, unknown, z.infer<typeof itemImageOrdersSchema>>,
       res: Response,
       next
     ) => {

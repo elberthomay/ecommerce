@@ -3,23 +3,25 @@ import pagingAndLimitTests from "../../../test/pagingAndLimitTests.test";
 import { defaultShop } from "../../../test/helpers/shop/shopHelper";
 import { createItem } from "../../../test/helpers/item/itemHelper";
 import request from "supertest";
-import {
-  ItemGetOutputType,
-  ShopItemGetOutputType,
-} from "../../../types/itemTypes";
 import { faker } from "@faker-js/faker";
 import ItemImage from "../../../models/ItemImage";
-import { shopItemGetOutputSchema } from "../../../schemas.ts/itemSchema";
+import {
+  shopItemGetOutputBase,
+  shopItemGetOutputSchema,
+} from "../../../schemas/itemSchema";
+import { z } from "zod";
+import { printedExpect } from "../../../test/helpers/assertionHelper";
 
 const url = "/api/shop/" + defaultShop.id + "/item";
 
 type ShopItemReqBodyType = {
-  body: { count: number; rows: ShopItemGetOutputType[] };
+  body: z.infer<typeof shopItemGetOutputSchema>;
 };
 
-const isInStock = (item: ShopItemGetOutputType) => item.quantity !== 0;
+const isInStock = (item: z.infer<typeof shopItemGetOutputBase>) =>
+  item.quantity !== 0;
 const isPriceSorted = (
-  items: ShopItemGetOutputType[],
+  items: z.infer<typeof shopItemGetOutputSchema.shape.rows>,
   comparator: (cur: number, prev: number) => boolean
 ) =>
   items.every(({ price }, index, array) => {
@@ -59,7 +61,7 @@ it("order first by whenever item sold out or not", async () => {
   await request(app)
     .get(url)
     .send()
-    .expect(200)
+    .expect(printedExpect(200))
     .expect(({ body: { count, rows } }: ShopItemReqBodyType) => {
       expect(count).toEqual(150);
       //first 50 must be in stock
@@ -78,7 +80,7 @@ it("sort by price ascending when corresponding query option is used", async () =
   await request(app)
     .get(url)
     .query({ orderBy: "cheapest" })
-    .expect(200)
+    .expect(printedExpect(200))
     .expect(({ body: { count, rows } }: ShopItemReqBodyType) => {
       expect(rows).toHaveLength(80);
 
@@ -103,7 +105,7 @@ it("sort by price descending when corresponding query option is used", async () 
   await request(app)
     .get(url)
     .query({ orderBy: "mostExpensive" })
-    .expect(200)
+    .expect(printedExpect(200))
     .expect(({ body: { count, rows } }) => {
       expect(rows).toHaveLength(80);
       //price descending
@@ -144,7 +146,7 @@ it("search by string when search query is provided", async () => {
   await request(app)
     .get(url)
     .query({ search: keyWord })
-    .expect(200)
+    .expect(printedExpect(200))
     .expect(({ body: { count, rows } }: ShopItemReqBodyType) => {
       expect(rows).toHaveLength(30);
       //result have the specified keyword in it"
@@ -169,16 +171,15 @@ it("return item data with determined format", async () => {
   await request(app)
     .get(url)
     .send()
-    .expect(200)
-    .expect(async ({ body: { count, rows } }) => {
-      const { value, error } = shopItemGetOutputSchema.validate(rows);
-      expect(error).toBe(undefined);
-      expect(
-        rows
-          .filter(({ image }: { image: string | null }) => image)
-          .every(
-            (item: ItemGetOutputType) => item.image === "http://image.com/1"
-          )
-      ).toBeTruthy();
+    .expect(printedExpect(200))
+    .expect(async ({ body }) => {
+      const validationResult = shopItemGetOutputSchema.safeParse(body);
+      expect(validationResult.success).toBe(true);
+      if (validationResult.success)
+        expect(
+          validationResult.data.rows
+            .filter(({ image }: { image: string | null }) => image)
+            .every((item) => item.image === "http://image.com/1")
+        ).toBeTruthy();
     });
 });

@@ -1,12 +1,12 @@
 import validator from "../middlewares/validator"; // Import your validator function
 import ValidationError from "../errors/ValidationError"; // Import the ValidationError class from Joi
-import { ObjectSchema } from "joi";
 import { NextFunction, Request, Response } from "express";
+import { ZodTypeAny } from "zod";
 
 // Define the reusable test function
 
 export const validatorTestFunction = (
-  schemas: { [key in "body" | "params" | "query"]?: ObjectSchema },
+  schemas: { [key in "body" | "params" | "query"]?: ZodTypeAny },
   inputData: { [key in "body" | "params" | "query"]?: any },
   expectedResult:
     | { value: { [key in "body" | "params" | "query"]?: any } }
@@ -24,12 +24,12 @@ export const validatorTestFunction = (
       | "query"
     )[];
 
-    // Mock the behavior of ObjectSchema.validate
+    // Mock the behavior of safeParse
     const validateMocks: {
       [key in "body" | "params" | "query"]?: jest.SpyInstance;
     } = {};
     keys.forEach(
-      (key) => (validateMocks[key] = jest.spyOn(schemas[key]!, "validate"))
+      (key) => (validateMocks[key] = jest.spyOn(schemas[key]!, "safeParse"))
     );
 
     // Call the validator middleware

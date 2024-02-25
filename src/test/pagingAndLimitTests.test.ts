@@ -1,5 +1,6 @@
 import { Express } from "express";
 import request from "supertest";
+import { printedExpect } from "./helpers/assertionHelper";
 /**
  * Run test suite that tests paging and limit
  * @param app express instance used
@@ -19,7 +20,7 @@ export default function pagingAndLimitTests(
     await request(app)
       .get(url)
       .send()
-      .expect(200)
+      .expect(printedExpect(200))
       .expect(({ body }) => expect(transformerFunction(body)).toHaveLength(0));
   });
 
@@ -29,7 +30,7 @@ export default function pagingAndLimitTests(
       .query({ limit: 40 })
       .set("Cookie", cookie)
       .send()
-      .expect(200)
+      .expect(printedExpect(200))
       .expect(({ body }) => {
         expect(transformerFunction(body)).toHaveLength(0);
       });
@@ -54,7 +55,7 @@ export default function pagingAndLimitTests(
       .get(url)
       .set("Cookie", cookie)
       .send()
-      .expect(200)
+      .expect(printedExpect(200))
       .expect(({ body }) => {
         expect(transformerFunction(body)).toHaveLength(80);
       });
@@ -68,7 +69,7 @@ export default function pagingAndLimitTests(
       .query({ page: 2 })
       .set("Cookie", cookie)
       .send()
-      .expect(200)
+      .expect(printedExpect(200))
       .expect(({ body }) => {
         expect(transformerFunction(body)).toHaveLength(20);
       });
@@ -82,7 +83,7 @@ export default function pagingAndLimitTests(
       .query({ page: 3 })
       .set("Cookie", cookie)
       .send()
-      .expect(200)
+      .expect(printedExpect(200))
       .expect(({ body }) => {
         expect(transformerFunction(body)).toHaveLength(0);
       });
@@ -96,7 +97,7 @@ export default function pagingAndLimitTests(
       .query({ limit: 40 })
       .set("Cookie", cookie)
       .send()
-      .expect(200)
+      .expect(printedExpect(200))
       .expect(({ body }) => {
         expect(transformerFunction(body)).toHaveLength(40);
       });
@@ -110,7 +111,7 @@ export default function pagingAndLimitTests(
       .query({ limit: 30, page: 4 })
       .set("Cookie", cookie)
       .send()
-      .expect(200)
+      .expect(printedExpect(200))
       .expect(({ body }) => {
         expect(transformerFunction(body)).toHaveLength(10);
       });
@@ -124,7 +125,7 @@ export default function pagingAndLimitTests(
         .query({ limit })
         .set("Cookie", cookie)
         .send()
-        .expect(400);
+        .expect(printedExpect(400));
     }
   });
 
@@ -136,7 +137,7 @@ export default function pagingAndLimitTests(
         .query({ page })
         .set("Cookie", cookie)
         .send()
-        .expect(400);
+        .expect(printedExpect(400));
     }
   });
 }

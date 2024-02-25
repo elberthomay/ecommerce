@@ -5,7 +5,6 @@ import {
   createDefaultShop,
   defaultShop,
 } from "../../../test/helpers/shop/shopHelper";
-import validationTest from "../../../test/helpers/validationTest.test";
 
 const createUrl = (itemName: string) =>
   `/api/shop/checkName/${encodeURIComponent(itemName)}`;

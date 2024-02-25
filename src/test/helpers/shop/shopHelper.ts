@@ -2,7 +2,8 @@ import { faker } from "@faker-js/faker";
 import Shop, { ShopCreationAttribute } from "../../../models/Shop";
 import { createUser } from "../user/userHelper";
 import { defaultUser } from "../user/userData";
-import { ShopUpdateType } from "../../../types/shopTypes";
+import { z } from "zod";
+import { shopUpdateSchema } from "../../../schemas/shopSchema";
 
 /**
  * Create Shop from number or array of fragmented(or whole) user data.
@@ -64,7 +65,7 @@ export const defaultShop: ShopCreationAttribute = {
   userId: defaultUser.id,
 };
 
-export const defaultShopUpdate: ShopUpdateType = {
+export const defaultShopUpdate: z.infer<typeof shopUpdateSchema> = {
   name: faker.company.name(),
   description: generateShopDescription(faker.company.name()),
 };

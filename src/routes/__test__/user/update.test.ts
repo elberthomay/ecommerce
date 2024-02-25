@@ -11,8 +11,8 @@ import User from "../../../models/User";
 import validationTest from "../../../test/helpers/validationTest.test";
 import { invalidUserValue } from "../../../test/helpers/user/userData";
 import { omit, pick } from "lodash";
-import { CurrentUserOutputType } from "../../../types/userTypes";
-import { currentUserOutputSchema } from "../../../schemas.ts/userSchema";
+import { currentUserOutputSchema } from "../../../schemas/userSchema";
+import { z } from "zod";
 
 const url = "/api/user/";
 const method = "patch";
@@ -66,9 +66,8 @@ it("updated user data", async () => {
 it("returned data that match currentUserOutputSchema", async () => {
   await defaultRequest()
     .expect(200)
-    .expect(({ body }: { body: CurrentUserOutputType }) => {
-      const { value, error } = currentUserOutputSchema.validate(body);
-      console.log(value);
-      expect(error).toBeUndefined();
+    .expect(({ body }: { body: z.infer<typeof currentUserOutputSchema> }) => {
+      const validationResult = currentUserOutputSchema.safeParse(body);
+      expect(validationResult.success).toBe(true);
     });
 });

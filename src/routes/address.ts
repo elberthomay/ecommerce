@@ -10,22 +10,18 @@ import Address, { AddressCreationAttribute } from "../models/Address";
 import validator from "../middlewares/validator";
 import AddressLimitError from "../errors/AddressLimitError";
 import { authorization } from "../middlewares/authorize";
-import {
-  AddressCreateType,
-  AddressOutputType,
-  AddressParamType,
-  AddressUpdateType,
-} from "../types/addressType";
 import UserAddress from "../models/UserAddress";
 import {
   addressCreateSchema,
+  addressOutputSchema,
   addressParamSchema,
   addressUpdateSchema,
-} from "../schemas.ts/addressSchema";
+} from "../schemas/addressSchema";
 import NotFoundError from "../errors/NotFoundError";
 import { ModelWithAddresses } from "../test/helpers/address/addressHelper";
 import sequelize from "../models/sequelize";
 import { isNull, omitBy } from "lodash";
+import { z } from "zod";
 
 const router = Router();
 
@@ -34,7 +30,7 @@ const authorizeStaffOrAddressOwner = authorization(
   [
     0,
     1,
-    (req: Request<AddressParamType | ParamsDictionary>) => {
+    (req: Request<z.infer<typeof addressParamSchema> | ParamsDictionary>) => {
       const addressList: Address[] | null | undefined = (req as any)
         .addressList;
       const addressId = req.params.addressId;
@@ -63,7 +59,7 @@ const getAllAddresses = catchAsync(
 
 async function createAddress<T extends ModelWithAddresses>(
   parentInstance: T,
-  addressData: AddressCreateType,
+  addressData: z.infer<typeof addressCreateSchema>,
   addressLimit: number
 ): Promise<Address> {
   const addresses = (await parentInstance.$get("addresses")) as Address[];
@@ -82,7 +78,7 @@ async function createAddress<T extends ModelWithAddresses>(
 function formatAddress(
   address: Address,
   selectedAddressId?: string
-): AddressOutputType {
+): z.infer<typeof addressOutputSchema> {
   const {
     id,
     name,
@@ -122,7 +118,9 @@ function formatAddress(
         ? id === selectedAddressId
         : shopAddress?.selected ?? false,
   };
-  return omitBy(addressOutput, isNull) as unknown as AddressOutputType;
+  return omitBy(addressOutput, isNull) as unknown as z.infer<
+    typeof addressOutputSchema
+  >;
 }
 
 // get user addresses
@@ -190,12 +188,17 @@ router.post(
   fetchCurrentUser,
   catchAsync(
     async (
-      req: Request<unknown, unknown, AddressCreateType, unknown>,
+      req: Request<
+        unknown,
+        unknown,
+        z.infer<typeof addressCreateSchema>,
+        unknown
+      >,
       res: Response,
       next: NextFunction
     ) => {
       const currentUser: User = (req as any).currentUser;
-      const addressData: AddressCreateType = req.body;
+      const addressData: z.infer<typeof addressCreateSchema> = req.body;
 
       const newAddress = await createAddress(currentUser, addressData, 10);
       if (!currentUser.selectedAddressId)
@@ -216,7 +219,12 @@ router.post(
   fetchCurrentUser,
   catchAsync(
     async (
-      req: Request<unknown, unknown, AddressCreateType, unknown>,
+      req: Request<
+        unknown,
+        unknown,
+        z.infer<typeof addressCreateSchema>,
+        unknown
+      >,
       res: Response,
       next: NextFunction
     ) => {
@@ -239,7 +247,7 @@ router.patch(
   authenticate(true),
   validator({ body: addressUpdateSchema, params: addressParamSchema }),
   fetchCurrentUser,
-  fetch<AddressCreationAttribute, AddressParamType>({
+  fetch<AddressCreationAttribute, z.infer<typeof addressParamSchema>>({
     model: Address,
     location: "params",
     key: ["id", "addressId"],
@@ -251,9 +259,9 @@ router.patch(
   catchAsync(
     async (
       req: Request<
-        AddressParamType | ParamsDictionary,
+        z.infer<typeof addressParamSchema> | ParamsDictionary,
         unknown,
-        AddressUpdateType
+        z.infer<typeof addressUpdateSchema>
       >,
       res: Response,
       next: NextFunction
@@ -279,7 +287,7 @@ router.delete(
   authenticate(true),
   validator({ params: addressParamSchema }),
   fetchCurrentUser,
-  fetch<AddressCreationAttribute, AddressParamType>({
+  fetch<AddressCreationAttribute, z.infer<typeof addressParamSchema>>({
     model: Address,
     location: "params",
     key: ["id", "addressId"],
@@ -290,9 +298,9 @@ router.delete(
   catchAsync(
     async (
       req: Request<
-        AddressParamType | ParamsDictionary,
+        z.infer<typeof addressParamSchema> | ParamsDictionary,
         unknown,
-        AddressUpdateType,
+        z.infer<typeof addressUpdateSchema>,
         unknown
       >,
       res: Response,
@@ -320,7 +328,7 @@ router.post(
   authenticate(true),
   validator({ params: addressParamSchema }),
   fetchCurrentUser,
-  fetch<AddressCreationAttribute, AddressParamType>({
+  fetch<AddressCreationAttribute, z.infer<typeof addressParamSchema>>({
     model: Address,
     key: ["id", "addressId"],
     location: "params",
@@ -329,7 +337,7 @@ router.post(
   }),
   catchAsync(
     async (
-      req: Request<AddressParamType | ParamsDictionary>,
+      req: Request<z.infer<typeof addressParamSchema> | ParamsDictionary>,
       res: Response,
       next: NextFunction
     ) => {
@@ -350,7 +358,7 @@ router.post(
   authenticate(true),
   validator({ params: addressParamSchema }),
   fetchCurrentUser,
-  fetch<AddressCreationAttribute, AddressParamType>({
+  fetch<AddressCreationAttribute, z.infer<typeof addressParamSchema>>({
     model: Address,
     key: ["id", "addressId"],
     location: "params",
@@ -359,7 +367,7 @@ router.post(
   }),
   catchAsync(
     async (
-      req: Request<AddressParamType | ParamsDictionary>,
+      req: Request<z.infer<typeof addressParamSchema> | ParamsDictionary>,
       res: Response,
       next: NextFunction
     ) => {

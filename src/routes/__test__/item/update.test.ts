@@ -7,16 +7,17 @@ import {
   forgeCookie,
 } from "../../../test/helpers/user/userHelper";
 import Item from "../../../models/Item";
-import { ItemUpdateType } from "../../../types/itemTypes";
 import { createItem, defaultItem } from "../../../test/helpers/item/itemHelper";
 import { createShop, defaultShop } from "../../../test/helpers/shop/shopHelper";
 import { invalidUuid } from "../../../test/helpers/commonData";
 import _ from "lodash";
 import { defaultRootUser } from "../../../test/helpers/user/userData";
+import { z } from "zod";
+import { itemUpdateSchema } from "../../../schemas/itemSchema";
 
 const url = "/api/item/";
 
-const changesItemData: ItemUpdateType = {
+const changesItemData: z.infer<typeof itemUpdateSchema> = {
   name: "Green Tree",
   description: "Green Tree with good shades",
   price: 5000,

@@ -8,9 +8,6 @@ import {
   defaultCookie,
 } from "../../../test/helpers/user/userHelper";
 import { defaultUser } from "../../../test/helpers/user/userData";
-import User from "../../../models/User";
-import Item, { ItemCreationAttribute } from "../../../models/Item";
-import Shop from "../../../models/Shop";
 import Cart from "../../../models/Cart";
 import { invalidUuid } from "../../../test/helpers/commonData";
 import { createItem } from "../../../test/helpers/item/itemHelper";

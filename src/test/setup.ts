@@ -2,6 +2,7 @@ import "dotenv/config";
 import sequelize from "../models/sequelize";
 import { createUser } from "./helpers/user/userHelper";
 import { defaultRootUser } from "./helpers/user/userData";
+import "jest-expect-message";
 
 beforeAll(async () => {
   try {

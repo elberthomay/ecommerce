@@ -3,5 +3,6 @@ kind: ConfigMap
 metadata:
   name: ecommerce-data
 data:
+  NODE_ENV: prod
   GOOGLE_CALLBACK_URL: https://ecommercexyz.online/api/user/login/auth/callback
   CLIENT_HOST_NAME: https://ecommercexyz.online/

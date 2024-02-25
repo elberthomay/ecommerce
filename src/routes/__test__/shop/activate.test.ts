@@ -14,6 +14,7 @@ import {
 import _ from "lodash";
 import { invalidShopValue } from "../../../test/helpers/shop/shopData";
 import validationTest from "../../../test/helpers/validationTest.test";
+import { printedExpect } from "../../../test/helpers/assertionHelper";
 
 const url = "/api/shop";
 const getRequest = () => request(app).post(url).set("Cookie", defaultCookie());
@@ -34,12 +35,14 @@ it("should return 400 with invalid shop names", async () => {
 it("should return 409(conflict) if name already exists", async () => {
   const [shop] = await createShop(1);
 
-  await getRequest().send({ name: shop.name }).expect(409);
+  await getRequest().send({ name: shop.name }).expect(printedExpect(409));
 });
 
 it("should return 409(conflict) if store has been activated", async () => {
   await createDefaultShop();
-  await getRequest().send({ name: "another shop name" }).expect(409);
+  await getRequest()
+    .send({ name: "another shop name" })
+    .expect(printedExpect(409));
 });
 
 it("should successfuly create shop when authenticated(status code 201), has yet to activate shop and supplied with correct name", async () => {
@@ -47,7 +50,7 @@ it("should successfuly create shop when authenticated(status code 201), has yet 
   const { name, description } = defaultShop;
   await getRequest()
     .send({ name, description })
-    .expect(201)
+    .expect(printedExpect(201))
     .expect(({ body }) => {
       expect(_.pick(body, ["userId", "name", "description"])).toEqual({
         userId: user.id,

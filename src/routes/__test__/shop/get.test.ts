@@ -13,10 +13,14 @@ const method = "get";
 const getRequest = (shopId: string, cookies: string[]) =>
   request(app).get(getUrl(shopId)).set("Cookie", cookies);
 
-it("return 400 when shopId is invalid", async () => {
+it("return 404 when shopId is invalid", async () => {
   await Promise.all(
-    invalidUuid.map((id) => getRequest(id, []).send().expect(400))
+    invalidUuid.map((id) => getRequest(id, []).send().expect(404))
   );
+});
+
+it("return 400 when shopId is more than 50 characters", async () => {
+  await getRequest("a".repeat(51), []).send().expect(400);
 });
 
 it("return 400 when shop does not exist", async () => {

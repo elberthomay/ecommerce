@@ -1,11 +1,12 @@
 import { NextFunction, Request, Response } from "express";
-import { UserLoginType } from "../types/userTypes";
 import User from "../models/User";
 import { TokenTypes } from "../types/TokenTypes";
 import jwt from "jsonwebtoken";
+import { z } from "zod";
+import { loginSchema } from "../schemas/userSchema";
 
 const createToken = (
-  req: Request<unknown, unknown, UserLoginType>,
+  req: Request<unknown, unknown, z.infer<typeof loginSchema>>,
   res: Response,
   next: NextFunction
 ) => {

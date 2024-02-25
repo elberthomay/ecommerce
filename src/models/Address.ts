@@ -19,8 +19,8 @@ export interface AddressCreationAttribute {
   latitude?: number;
   postCode?: string;
   detail: string;
-  village?: string;
-  district?: string;
+  village?: string | null;
+  district?: string | null;
   city: string;
   province: string;
   country: string;
