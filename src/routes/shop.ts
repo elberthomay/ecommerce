@@ -89,7 +89,7 @@ router.get(
         where: search
           ? Sequelize.and(
               Sequelize.literal(
-                `MATCH(${Item.name}) AGAINST(:name IN NATURAL LANGUAGE MODE)`
+                `MATCH(${Item.name}.name) AGAINST(:name IN NATURAL LANGUAGE MODE)`
               ),
               { shopId }
             )
