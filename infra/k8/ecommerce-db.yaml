@@ -12,9 +12,16 @@ spec:
       labels:
         app: ecommerce-db
     spec:
+      volumes:
+        - name: mysql-pv
+          persistentVolumeClaim:
+            claimName: ecommerce-db-pvc
       containers:
         - name: ecommerce-db
           image: mysql
+          volumeMounts:
+            - name: mysql-pv
+              mountPath: /var/lib/mysql
           env:
             - name: MYSQL_DATABASE
               valueFrom:
