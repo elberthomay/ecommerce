@@ -21,11 +21,11 @@ class ItemImage extends Model<ItemImageCreationAttribute> {
     name: "unq-order-idx",
     type: "UNIQUE",
   })
+  @Index
   @ForeignKey(() => Item)
   @Column({
     type: DataType.UUID,
     primaryKey: true,
-    // unique: "unq-item-order-idx",
   })
   itemId!: string;
 
@@ -42,7 +42,6 @@ class ItemImage extends Model<ItemImageCreationAttribute> {
   @Column({
     type: DataType.INTEGER,
     allowNull: false,
-    // unique: "unq-item-order-idx",
   })
   order!: number;
 

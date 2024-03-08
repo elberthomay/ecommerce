@@ -12,12 +12,14 @@ import {
   Unique,
   Validate,
   BelongsTo,
+  HasMany,
 } from "sequelize-typescript";
 import Shop, { ShopCreationAttribute } from "./Shop";
 import Item, { ItemCreationAttribute } from "./Item";
 import Cart from "./Cart";
 import Address from "./Address";
 import UserAddress from "./UserAddress";
+import Order, { OrderCreationAttribute } from "./Order";
 
 export interface UserCreationAttribute {
   id?: string;
@@ -28,6 +30,7 @@ export interface UserCreationAttribute {
   shop?: ShopCreationAttribute;
   selectedAddressId?: string;
   itemsInCart?: ItemCreationAttribute[];
+  orders?: OrderCreationAttribute[];
   privilege?: 0 | 1 | 2;
 }
 
@@ -65,7 +68,7 @@ class User extends Model<UserCreationAttribute> {
   @AllowNull(true)
   @Unique
   @Column(DataType.UUID)
-  selectedAddressId!: string;
+  selectedAddressId!: string | null;
 
   @BelongsTo(() => Address, {
     targetKey: "id",
@@ -75,6 +78,9 @@ class User extends Model<UserCreationAttribute> {
 
   @HasOne(() => Shop, { onDelete: "CASCADE" })
   shop!: Shop | null;
+
+  @HasMany(() => Order, { onDelete: "CASCADE" })
+  orders!: Order[];
 
   @BelongsToMany(() => Item, () => Cart)
   itemsInCart!: Item[];

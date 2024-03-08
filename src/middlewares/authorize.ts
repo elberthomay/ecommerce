@@ -26,10 +26,13 @@ const authorize = (
 
 export const authorization =
   (
-    allowed: (keyof priviledgeEnum | ((req: Request) => boolean))[],
+    allowed: (
+      | keyof priviledgeEnum
+      | ((req: Request<any, any, any, any>) => boolean)
+    )[],
     resourceName = "Data"
   ) =>
-  (req: Request, res: Response, next: NextFunction) => {
+  (req: Request<any, any, any, any>, res: Response, next: NextFunction) => {
     const currentUser: User | null | undefined = (req as any).currentUser;
     const result = allowed.some((entry) => {
       if (typeof entry === "number") return currentUser?.privilege === entry;

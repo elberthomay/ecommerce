@@ -6,6 +6,7 @@ import {
   BelongsToMany,
   ForeignKey,
   BelongsTo,
+  Index,
 } from "sequelize-typescript";
 import Item from "./Item";
 import User from "./User";
@@ -19,6 +20,7 @@ interface CartCreationAttribute {
 
 @Table({ tableName: "Cart" })
 class Cart extends Model<CartCreationAttribute> {
+  @Index
   @ForeignKey(() => User)
   @Column
   userId!: string;

@@ -10,21 +10,29 @@ import {
 import { defaultUser } from "../../../test/helpers/user/userData";
 import { createItem } from "../../../test/helpers/item/itemHelper";
 import Cart from "../../../models/Cart";
+import { createAddress } from "../../../test/helpers/address/addressHelper";
+import UserAddress from "../../../models/UserAddress";
 
-const url = "/api/order/";
+const url = "/api/order/process";
 const method = "post";
+
+const getRequest = (cookie: string[]) =>
+  request(app).post(url).set("Cookie", cookie);
 
 describe("return 401 on failed authentication", () => {
   authenticationTests(app, url, method);
 });
-beforeEach(async () => await createDefaultUser());
 
-it("return 204 when cart is empty or no item is selected", async () => {
-  await request(app)
-    .post(url)
-    .set("Cookie", defaultCookie())
-    .send()
-    .expect(204);
+beforeEach(async () => {
+  const {
+    users: [user],
+  } = await createUser([{ id: defaultUser.id }]);
+  const [address] = await createAddress(1, user);
+  await user.update({ selectedAddressId: address.id });
+});
+
+it("return 422 when cart is empty or no item is selected", async () => {
+  await getRequest(defaultCookie()).send().expect(422);
 
   //create items and insert them to default user's cart, all unselected
   const items = (await createItem(5)).filter((item) => item.quantity > 0);
@@ -37,11 +45,7 @@ it("return 204 when cart is empty or no item is selected", async () => {
     }))
   );
 
-  await request(app)
-    .post(url)
-    .set("Cookie", defaultCookie())
-    .send()
-    .expect(204);
+  await getRequest(defaultCookie()).send().expect(422);
 });
 
 it("return 422 when quantity in cart is more than inventory", async () => {
@@ -54,47 +58,43 @@ it("return 422 when quantity in cart is more than inventory", async () => {
     quantity: items[0].quantity + 1,
   });
 
-  await request(app)
-    .post(url)
-    .set("Cookie", defaultCookie())
-    .send()
-    .expect(422);
+  await getRequest(defaultCookie()).send().expect(422);
 });
 
 it("return 200 when order is successful, delete all selected item in cart, decrement inventory by the cart amount", async () => {
-  //create items and one of them to cart with quantity more than inventory
-  const selectedItems = (await createItem(5)).filter(
-    (item) => item.quantity > 1
-  );
-  await Cart.bulkCreate(
-    selectedItems.map((item) => ({
-      itemId: item.id,
-      userId: defaultUser.id,
-      selected: true,
-      quantity: item.quantity - 2,
-    }))
-  );
-  const unselectedItems = (await createItem(2)).filter(
-    (item) => item.quantity > 0
-  );
-  await Cart.bulkCreate(
-    unselectedItems.map((item) => ({
-      itemId: item.id,
-      userId: defaultUser.id,
-      selected: false,
-      quantity: item.quantity,
+  //create items with random quantity
+  const items = await createItem(
+    Array.from({ length: 20 }).map((_) => ({
+      quantity: Math.floor(Math.random() * 10 + 3),
     }))
   );
 
-  await request(app)
-    .post(url)
-    .set("Cookie", defaultCookie())
-    .send()
-    .expect(200);
+  const selectedItems = items.slice(0, 15);
+  const unselectedItems = items.slice(15);
 
-  //all cart entry with selected item destroyed
+  await Cart.bulkCreate(
+    selectedItems
+      .map((item) => ({
+        itemId: item.id,
+        userId: defaultUser.id,
+        selected: true,
+        quantity: item.quantity - 2,
+      }))
+      .concat(
+        unselectedItems.map((item) => ({
+          itemId: item.id,
+          userId: defaultUser.id,
+          selected: false,
+          quantity: item.quantity - 2,
+        }))
+      )
+  );
+
+  await getRequest(defaultCookie()).send().expect(200);
+
+  //all selected cart entry destroyed
   const newCarts = await Cart.findAll({ where: { userId: defaultUser.id } });
-  expect(newCarts).toHaveLength(2);
+  expect(newCarts).toHaveLength(unselectedItems.length);
 
   // all selected item's inventory reduced
   await Promise.all(
@@ -114,65 +114,94 @@ it("return 200 when order is successful, delete all selected item in cart, decre
   );
 });
 
-it("kept integrity by failing one order when order race condition occur", async () => {
-  //create 5 item, filter out item with quantity less than 2
-  const selectedItems = (await createItem(5)).filter(
-    (item) => item.quantity > 1
-  );
+it("kept integrity by failing orders when order race condition occur", async () => {
+  //create item with quantity 2
+  const [limitedEdition] = await createItem([{ quantity: 3 }]);
 
-  //create 5 users and put all items to their carts
-  const { users } = await createUser([defaultUser, {}, {}, {}, {}]);
-
+  //create 10 users and address and put item to their carts
+  const { users } = await createUser(10);
   await Promise.all(
     users.map(async (user) => {
-      await Cart.bulkCreate(
-        selectedItems.map((item) => ({
-          itemId: item.id,
+      const [address] = await createAddress(1, user);
+      await user.update({ selectedAddressId: address.id });
+    })
+  );
+
+  //limited edition item to cart of all users
+  await Cart.bulkCreate(
+    users
+      .map((user) => [
+        {
+          itemId: limitedEdition.id,
           userId: user.id,
           selected: true,
-          quantity: item.quantity - 2,
-        }))
-      );
-    })
+          quantity: 1,
+        },
+      ])
+      .flat()
   );
 
-  // create request objects
-  const requests = users.map((user) =>
-    request(app).post(url).set("Cookie", forgeCookie(user))
-  );
+  //send all process request and extract the status code
+  const results = (
+    await Promise.all(
+      users.map((user) => getRequest([forgeCookie(user)]).send())
+    )
+  ).map(({ statusCode }) => statusCode);
 
-  //send them all
-  const results = await Promise.all(requests.map((request) => request.send()));
+  // only 3 succeed
+  expect(results.reduce((sum, code) => sum + Number(code === 200), 0)).toBe(3);
 
-  const successArray = results.map((result) => result.statusCode);
+  // the rest should receive out of stock error
+  expect(results.reduce((sum, code) => sum + Number(code === 422), 0)).toBe(7);
 
-  //count successes
-  const successCount = results.reduce((successCount, response, index) => {
-    if (response.statusCode === 200) {
-      //deleting successful user from users
-      users.splice(index, 1);
-      return successCount + 1;
-    } else return successCount;
-  }, 0);
+  // item should be out of stock
+  expect((await limitedEdition.reload()).quantity).toBe(0);
+});
 
-  //only 1 succeed
-  expect(successCount).toEqual(1);
+it("kept integrity by correctly subtracting quantity when order race condition occur", async () => {
+  const initialItemCount = 200;
+  //create item with quantity 20
+  const [commonItem] = await createItem([{ quantity: initialItemCount }]);
 
-  // all selected item's inventory reduced only by 1 order
-  await Promise.all(
-    selectedItems.map(async (item) => {
-      await item.reload();
-      expect(item.quantity).toEqual(2);
-    })
-  );
-
+  //create 10 users and put item to their carts
+  const { users } = await createUser(10);
   await Promise.all(
     users.map(async (user) => {
-      const cart = await Cart.findAll({
-        where: { userId: user.id, selected: true },
-      });
-      expect(cart).toHaveLength(5);
-      return cart;
+      const [address] = await createAddress(1, user);
+      await user.update({ selectedAddressId: address.id });
     })
+  );
+
+  //limited edition item to cart of all users
+  const carts = await Cart.bulkCreate(
+    users
+      .map((user, i) => [
+        {
+          itemId: commonItem.id,
+          userId: user.id,
+          selected: true,
+          quantity: 2 + i,
+        },
+      ])
+      .flat()
+  );
+
+  const totalQuantity = carts.reduce((sum, { quantity }) => sum + quantity, 0);
+
+  //send all process request and extract the status code
+  const results = (
+    await Promise.all(
+      users.map((user) => getRequest([forgeCookie(user)]).send())
+    )
+  ).map(({ statusCode }) => statusCode);
+
+  // all succeed
+  expect(results.reduce((sum, code) => sum + Number(code === 200), 0)).toBe(
+    results.length
+  );
+
+  // item quantity should be decremented properly
+  expect((await commonItem.reload()).quantity).toBe(
+    initialItemCount - totalQuantity
   );
 });

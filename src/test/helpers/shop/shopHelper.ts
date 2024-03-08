@@ -19,7 +19,9 @@ export const createShop = async (
     (creationData?: Partial<ShopCreationAttribute>) => () => {
       return {
         id: creationData?.id ?? faker.string.uuid(),
-        name: creationData?.name ?? faker.company.name(),
+        name:
+          creationData?.name ??
+          faker.company.name().replace(/[^a-zA-Z0-9_-]/g, ""),
         description:
           creationData?.description ??
           generateShopDescription(creationData?.name ?? faker.company.name()),

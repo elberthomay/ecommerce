@@ -77,7 +77,7 @@ async function createAddress<T extends ModelWithAddresses>(
 
 function formatAddress(
   address: Address,
-  selectedAddressId?: string
+  selectedAddressId?: string | null
 ): z.infer<typeof addressOutputSchema> {
   const {
     id,

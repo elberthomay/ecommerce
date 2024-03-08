@@ -17,6 +17,7 @@ import User, { UserCreationAttribute } from "./User";
 import Item, { ItemCreationAttribute } from "./Item";
 import Address from "./Address";
 import ShopAddress from "./ShopAddress";
+import Order, { OrderCreationAttribute } from "./Order";
 
 export interface ShopCreationAttribute {
   id?: string;
@@ -26,6 +27,7 @@ export interface ShopCreationAttribute {
   userId?: string;
   user?: UserCreationAttribute;
   items?: ItemCreationAttribute[];
+  orders?: OrderCreationAttribute[];
 }
 
 @Table({ tableName: "Shop" })
@@ -61,6 +63,9 @@ class Shop extends Model<ShopCreationAttribute> {
 
   @HasMany(() => Item)
   items!: Item[] | null;
+
+  @HasMany(() => Order, { onDelete: "CASCADE" })
+  orders!: Order[];
 }
 
 export default Shop;

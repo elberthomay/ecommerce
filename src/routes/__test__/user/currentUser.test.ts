@@ -10,6 +10,10 @@ import { omit, pick } from "lodash";
 import { defaultUser } from "../../../test/helpers/user/userData";
 import { createItem } from "../../../test/helpers/item/itemHelper";
 import { z } from "zod";
+import {
+  printedExpect,
+  validatedExpect,
+} from "../../../test/helpers/assertionHelper";
 
 const url = "/api/user";
 const getRequest = (cookie?: string[]) =>
@@ -36,15 +40,13 @@ it("should return user information with correct schema if user is logged in", as
   user.$add("itemsInCart", items.slice(0, 5), { through: { quantity: 5 } });
 
   await getRequest(defaultCookie())
-    .expect(200)
-    .expect(({ body }: { body: z.infer<typeof currentUserOutputSchema> }) => {
-      const validationResult = currentUserOutputSchema.safeParse(body);
-      expect(validationResult.success).toBe(true);
-      if (validationResult.success) {
-        expect(pick(validationResult.data, ["id", "name", "email"])).toEqual(
+    .expect(printedExpect(200))
+    .expect(
+      validatedExpect(currentUserOutputSchema, (data, res) => {
+        expect(pick(data, ["id", "name", "email"])).toEqual(
           omit(defaultUser, ["password"])
         );
-        expect(validationResult.data.cartCount).toEqual(5);
-      }
-    });
+        expect(data.cartCount).toBe(5);
+      })
+    );
 });

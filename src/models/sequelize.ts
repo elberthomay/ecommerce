@@ -1,8 +1,8 @@
-import { Sequelize } from "sequelize-typescript";
+import { Sequelize, Model } from "sequelize-typescript";
 import User from "./User";
 import Shop from "./Shop";
 import Item from "./Item";
-import Tag from "./Tag";
+import Tag, { TagCreationAttribute } from "./Tag";
 import ItemTag from "./ItemTag";
 import Cart from "./Cart";
 import Address from "./Address";
@@ -11,6 +11,10 @@ import Subdistrict from "./Subdistrict";
 import UserAddress from "./UserAddress";
 import ShopAddress from "./ShopAddress";
 import ItemImage from "./ItemImage";
+import Order from "./Order";
+import OrderItem from "./OrderItem";
+import OrderItemImage from "./OrderItemImage";
+import { addFKIfNotExistToModel } from "./helpers/modelHelpers";
 
 const sequelize = new Sequelize({
   database: process.env.DB_NAME ?? "ecommerce_test",
@@ -34,8 +38,18 @@ const sequelize = new Sequelize({
     Address,
     UserAddress,
     ShopAddress,
+    Order,
+    OrderItem,
+    OrderItemImage,
   ],
   logging: false,
 });
+
+OrderItemImage.afterSync(
+  addFKIfNotExistToModel(OrderItemImage, OrderItem, [
+    ["orderId", "orderId"],
+    ["itemId", "id"],
+  ])
+);
 
 export default sequelize;

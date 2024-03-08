@@ -22,7 +22,7 @@ export const createItem = async (
         id: data?.id ?? faker.string.uuid(),
         name: data?.name ?? faker.commerce.productName(),
         description: data?.description ?? faker.commerce.productDescription(),
-        price: data?.price ?? faker.number.int({ min: 0, max: 1000000000 }),
+        price: data?.price ?? faker.number.int({ min: 0, max: 100000000 }),
         quantity: data?.quantity ?? faker.number.int({ min: 0, max: 9999 }),
         shopId: shop.id,
       };

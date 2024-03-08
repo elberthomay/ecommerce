@@ -1,126 +1,320 @@
-import { Router } from "express";
+import { Router, Request, Response, NextFunction } from "express";
 import authenticate from "../middlewares/authenticate";
 import User, { UserCreationAttribute } from "../models/User";
-import fetch from "../middlewares/fetch";
+import fetch, { fetchCurrentUser } from "../middlewares/fetch";
 import { TokenTypes } from "../types/TokenTypes";
 import catchAsync from "../middlewares/catchAsync";
 import Cart from "../models/Cart";
-import Item from "../models/Item";
+import UserAddress from "../models/UserAddress";
+import Address from "../models/Address";
+import Order, { OrderCreationAttribute } from "../models/Order";
+import {
+  cancelOrder,
+  confirmOrder,
+  createOrders,
+  deliverOrder,
+  getOrders,
+} from "../models/helpers/orderHelpers";
+import {
+  getOrdersOption,
+  formatGetOrders,
+  getOrdersParam,
+  getOrdersQuery,
+  orderStatusChangeParams,
+  formatOrder,
+  formatOrderItem,
+  getOrderItemParam,
+} from "../schemas/orderSchema";
+import { authorization } from "../middlewares/authorize";
+import validator from "../middlewares/validator";
+import { z } from "zod";
+import Shop, { ShopCreationAttribute } from "../models/Shop";
+import OrderItem, { getOrderItem } from "../models/OrderItem";
+import OrderItemImage, {
+  getOrderItemImageInclude,
+} from "../models/OrderItemImage";
 import sequelize from "../models/sequelize";
-import InventoryError from "../errors/InventoryError";
-import Shop from "../models/Shop";
-import ChangedInventory from "../errors/ChangedInventory";
 
 const router = Router();
 
-// router.post(
-//   "/",
-//   authenticate(true),
-//   fetch<UserCreationAttribute, TokenTypes>({
-//     model: User,
-//     key: "id",
-//     location: "tokenData",
-//     destination: "currentUser",
-//     force: "exist",
-//   }),
-//   catchAsync(async (req, res) => {
-//     const currentUser: User = (req as any).currentUser;
-//     let itemsInCart: (Item & { Cart: Cart })[] = (await currentUser.$get(
-//       "itemsInCart",
-//       {
-//         include: [Shop],
-//       }
-//     )) as any;
+interface IGetOrdersRequest
+  extends Request<
+    z.infer<typeof getOrdersParam>,
+    unknown,
+    unknown,
+    z.infer<typeof getOrdersQuery>
+  > {
+  currentUser?: User;
+  queryUser?: User;
+  queryShop?: Shop;
+}
 
-//     itemsInCart = itemsInCart.filter((item) => item.Cart.selected);
+interface IOrderStatusChangeRequest
+  extends Request<z.infer<typeof getOrdersParam>> {
+  currentUser?: User;
+  order?: Order;
+  shop?: Shop | null;
+}
 
-//     if (itemsInCart.length === 0) return res.status(204).send();
-//     else if (itemsInCart.some((item) => item.Cart.quantity > item.quantity))
-//       throw new InventoryError();
-//     else {
-//       const transaction = await sequelize.transaction();
-//       try {
-//         itemsInCart.forEach(async (item) => {
-//           const [updatedRowCount] = await Item.update(
-//             {
-//               quantity: (item.quantity -= item.Cart.quantity),
-//             },
-//             {
-//               where: {
-//                 id: item.id,
-//                 updatedAt: item.updatedAt,
-//               },
-//               transaction,
-//             }
-//           );
-//           if (updatedRowCount === 0) throw new Error("update failed");
-//           await item.destroy({ transaction });
-//         });
-//         await transaction.commit();
-//         res.json({ status: "success" });
-//       } catch (err) {
-//         await transaction.rollback();
-//         throw new Error("order failed");
-//       }
-//     }
-//   })
-// );
+interface IOrderStatusCancelRequest extends IOrderStatusChangeRequest {
+  side?: "shop" | "user";
+}
 
-router.post(
-  "/",
+interface IGetOrderItemRequest
+  extends Request<z.infer<typeof getOrderItemParam>> {
+  currentUser?: User;
+  order?: Order;
+  shop?: Shop;
+}
+
+const authorizeAdminOrShopOwner = authorization(
+  [
+    0,
+    1,
+    (req: IGetOrdersRequest) => {
+      const shop = req.queryShop;
+      return !!shop && req.currentUser?.id === shop?.userId;
+    },
+  ],
+  "Order"
+);
+
+const authorizeAdminOrOrderShopOwner = authorization(
+  [
+    0,
+    1,
+    (req: IOrderStatusChangeRequest) => {
+      const order = req.order;
+      const shop = req.shop;
+      if (order === undefined || shop === undefined)
+        throw Error("order or shop not loaded");
+      return !!shop && order.shopId === shop.id;
+    },
+  ],
+  "Order"
+);
+
+const authorizeAdminOrderShopOwnerOrUser = authorization(
+  [
+    0,
+    1,
+    (req: IOrderStatusCancelRequest) => {
+      const currentUser = req.currentUser;
+      const order = req.order;
+      const currentShop = req.shop;
+      if (!order || !currentUser)
+        throw Error("order or currentUser not loaded");
+      if (order.shopId === currentShop?.id) req.side = "shop";
+      else if (order.userId === currentUser.id) req.side = "user";
+      return (
+        order.shopId === currentShop?.id || order.userId === currentUser.id
+      );
+    },
+  ],
+  "Order"
+);
+
+// get order of given user
+router.get(
+  "/user/:userId",
   authenticate(true),
-  fetch<UserCreationAttribute, TokenTypes>({
+  validator({ params: getOrdersParam, query: getOrdersQuery }),
+  fetchCurrentUser,
+  fetch<UserCreationAttribute, z.infer<typeof getOrdersParam>>({
     model: User,
-    key: "id",
-    location: "tokenData",
-    destination: "currentUser",
+    location: "params",
+    key: ["id", "userId"],
+    force: "exist",
+    destination: "queryUser",
+  }),
+  authorization(
+    [
+      0,
+      1,
+      (req: IGetOrdersRequest) => {
+        const paramUserId = req.params.userId;
+        return req.currentUser?.id === paramUserId;
+      },
+    ],
+    "Order"
+  ),
+  catchAsync(
+    async (req: IGetOrdersRequest, res: Response, next: NextFunction) => {
+      const user = req.queryUser;
+      const options: z.infer<typeof getOrdersOption> = {
+        ...req.query,
+        userId: user!.id,
+      };
+      const orders = await getOrders(options);
+      const result = await formatGetOrders.parseAsync(orders);
+      res.json(result);
+    }
+  )
+);
+
+// get orders of the given shop
+router.get(
+  "/shop/:shopId",
+  authenticate(true),
+  validator({ params: getOrdersParam, query: getOrdersQuery }),
+  fetchCurrentUser,
+  fetch<ShopCreationAttribute, z.infer<typeof getOrdersParam>>({
+    model: Shop,
+    location: "params",
+    key: ["id", "shopId"],
+    force: "exist",
+    destination: "queryShop",
+  }),
+  authorizeAdminOrShopOwner,
+  catchAsync(
+    async (req: IGetOrdersRequest, res: Response, next: NextFunction) => {
+      const shop = req.queryShop;
+      const options: z.infer<typeof getOrdersOption> = {
+        ...req.query,
+        shopId: shop!.id,
+      };
+      const orders = await getOrders(options);
+      const result = await formatGetOrders.parseAsync(orders);
+      res.json(result);
+    }
+  )
+);
+
+// get item snapshot of an order
+router.get(
+  "/:orderId/item/:itemId",
+  authenticate(true),
+  validator({ params: getOrderItemParam }),
+  fetchCurrentUser,
+  fetch<OrderCreationAttribute, z.infer<typeof getOrderItemParam>>({
+    model: Order,
+    location: "params",
+    key: ["id", "orderId"],
+    destination: "order",
     force: "exist",
   }),
+  fetch<OrderCreationAttribute, TokenTypes>({
+    model: Shop,
+    location: "tokenData",
+    key: ["userId", "id"],
+    destination: "shop",
+  }),
+  authorizeAdminOrderShopOwnerOrUser,
+  catchAsync(
+    async (req: IGetOrderItemRequest, res: Response, next: NextFunction) => {
+      const { orderId, itemId } = req.params;
+      const orderItem = await getOrderItem(orderId, itemId);
+      const result = await formatOrderItem.parseAsync(orderItem);
+      res.json(result);
+    }
+  )
+);
+
+router.post(
+  "/process",
+  authenticate(true),
+  fetchCurrentUser,
   catchAsync(async (req, res) => {
     const currentUser: User = (req as any).currentUser;
-    // const itemsInCart: (Item & { Cart: Cart })[] = (await currentUser.$get(
-    //   "itemsInCart",
-    //   {
-    //     where: { selected: true },
-    //     include: [Shop],
-    //   }
-    // )) as any;
-
-    const carts = await Cart.findAll({
-      where: { userId: currentUser.id, selected: true },
-      include: Item,
+    const selectedAddressId = currentUser.selectedAddressId; // get selected user id
+    if (!selectedAddressId) throw new Error("No address is selected");
+    const userAddress = await UserAddress.findOne({
+      where: { addressId: selectedAddressId, userId: currentUser.id },
+      include: [Address],
     });
 
-    if (carts.length === 0) return res.status(204).send();
-    else if (carts.some((cart) => cart.quantity > cart.item!.quantity))
-      throw new InventoryError();
-    else {
-      const transaction = await sequelize.transaction();
-      try {
-        await Promise.all(
-          carts.map(async (cart) => {
-            const [updatedRowCount] = await Item.update(
-              { quantity: (cart.item!.quantity -= cart.quantity) },
-              {
-                where: {
-                  id: cart.item!.id,
-                  updatedAt: cart.item!.updatedAt,
-                },
-                transaction,
-              }
-            );
-            if (updatedRowCount === 0) throw new Error("update failed");
-            await cart.destroy({ transaction });
-          })
-        );
-        await transaction.commit();
-        res.json({ status: "success" });
-      } catch (err) {
-        await transaction.rollback();
-        throw new ChangedInventory();
-      }
-    }
+    const selectedCarts = await Cart.findAll({
+      where: { userId: currentUser.id, selected: true },
+    });
+    const orders = await createOrders(selectedCarts, userAddress!);
+    const result = formatGetOrders.parse(orders);
+    return res.json(result);
   })
+);
+
+const orderStatusChangeMiddlewareChain = [
+  authenticate(true),
+  validator({ params: orderStatusChangeParams }),
+  fetchCurrentUser,
+  fetch<OrderCreationAttribute, z.infer<typeof orderStatusChangeParams>>({
+    model: Order,
+    location: "params",
+    key: ["id", "orderId"],
+    destination: "order",
+    include: [
+      Shop,
+      {
+        model: OrderItem,
+        attributes: ["id", "name", "price", "quantity"],
+        include: [getOrderItemImageInclude("items")],
+      },
+    ],
+    order: [
+      sequelize.literal("`items`.`name` ASC"),
+      sequelize.literal("`items->images`.`order` ASC"),
+      // [OrderItem, "name", "ASC"],
+      // ["items.images", "order", "ASC"],
+    ],
+    force: "exist",
+  }),
+  fetch<OrderCreationAttribute, TokenTypes>({
+    model: Shop,
+    location: "tokenData",
+    key: ["userId", "id"],
+    destination: "shop",
+  }),
+];
+
+router.post(
+  "/:orderId/confirm",
+  orderStatusChangeMiddlewareChain,
+  authorizeAdminOrOrderShopOwner,
+  catchAsync(
+    async (
+      req: IOrderStatusChangeRequest,
+      res: Response,
+      next: NextFunction
+    ) => {
+      const order = req.order!;
+      const updatedOrder: Order = await confirmOrder(order);
+      const result = await formatOrder.parseAsync(updatedOrder);
+      res.json(result);
+    }
+  )
+);
+router.post(
+  "/:orderId/deliver",
+  orderStatusChangeMiddlewareChain,
+  authorizeAdminOrOrderShopOwner,
+  catchAsync(
+    async (
+      req: IOrderStatusChangeRequest,
+      res: Response,
+      next: NextFunction
+    ) => {
+      const order = req.order!;
+      const updatedOrder: Order = await deliverOrder(order);
+      const result = await formatOrder.parseAsync(updatedOrder);
+      res.json(result);
+    }
+  )
+);
+router.post(
+  "/:orderId/cancel",
+  orderStatusChangeMiddlewareChain,
+  authorizeAdminOrderShopOwnerOrUser,
+  catchAsync(
+    async (
+      req: IOrderStatusCancelRequest,
+      res: Response,
+      next: NextFunction
+    ) => {
+      const order = req.order!;
+      const updatedOrder: Order = await cancelOrder(order, req.side);
+      const result = await formatOrder.parseAsync(updatedOrder);
+      res.json(result);
+    }
+  )
 );
 
 export default router;

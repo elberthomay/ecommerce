@@ -21,8 +21,8 @@ export const validatedExpect =
         !validationResult.success
           ? JSON.stringify(validationResult.error.format(), null, 2)
           : ""
-      }`,
-      { showPrefix: false }
+      }\nbody: \n${JSON.stringify(res.body, null, 2)}`,
+      { showPrefix: false, showMatcherMessage: false }
     ).toBe(true);
     if (validationResult.success) await callback?.(validationResult.data, res);
   };

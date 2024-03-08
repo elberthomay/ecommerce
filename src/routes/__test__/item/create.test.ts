@@ -4,7 +4,6 @@ import authenticationTests from "../../../test/authenticationTests.test";
 import {
   createDefaultUser,
   defaultCookie,
-  forgeCookie,
 } from "../../../test/helpers/user/userHelper";
 import { createItem, defaultItem } from "../../../test/helpers/item/itemHelper";
 import { createShop, defaultShop } from "../../../test/helpers/shop/shopHelper";
@@ -16,7 +15,6 @@ import {
 import Item, { ItemCreationAttribute } from "../../../models/Item";
 import Tag from "../../../models/Tag";
 import ItemTag from "../../../models/ItemTag";
-import { invalidTagIds } from "../../../test/helpers/Tag/tagData";
 import imageInputTests from "../../../test/imageInputTests.test";
 import { MAX_IMAGE_COUNT } from "../../../var/constants";
 import { defaultUser } from "../../../test/helpers/user/userData";
@@ -27,7 +25,6 @@ import {
   itemDetailsOutputSchema,
 } from "../../../schemas/itemSchema";
 import { z } from "zod";
-import validationTest from "../../../test/helpers/validationTest.test";
 import { printedExpect } from "../../../test/helpers/assertionHelper";
 
 const url = "/api/item";
@@ -79,7 +76,7 @@ describe("created default shop", () => {
       app,
       url,
       "post",
-      [forgeCookie(defaultUser, undefined, "secret", "jwt")],
+      defaultCookie(),
       MAX_IMAGE_COUNT,
       "images",
       defaultCreateItem

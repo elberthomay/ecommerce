@@ -12,7 +12,7 @@ export const itemSchema = z.object({
   id: uuidSchema,
   name: z.string().max(255),
   description: z.string().max(2000),
-  price: z.number().min(0).max(1000000000),
+  price: z.number().min(0).max(100000000),
   quantity: z.number().min(0).max(9999).default(1),
 });
 
@@ -28,7 +28,7 @@ const tagIdArray = z
   );
 
 export const itemCreateSchema = itemSchema
-  .omit({ id: true })
+  .omit({ id: true, images: true, tags: true })
   .merge(z.object({ tags: tagIdArray.optional() }))
   .strict();
 
@@ -64,12 +64,10 @@ const itemSchemaBase = itemSchema.extend({
   shopName: shopSchema.shape.name,
 });
 
-export const itemDetailsOutputSchema = itemSchemaBase
-  .extend({
-    images: z.array(z.object({ imageName: z.string(), order: z.number() })),
-    tags: z.array(tagSchema.pick({ id: true, name: true })),
-  })
-  .strict();
+export const itemDetailsOutputSchema = itemSchemaBase.extend({
+  images: z.array(z.object({ imageName: z.string(), order: z.number() })),
+  tags: z.array(tagSchema.pick({ id: true, name: true })),
+});
 
 export const itemGetOutputBase = itemSchemaBase
   .extend({
