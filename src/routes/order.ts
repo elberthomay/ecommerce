@@ -30,9 +30,7 @@ import validator from "../middlewares/validator";
 import { z } from "zod";
 import Shop, { ShopCreationAttribute } from "../models/Shop";
 import OrderItem, { getOrderItem } from "../models/OrderItem";
-import OrderItemImage, {
-  getOrderItemImageInclude,
-} from "../models/OrderItemImage";
+import { getOrderItemImageInclude } from "../models/OrderItemImage";
 import sequelize from "../models/sequelize";
 
 const router = Router();

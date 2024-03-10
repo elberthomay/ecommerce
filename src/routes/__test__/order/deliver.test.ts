@@ -19,6 +19,12 @@ import {
 import Shop from "../../../models/Shop";
 import { createShop } from "../../../test/helpers/shop/shopHelper";
 import { formatOrder, orderOutputSchema } from "../../../schemas/orderSchema";
+import {
+  setCancelOrderTimeout,
+  setDeliverOrder,
+} from "../../../agenda/orderAgenda";
+import { addMinutes } from "date-fns";
+import { DELIVERY_TIMEOUT_MINUTE } from "../../../var/constants";
 
 const getUrl = (orderId: string) => `/api/order/${orderId}/deliver`;
 
@@ -47,6 +53,7 @@ beforeEach(async () => {
       { id: defaultShop.id }
     )
   )[0];
+  (setCancelOrderTimeout as jest.Mock).mockClear();
 });
 
 describe("passes authentication test", () => {
@@ -129,6 +136,12 @@ it("return 200 with correct data and format", async () => {
     .expect(
       validatedExpect(orderOutputSchema, (data, res) => {
         expect(data).toEqual(expectedResult);
+        expect(setDeliverOrder).toHaveBeenCalledTimes(1);
+        const [orderId, timeout] = (setDeliverOrder as jest.Mock).mock.calls[0];
+        expect(orderId).toBe(data.id);
+        expect(timeout).toEqual(
+          addMinutes(new Date(data.createdAt), DELIVERY_TIMEOUT_MINUTE)
+        );
       })
     );
 });

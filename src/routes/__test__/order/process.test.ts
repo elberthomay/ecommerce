@@ -11,7 +11,15 @@ import { defaultUser } from "../../../test/helpers/user/userData";
 import { createItem } from "../../../test/helpers/item/itemHelper";
 import Cart from "../../../models/Cart";
 import { createAddress } from "../../../test/helpers/address/addressHelper";
-import UserAddress from "../../../models/UserAddress";
+import { printedExpect } from "../../../test/helpers/assertionHelper";
+import { z } from "zod";
+import { formatGetOrders } from "../../../schemas/orderSchema";
+import {
+  setCancelOrderTimeout,
+  setDeliverOrder,
+} from "../../../agenda/orderAgenda";
+import { OrderStatuses } from "../../../models/Order";
+import { AWAITING_CONFIRMATION_TIMEOUT_MINUTE } from "../../../var/constants";
 
 const url = "/api/order/process";
 const method = "post";
@@ -29,6 +37,8 @@ beforeEach(async () => {
   } = await createUser([{ id: defaultUser.id }]);
   const [address] = await createAddress(1, user);
   await user.update({ selectedAddressId: address.id });
+  (setCancelOrderTimeout as jest.Mock).mockClear();
+  (setDeliverOrder as jest.Mock).mockClear();
 });
 
 it("return 422 when cart is empty or no item is selected", async () => {
@@ -61,16 +71,21 @@ it("return 422 when quantity in cart is more than inventory", async () => {
   await getRequest(defaultCookie()).send().expect(422);
 });
 
-it("return 200 when order is successful, delete all selected item in cart, decrement inventory by the cart amount", async () => {
+it("return 200 when order is successful, delete all selected item in cart, decrement inventory by the cart amount, schedule timeout", async () => {
+  const shopCount = 3;
   //create items with random quantity
-  const items = await createItem(
-    Array.from({ length: 20 }).map((_) => ({
-      quantity: Math.floor(Math.random() * 10 + 3),
-    }))
+  const itemsByShop = await Promise.all(
+    Array.from({ length: shopCount }).map((_) =>
+      createItem(
+        Array.from({ length: 15 }).map((_) => ({
+          quantity: Math.floor(Math.random() * 10 + 3),
+        }))
+      )
+    )
   );
 
-  const selectedItems = items.slice(0, 15);
-  const unselectedItems = items.slice(15);
+  const selectedItems = itemsByShop.map((items) => items.slice(0, 10)).flat();
+  const unselectedItems = itemsByShop.map((items) => items.slice(10)).flat();
 
   await Cart.bulkCreate(
     selectedItems
@@ -90,7 +105,30 @@ it("return 200 when order is successful, delete all selected item in cart, decre
       )
   );
 
-  await getRequest(defaultCookie()).send().expect(200);
+  await getRequest(defaultCookie())
+    .send()
+    .expect(printedExpect(200))
+    .expect(({ body }: { body: z.infer<typeof formatGetOrders> }) => {
+      expect(body).toHaveLength(shopCount);
+      expect(setCancelOrderTimeout).toHaveBeenCalledTimes(body.length);
+
+      (setCancelOrderTimeout as jest.Mock).mock.calls.forEach((argument) => {
+        const [orderId, timeout, initialStatus] = argument;
+        const order = body.find(({ id }) => id === orderId);
+
+        expect(order).not.toBeUndefined();
+        expect(initialStatus).toBe(OrderStatuses.AWAITING);
+        if (order) {
+          const expectedTimeout = new Date(
+            new Date(order.createdAt).setMinutes(
+              new Date(order.createdAt).getMinutes() +
+                AWAITING_CONFIRMATION_TIMEOUT_MINUTE
+            )
+          );
+          expect(timeout).toEqual(expectedTimeout);
+        }
+      });
+    });
 
   //all selected cart entry destroyed
   const newCarts = await Cart.findAll({ where: { userId: defaultUser.id } });

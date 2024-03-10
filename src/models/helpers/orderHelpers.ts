@@ -18,6 +18,16 @@ import InventoryError from "../../errors/InventoryError";
 import { z } from "zod";
 import { isUndefined, omitBy } from "lodash";
 import Shop from "../Shop";
+import {
+  setCancelOrderTimeout,
+  setDeliverOrder,
+} from "../../agenda/orderAgenda";
+import {
+  AWAITING_CONFIRMATION_TIMEOUT_MINUTE,
+  CONFIRMED_TIMEOUT_MINUTE,
+  DELIVERY_TIMEOUT_MINUTE,
+} from "../../var/constants";
+import { addMinutes } from "date-fns";
 
 export async function getOrders(options: z.infer<typeof getOrdersOption>) {
   const { userId, shopId, status, itemName, newerThan, orderBy, page, limit } =
@@ -32,7 +42,6 @@ export async function getOrders(options: z.infer<typeof getOrdersOption>) {
     },
     isUndefined
   );
-  console.log(whereOption);
   const orders = await Order.findAll({
     where: whereOption,
     include: [
@@ -60,42 +69,112 @@ export async function getOrders(options: z.infer<typeof getOrdersOption>) {
   return orders;
 }
 
-export async function cancelOrder(
-  order: Order,
-  side?: "shop" | "user"
-): Promise<Order> {
-  if (order.status === OrderStatuses.AWAITING) {
-    return await order.update({ status: OrderStatuses.CANCELLED });
-  } else if (order.status === OrderStatuses.CONFIRMED) {
-    if (side === "shop")
-      return await order.update({ status: OrderStatuses.CANCELLED });
-    else
-      throw new InvalidOrderStatusError(
-        "Order could only be cancelled by user if it has yet to be confirmed"
-      );
-  } else {
-    throw new InvalidOrderStatusError(
-      "Order could only be cancelled if it has yet to be delivered"
-    );
-  }
+/**
+ *
+ * @param orderId Id of order to be changes
+ * @param newStatus Status to be changed into
+ * @param checker Function checking if current status is valid
+ * @param onSuccess Function run after changing status, throwing error inside would rollback transaction
+ * @returns Updated Order instance, no assossiation is eagerly loaded
+ */
+async function updateOrderStatus(
+  orderId: string,
+  newStatus: OrderStatuses,
+  checker: (oldStatus: OrderStatuses) => string | true,
+  onSuccess?: (order: Order, transaction?: Transaction) => any
+) {
+  return sequelize.transaction(async (transaction) => {
+    const lockedOrder = await Order.findOne({
+      where: { id: orderId },
+      transaction,
+      lock: true,
+    });
+    if (!lockedOrder) throw Error("updateOrderStatus: order does not exist");
+    // checker return string if error happen
+    const checkerResult = checker(lockedOrder.status);
+    if (checkerResult === true) {
+      await lockedOrder!.update({ status: newStatus }, { transaction });
+      await onSuccess?.(lockedOrder, transaction); //run and await onSuccess if exist
+      return lockedOrder;
+    } else throw new InvalidOrderStatusError(checkerResult);
+  });
+}
+
+async function reloadOrder(order: Order) {
+  await order.reload({
+    include: [
+      Shop,
+      {
+        model: OrderItem,
+        attributes: ["id", "name", "price", "quantity"],
+        include: [getOrderItemImageInclude("items")],
+      },
+    ],
+    order: [
+      sequelize.literal("`items`.`name` ASC"),
+      sequelize.literal("`items->images`.`order` ASC"),
+      // [OrderItem, "name", "ASC"],
+      // ["items.images", "order", "ASC"],
+    ],
+  });
 }
 
 export async function confirmOrder(order: Order) {
-  if (order.status === OrderStatuses.AWAITING) {
-    return await order.update({ status: OrderStatuses.CONFIRMED });
-  } else
-    throw new InvalidOrderStatusError(
-      "Order could only be confirmed if it has yet to be confirmed"
-    );
+  const updatedOrder = await updateOrderStatus(
+    order.id,
+    OrderStatuses.CONFIRMED,
+    (currentStatus) => {
+      if (currentStatus === OrderStatuses.AWAITING) return true;
+      else return "Order could only be confirmed if it has yet to be confirmed";
+    },
+    ({ id, createdAt, status }) =>
+      setCancelOrderTimeout(
+        id,
+        addMinutes(createdAt!, CONFIRMED_TIMEOUT_MINUTE),
+        status
+      )
+  );
+  await reloadOrder(updatedOrder);
+  return updatedOrder;
+}
+
+export async function cancelOrder(order: Order, side?: "shop" | "user") {
+  const updatedOrder = await updateOrderStatus(
+    order.id,
+    OrderStatuses.CANCELLED,
+    (currentStatus) => {
+      if (
+        currentStatus === OrderStatuses.AWAITING ||
+        (currentStatus === OrderStatuses.CONFIRMED && side === "shop")
+      )
+        return true;
+      else if (currentStatus === OrderStatuses.CONFIRMED && side === "user")
+        return "Order could only be cancelled by user if it has yet to be confirmed";
+      else return "Order could only be cancelled if it has yet to be delivered";
+    }
+  );
+  await reloadOrder(updatedOrder);
+  return updatedOrder;
 }
 
 export async function deliverOrder(order: Order) {
-  if (order.status === OrderStatuses.CONFIRMED) {
-    return await order.update({ status: OrderStatuses.DELIVERING });
-  } else
-    throw new InvalidOrderStatusError(
-      "Order could only be delivered if it is currently confirmed"
-    );
+  const updatedOrder = await updateOrderStatus(
+    order.id,
+    OrderStatuses.DELIVERING,
+    (currentStatus) => {
+      if (currentStatus === OrderStatuses.CONFIRMED) return true;
+      else return "Order could only be delivered if it is currently confirmed";
+    },
+    async ({ id, createdAt }) => {
+      // set timeout
+      await setDeliverOrder(
+        id,
+        addMinutes(createdAt!, DELIVERY_TIMEOUT_MINUTE)
+      );
+    }
+  );
+  await reloadOrder(updatedOrder);
+  return updatedOrder;
 }
 
 /**
@@ -148,11 +227,25 @@ export async function createOrders(cartItems: Cart[], address: UserAddress) {
       );
 
       // create order for each shop
-      return await Promise.all(
+      const orders = await Promise.all(
         cartsByShop.map(([shopId, cartItems]) =>
           createOrder(cartItems, addressData.data, userId, transaction)
         )
       );
+
+      // set timeout
+      await Promise.all(
+        orders.map(async ({ id, status, createdAt }) => {
+          if (!createdAt) throw Error("processOrder: createdAt not loaded");
+          await setCancelOrderTimeout(
+            id,
+            addMinutes(createdAt, AWAITING_CONFIRMATION_TIMEOUT_MINUTE),
+            status
+          );
+        })
+      );
+
+      return orders;
     } //some item out of stock
     else
       throw new InventoryError(

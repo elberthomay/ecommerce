@@ -4,6 +4,8 @@ import { createUser } from "./helpers/user/userHelper";
 import { defaultRootUser } from "./helpers/user/userData";
 import "jest-expect-message";
 
+jest.mock("../agenda/orderAgenda");
+
 beforeAll(async () => {
   try {
     await sequelize.sync({ force: true });
