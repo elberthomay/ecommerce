@@ -19,8 +19,11 @@ export const orderAddressSchema = addressSchema
   });
 
 export const formatOrderAddress = addressSchema
-  .omit({ id: true, name: true, subdistrictId: true })
+  .omit({ id: true, name: true, subdistrictId: true, postCode: true })
   .extend({
+    postCode: addressSchema.shape.postCode
+      .nullish()
+      .transform((code) => code ?? undefined),
     latitude: latitudeSchema.nullish().transform((lat) => lat ?? undefined),
     longitude: longitudeSchema.nullish().transform((lng) => lng ?? undefined),
   })

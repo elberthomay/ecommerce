@@ -32,6 +32,7 @@ import Shop, { ShopCreationAttribute } from "../models/Shop";
 import OrderItem, { getOrderItem } from "../models/OrderItem";
 import { getOrderItemImageInclude } from "../models/OrderItemImage";
 import sequelize from "../models/sequelize";
+import NoAddressSelectedError from "../errors/NoAddressSelectedError";
 
 const router = Router();
 
@@ -215,7 +216,7 @@ router.post(
   catchAsync(async (req, res) => {
     const currentUser: User = (req as any).currentUser;
     const selectedAddressId = currentUser.selectedAddressId; // get selected user id
-    if (!selectedAddressId) throw new Error("No address is selected");
+    if (!selectedAddressId) throw new NoAddressSelectedError();
     const userAddress = await UserAddress.findOne({
       where: { addressId: selectedAddressId, userId: currentUser.id },
       include: [Address],

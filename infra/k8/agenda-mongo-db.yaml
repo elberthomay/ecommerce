@@ -1,0 +1,50 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: agenda-mongo-db-depl
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: agenda-mongo-db
+  template:
+    metadata:
+      labels:
+        app: agenda-mongo-db
+    spec:
+      volumes:
+        - name: agenda-mongo-db-pv
+          persistentVolumeClaim:
+            claimName: agenda-mongo-db-pvc
+      containers:
+        - name: agenda-mongo-db
+          image: mongo
+          volumeMounts:
+            - name: agenda-mongo-db-pv
+              mountPath: /data/db
+          env:
+            - name: MONGO_INITDB_ROOT_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: ecommerce-db-secret
+                  key: MONGO_INITDB_ROOT_USERNAME
+            - name: MONGO_INITDB_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: ecommerce-db-secret
+                  key: MONGO_INITDB_ROOT_PASSWORD
+            - name: MONGO_INITDB_DATABASE
+              value: agenda
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: agenda-mongo-db-srv
+spec:
+  selector:
+    app: agenda-mongo-db
+  ports:
+    - name: agenda-mongo-db
+      protocol: TCP
+      port: 27017
+      targetPort: 27017

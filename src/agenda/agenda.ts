@@ -2,7 +2,11 @@ import { Agenda } from "@hokify/agenda";
 import Order, { OrderStatuses } from "../models/Order";
 import sequelize from "../models/sequelize";
 
-const mongoConnectionString = "mongodb://agenda-mongo-srv/agenda";
+const username = process.env.MONGO_INITDB_ROOT_USERNAME ?? "root";
+const password = process.env.MONGO_INITDB_ROOT_PASSWORD ?? "1234";
+
+const mongoConnectionString = `mongodb://${username}:${password}@agenda-mongo-db-srv:27017/agenda`;
+console.log(mongoConnectionString);
 
 export interface orderTimeoutParamType {
   orderId: string;

@@ -41,6 +41,17 @@ spec:
                   name: ecommerce-db-secret
                   key: BACKEND_DB_PASSWORD
 
+            - name: MONGO_INITDB_ROOT_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: ecommerce-db-secret
+                  key: MONGO_INITDB_ROOT_USERNAME
+            - name: MONGO_INITDB_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: ecommerce-db-secret
+                  key: MONGO_INITDB_ROOT_PASSWORD
+
             # aws and google keys
             - name: AWS_ACCESS_KEY_ID
               valueFrom:

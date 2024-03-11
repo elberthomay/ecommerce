@@ -7,7 +7,7 @@ import {
   orderAddressSchema,
 } from "../../schemas/orderSchema";
 import OrderItemImage, { getOrderItemImageInclude } from "../OrderItemImage";
-import InvalidOrderStatusError from "../../errors/invalidOrderStatusError";
+import InvalidOrderStatusError from "../../errors/InvalidOrderStatusError";
 import Cart from "../Cart";
 import UserAddress from "../UserAddress";
 import NoItemInCartError from "../../errors/NoItemInCartError";

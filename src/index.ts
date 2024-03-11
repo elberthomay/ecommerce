@@ -1,6 +1,8 @@
 import "dotenv/config";
 import app from "./app";
 import sequelize from "./models/sequelize";
+import { DatabaseError } from "sequelize";
+import agenda from "./agenda/agenda";
 
 (async () => {
   if (
@@ -22,12 +24,14 @@ import sequelize from "./models/sequelize";
     try {
       await sequelize.sync();
       console.log("Database connection established");
+      await agenda.start();
       app.listen(3000, () => {
         console.log("listening to port 3000");
       });
     } catch (e) {
-      console.log("error connecting to database");
-      console.log(e);
+      if (e instanceof DatabaseError)
+        console.log("error connecting to database:\n", e);
+      else console.log(e);
     }
   }
 })();
