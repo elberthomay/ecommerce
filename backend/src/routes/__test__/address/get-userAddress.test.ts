@@ -9,7 +9,7 @@ import {
 } from "../../../test/helpers/user/userHelper";
 import { createAddress } from "../../../test/helpers/address/addressHelper";
 import User from "../../../models/User";
-import { addressOutputArraySchema } from "../../../schemas/addressSchema";
+import { addressOutputArraySchema } from "@elycommerce/common";
 import { defaultAddressCreateObject } from "../../../test/helpers/address/addressData";
 
 const url = "/api/address/user";

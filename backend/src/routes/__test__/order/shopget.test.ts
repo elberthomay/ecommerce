@@ -1,10 +1,7 @@
 import request from "supertest";
 import app from "../../../app";
 import { z } from "zod";
-import {
-  getOrdersOutputSchema,
-  getOrdersQuery,
-} from "../../../schemas/orderSchema";
+import { getOrdersOutputSchema, getOrdersQuery } from "@elycommerce/common";
 import {
   createUser,
   defaultCookie,
@@ -12,7 +9,6 @@ import {
 import authenticationTests from "../../../test/authenticationTests.test";
 import { defaultUser } from "../../../test/helpers/user/userData";
 import { createShop, defaultShop } from "../../../test/helpers/shop/shopHelper";
-import Shop from "../../../models/Shop";
 import { generateOrders } from "../../../test/helpers/order/orderHelper";
 import {
   printedExpect,

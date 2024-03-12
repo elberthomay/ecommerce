@@ -16,7 +16,7 @@ import {
   addressOutputSchema,
   addressParamSchema,
   addressUpdateSchema,
-} from "../schemas/addressSchema";
+} from "@elycommerce/common";
 import NotFoundError from "../errors/NotFoundError";
 import { ModelWithAddresses } from "../test/helpers/address/addressHelper";
 import sequelize from "../models/sequelize";

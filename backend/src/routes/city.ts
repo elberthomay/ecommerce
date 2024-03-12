@@ -8,7 +8,7 @@ import {
   cityCreateSchema,
   cityIdSchema,
   cityUpdateSchema,
-} from "../schemas/citySchema";
+} from "@elycommerce/common";
 import { authorization } from "../middlewares/authorize";
 import { z } from "zod";
 

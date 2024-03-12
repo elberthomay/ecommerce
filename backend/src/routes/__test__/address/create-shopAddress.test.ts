@@ -11,10 +11,7 @@ import { omit, pick } from "lodash";
 import validationTest from "../../../test/helpers/validationTest.test";
 import Shop from "../../../models/Shop";
 import { createDefaultShop } from "../../../test/helpers/shop/shopHelper";
-import {
-  addressCreateSchema,
-  addressOutputSchema,
-} from "../../../schemas/addressSchema";
+import { addressCreateSchema, addressOutputSchema } from "@elycommerce/common";
 import { z } from "zod";
 
 const url = "/api/address/shop";

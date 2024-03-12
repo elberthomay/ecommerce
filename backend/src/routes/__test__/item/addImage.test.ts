@@ -9,7 +9,7 @@ import {
   defaultCookie,
   forgeCookie,
 } from "../../../test/helpers/user/userHelper";
-import { MAX_IMAGE_COUNT } from "../../../var/constants";
+import { MAX_IMAGE_COUNT } from "@elycommerce/common";
 import Item from "../../../models/Item";
 import ItemImage from "../../../models/ItemImage";
 import { defaultShop } from "../../../test/helpers/shop/shopHelper";

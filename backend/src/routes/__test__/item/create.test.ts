@@ -16,14 +16,10 @@ import Item, { ItemCreationAttribute } from "../../../models/Item";
 import Tag from "../../../models/Tag";
 import ItemTag from "../../../models/ItemTag";
 import imageInputTests from "../../../test/imageInputTests.test";
-import { MAX_IMAGE_COUNT } from "../../../var/constants";
-import { defaultUser } from "../../../test/helpers/user/userData";
+import { MAX_IMAGE_COUNT } from "@elycommerce/common";
 import path from "path";
 import ItemImage from "../../../models/ItemImage";
-import {
-  itemCreateSchema,
-  itemDetailsOutputSchema,
-} from "../../../schemas/itemSchema";
+import { itemCreateSchema, itemDetailsOutputSchema } from "@elycommerce/common";
 import { z } from "zod";
 import { printedExpect } from "../../../test/helpers/assertionHelper";
 

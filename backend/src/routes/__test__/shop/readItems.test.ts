@@ -8,7 +8,7 @@ import ItemImage from "../../../models/ItemImage";
 import {
   shopItemGetOutputBase,
   shopItemGetOutputSchema,
-} from "../../../schemas/itemSchema";
+} from "@elycommerce/common";
 import { z } from "zod";
 import { printedExpect } from "../../../test/helpers/assertionHelper";
 

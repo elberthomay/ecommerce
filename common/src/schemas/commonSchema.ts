@@ -1,5 +1,5 @@
-import orderNameEnum from "../var/orderNameEnum";
 import { z } from "zod";
+import { orderNameEnum } from "../var/orderEnum";
 
 function getZodEnumFromObjectKeys<
   TI extends Record<string, any>,

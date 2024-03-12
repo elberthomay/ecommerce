@@ -1,4 +1,4 @@
-import { MAX_IMAGE_COUNT } from "../var/constants";
+import { MAX_IMAGE_COUNT } from "@elycommerce/common";
 import CustomError, { FormattedError } from "./CustomError";
 
 export default class MaxImageExceeded extends CustomError {

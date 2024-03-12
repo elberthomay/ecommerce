@@ -5,7 +5,7 @@ import { defaultShop } from "../../../test/helpers/shop/shopHelper";
 import Item from "../../../models/Item";
 import _ from "lodash";
 import ItemImage from "../../../models/ItemImage";
-import { itemDetailsOutputSchema } from "../../../schemas/itemSchema";
+import { itemDetailsOutputSchema } from "@elycommerce/common";
 import Tag from "../../../models/Tag";
 import { validatedExpect } from "../../../test/helpers/assertionHelper";
 

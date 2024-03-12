@@ -9,7 +9,7 @@ import {
 import { invalidTagNames } from "../../../test/helpers/Tag/tagData";
 import validationTest from "../../../test/helpers/validationTest.test";
 import { z } from "zod";
-import { tagCreateSchema } from "../../../schemas/tagSchema";
+import { tagCreateSchema } from "@elycommerce/common";
 import { printedExpect } from "../../../test/helpers/assertionHelper";
 const url = "/api/tag/";
 const method = "post";

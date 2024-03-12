@@ -24,7 +24,7 @@ import {
   formatOrder,
   formatOrderItem,
   getOrderItemParam,
-} from "../schemas/orderSchema";
+} from "@elycommerce/common";
 import { authorization } from "../middlewares/authorize";
 import validator from "../middlewares/validator";
 import { z } from "zod";

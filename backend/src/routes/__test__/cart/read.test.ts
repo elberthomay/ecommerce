@@ -13,10 +13,7 @@ import _ from "lodash";
 import { createItem } from "../../../test/helpers/item/itemHelper";
 import Cart from "../../../models/Cart";
 import { faker } from "@faker-js/faker";
-import {
-  cartOutputListSchema,
-  cartOutputSchema,
-} from "../../../schemas/cartSchema";
+import { cartOutputListSchema, cartOutputSchema } from "@elycommerce/common";
 import { z } from "zod";
 import {
   printedExpect,

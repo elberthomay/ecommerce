@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import { AuthorizationError } from "../errors/AuthorizationError";
-import priviledgeEnum from "../var/priviledgeEnum";
+import { priviledgeEnum } from "../var/priviledgeEnum";
 import User from "../models/User";
 
 /**

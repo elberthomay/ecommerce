@@ -13,12 +13,12 @@ import Cart from "../../../models/Cart";
 import { createAddress } from "../../../test/helpers/address/addressHelper";
 import { printedExpect } from "../../../test/helpers/assertionHelper";
 import { z } from "zod";
-import { formatGetOrders } from "../../../schemas/orderSchema";
+import { formatGetOrders } from "@elycommerce/common";
 import {
   setCancelOrderTimeout,
   setDeliverOrder,
 } from "../../../agenda/orderAgenda";
-import { OrderStatuses } from "../../../models/Order";
+import { OrderStatuses } from "@elycommerce/common";
 import { AWAITING_CONFIRMATION_TIMEOUT_MINUTE } from "../../../var/constants";
 
 const url = "/api/order/process";

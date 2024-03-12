@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { defaultItem } from "./itemHelper";
 import { pick } from "lodash";
-import { itemCreateSchema } from "../../../schemas/itemSchema";
+import { itemCreateSchema } from "@elycommerce/common";
 import { invalidTagIds } from "../Tag/tagData";
 
 export const invalidItemValues = {

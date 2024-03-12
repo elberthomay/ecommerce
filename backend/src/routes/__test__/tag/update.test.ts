@@ -13,7 +13,7 @@ import {
 import { printedExpect } from "../../../test/helpers/assertionHelper";
 import validationTest from "../../../test/helpers/validationTest.test";
 import { z } from "zod";
-import { tagPatchSchema } from "../../../schemas/tagSchema";
+import { tagPatchSchema } from "@elycommerce/common";
 import {
   invalidTagIds,
   invalidTagValues,

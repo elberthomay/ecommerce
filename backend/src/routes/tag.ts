@@ -6,7 +6,7 @@ import {
   tagCreateSchema,
   tagPatchSchema,
   tagParamSchema,
-} from "../schemas/tagSchema";
+} from "@elycommerce/common";
 import fetch, { fetchCurrentUser } from "../middlewares/fetch";
 import authenticate from "../middlewares/authenticate";
 import { authorization } from "../middlewares/authorize";

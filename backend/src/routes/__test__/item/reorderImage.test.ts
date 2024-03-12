@@ -12,7 +12,7 @@ import {
   defaultCookie,
   forgeCookie,
 } from "../../../test/helpers/user/userHelper";
-import { MAX_IMAGE_COUNT } from "../../../var/constants";
+import { MAX_IMAGE_COUNT } from "@elycommerce/common";
 import request from "supertest";
 import { shuffle } from "lodash";
 

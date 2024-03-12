@@ -1,11 +1,12 @@
 import { Op, Transaction } from "sequelize";
-import Order, { OrderStatuses, orderOrderOptions } from "../Order";
+import Order, { orderOrderOptions } from "../Order";
+import { OrderStatuses } from "@elycommerce/common";
 import OrderItem from "../OrderItem";
 import {
   formatOrderAddress,
   getOrdersOption,
   orderAddressSchema,
-} from "../../schemas/orderSchema";
+} from "@elycommerce/common";
 import OrderItemImage, { getOrderItemImageInclude } from "../OrderItemImage";
 import InvalidOrderStatusError from "../../errors/InvalidOrderStatusError";
 import Cart from "../Cart";

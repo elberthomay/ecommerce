@@ -16,14 +16,7 @@ import {
 import User from "./User";
 import Shop from "./Shop";
 import OrderItem, { OrderItemCreationAttribute } from "./OrderItem";
-
-export enum OrderStatuses {
-  AWAITING = "awaiting",
-  CONFIRMED = "confirmed",
-  DELIVERING = "delivering",
-  DELIVERED = "delivered",
-  CANCELLED = "cancelled",
-}
+import { OrderStatuses } from "@elycommerce/common";
 
 export const orderOrderOptions: Record<
   string,

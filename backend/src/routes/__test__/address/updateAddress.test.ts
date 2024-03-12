@@ -18,7 +18,7 @@ import {
 import Address from "../../../models/Address";
 import { omit } from "lodash";
 import { invalidUuid } from "../../../test/helpers/commonData";
-import { addressOutputSchema } from "../../../schemas/addressSchema";
+import { addressOutputSchema } from "@elycommerce/common";
 import { z } from "zod";
 import { printedExpect } from "../../../test/helpers/assertionHelper";
 

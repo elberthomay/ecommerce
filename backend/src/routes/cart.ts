@@ -12,7 +12,7 @@ import {
   cartOutputListSchema,
   cartOutputSchema,
   cartUpdateSchema,
-} from "../schemas/cartSchema";
+} from "@elycommerce/common";
 import Cart from "../models/Cart";
 import NotFoundError from "../errors/NotFoundError";
 import InventoryError from "../errors/InventoryError";

@@ -1,10 +1,7 @@
 import request from "supertest";
 import app from "../../../app";
 import { z } from "zod";
-import {
-  getOrdersOutputSchema,
-  getOrdersQuery,
-} from "../../../schemas/orderSchema";
+import { getOrdersOutputSchema, getOrdersQuery } from "@elycommerce/common";
 import {
   createUser,
   defaultCookie,

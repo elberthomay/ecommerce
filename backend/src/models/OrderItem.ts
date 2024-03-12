@@ -10,8 +10,6 @@ import {
 } from "sequelize-typescript";
 import NotFoundError from "../errors/NotFoundError";
 import OrderItemImage, { getOrderItemImageInclude } from "./OrderItemImage";
-import { z } from "zod";
-import { orderItemOutputSchema } from "../schemas/orderSchema";
 import Order from "./Order";
 
 export interface OrderItemCreationAttribute {

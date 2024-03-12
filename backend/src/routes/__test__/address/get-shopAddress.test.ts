@@ -8,7 +8,7 @@ import { createDefaultShop } from "../../../test/helpers/shop/shopHelper";
 import { createShop } from "../../../test/helpers/shop/shopHelper";
 import Shop from "../../../models/Shop";
 import ShopAddress from "../../../models/ShopAddress";
-import { addressOutputArraySchema } from "../../../schemas/addressSchema";
+import { addressOutputArraySchema } from "@elycommerce/common";
 import { defaultAddressCreateObject } from "../../../test/helpers/address/addressData";
 
 const url = "/api/address/shop";

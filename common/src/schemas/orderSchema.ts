@@ -8,7 +8,7 @@ import {
 import { addressSchema } from "./addressSchema";
 import { userSchema } from "./userSchema";
 import { shopSchema } from "./shopSchema";
-import { OrderStatuses, orderOrderOptions } from "../models/Order";
+import { OrderStatuses } from "../var/orderEnum";
 
 export const orderAddressSchema = addressSchema
   .omit({ id: true, name: true, subdistrictId: true, detail: true })

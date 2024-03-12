@@ -1,6 +1,7 @@
 import request from "supertest";
 import app from "../../../app";
-import Order, { OrderStatuses } from "../../../models/Order";
+import Order from "../../../models/Order";
+import { OrderStatuses } from "@elycommerce/common";
 import authenticationTests from "../../../test/authenticationTests.test";
 import { generateOrders } from "../../../test/helpers/order/orderHelper";
 import { faker } from "@faker-js/faker";
@@ -18,7 +19,7 @@ import {
 } from "../../../test/helpers/assertionHelper";
 import Shop from "../../../models/Shop";
 import { createShop } from "../../../test/helpers/shop/shopHelper";
-import { formatOrder, orderOutputSchema } from "../../../schemas/orderSchema";
+import { formatOrder, orderOutputSchema } from "@elycommerce/common";
 import { setCancelOrderTimeout } from "../../../agenda/orderAgenda";
 import { addMinutes } from "date-fns";
 import { CONFIRMED_TIMEOUT_MINUTE } from "../../../var/constants";

@@ -5,11 +5,10 @@ import {
   defaultCookie,
   tokenEqualityTest,
 } from "../../../test/helpers/user/userHelper";
-import { currentUserOutputSchema } from "../../../schemas/userSchema";
+import { currentUserOutputSchema } from "@elycommerce/common";
 import { omit, pick } from "lodash";
 import { defaultUser } from "../../../test/helpers/user/userData";
 import { createItem } from "../../../test/helpers/item/itemHelper";
-import { z } from "zod";
 import {
   printedExpect,
   validatedExpect,

@@ -18,7 +18,7 @@ import {
   itemQuerySchema,
   itemTagEditSchema,
   itemUpdateSchema,
-} from "../schemas/itemSchema";
+} from "@elycommerce/common";
 import {
   FindOptions,
   Includeable,
@@ -27,7 +27,7 @@ import {
   Sequelize,
   Transaction,
 } from "sequelize";
-import orderNameEnum from "../var/orderNameEnum";
+import { orderNameEnum } from "@elycommerce/common";
 import User from "../models/User";
 import { omit, includes, pick } from "lodash";
 import sequelize from "../models/sequelize";
@@ -36,7 +36,8 @@ import queryOptionToLimitOffset from "../helper/queryOptionToLimitOffset";
 import ItemImage from "../models/ItemImage";
 import processImage from "../middlewares/processImage";
 import ImageError from "../errors/ImageError";
-import { BUCKET_NAME, MAX_IMAGE_COUNT } from "../var/constants";
+import { BUCKET_NAME } from "../var/constants";
+import { MAX_IMAGE_COUNT } from "@elycommerce/common";
 import MaxImageExceeded from "../errors/MaxImageExceeded";
 import { DeleteObjectsCommand, PutObjectCommand } from "@aws-sdk/client-s3";
 import s3Client from "../helper/s3Client";

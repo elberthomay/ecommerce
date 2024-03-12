@@ -1,7 +1,7 @@
 import catchAsync from "./catchAsync";
 import multer from "multer";
 import { Request, Response, NextFunction } from "express";
-import { MAX_FILE_SIZE_IN_MB, MAX_IMAGE_COUNT } from "../var/constants";
+import { MAX_FILE_SIZE_IN_MB, MAX_IMAGE_COUNT } from "@elycommerce/common";
 // import fileType from "file-type";
 import ImageError from "../errors/ImageError";
 

@@ -3,7 +3,7 @@ import User from "../models/User";
 import { TokenTypes } from "../types/TokenTypes";
 import jwt from "jsonwebtoken";
 import { z } from "zod";
-import { loginSchema } from "../schemas/userSchema";
+import { loginSchema } from "@elycommerce/common";
 
 const createToken = (
   req: Request<unknown, unknown, z.infer<typeof loginSchema>>,

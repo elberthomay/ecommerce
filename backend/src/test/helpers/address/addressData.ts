@@ -1,7 +1,7 @@
 import { omit } from "lodash";
 import { AddressCreationAttribute } from "../../../models/Address";
 import { z } from "zod";
-import { addressCreateSchema } from "../../../schemas/addressSchema";
+import { addressCreateSchema } from "@elycommerce/common";
 
 export const invalidAddressValues = {
   name: [

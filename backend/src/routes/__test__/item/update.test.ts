@@ -13,7 +13,7 @@ import { invalidUuid } from "../../../test/helpers/commonData";
 import _ from "lodash";
 import { defaultRootUser } from "../../../test/helpers/user/userData";
 import { z } from "zod";
-import { itemUpdateSchema } from "../../../schemas/itemSchema";
+import { itemUpdateSchema } from "@elycommerce/common";
 
 const url = "/api/item/";
 

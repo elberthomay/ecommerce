@@ -21,7 +21,7 @@ import validationTest from "../../../test/helpers/validationTest.test";
 import {
   addressCreateSchema,
   addressOutputSchema,
-} from "../../../schemas/addressSchema";
+} from "@elycommerce/common";
 import { z } from "zod";
 import {
   printedExpect,

@@ -3,7 +3,7 @@ import Shop, { ShopCreationAttribute } from "../../../models/Shop";
 import { createUser } from "../user/userHelper";
 import { defaultUser } from "../user/userData";
 import { z } from "zod";
-import { shopUpdateSchema } from "../../../schemas/shopSchema";
+import { shopUpdateSchema } from "@elycommerce/common";
 
 /**
  * Create Shop from number or array of fragmented(or whole) user data.

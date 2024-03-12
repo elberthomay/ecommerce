@@ -11,7 +11,7 @@ import User from "../../../models/User";
 import validationTest from "../../../test/helpers/validationTest.test";
 import { invalidUserValue } from "../../../test/helpers/user/userData";
 import { omit, pick } from "lodash";
-import { currentUserOutputSchema } from "../../../schemas/userSchema";
+import { currentUserOutputSchema } from "@elycommerce/common";
 import { z } from "zod";
 
 const url = "/api/user/";

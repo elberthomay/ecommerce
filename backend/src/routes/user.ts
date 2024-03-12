@@ -3,7 +3,7 @@ import {
   userUpdateSchema,
   loginSchema,
   registerSchema,
-} from "../schemas/userSchema";
+} from "@elycommerce/common";
 import validator from "../middlewares/validator";
 import User, { UserCreationAttribute } from "../models/User";
 import catchAsync from "../middlewares/catchAsync";

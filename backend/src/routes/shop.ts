@@ -8,7 +8,7 @@ import {
   shopNameCheckSchema,
   shopParamSchema,
   shopUpdateSchema,
-} from "../schemas/shopSchema";
+} from "@elycommerce/common";
 import User from "../models/User";
 import Shop, { ShopCreationAttribute } from "../models/Shop";
 import fetch, { fetchCurrentUser } from "../middlewares/fetch";
@@ -16,7 +16,7 @@ import Item, { ItemCreationAttribute } from "../models/Item";
 import { ParamsDictionary } from "express-serve-static-core";
 import { TokenTypes } from "../types/TokenTypes";
 import { FindOptions, Op, Order, Sequelize } from "sequelize";
-import orderNameEnum from "../var/orderNameEnum";
+import { orderNameEnum } from "@elycommerce/common";
 import queryOptionToLimitOffset from "../helper/queryOptionToLimitOffset";
 import sequelize from "../models/sequelize";
 import DuplicateDataError from "../errors/DuplicateDataError";
@@ -28,7 +28,7 @@ import { DeleteObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
 import { BUCKET_NAME } from "../var/constants";
 import s3Client from "../helper/s3Client";
 import { z } from "zod";
-import { shopItemGetOutputSchema } from "../schemas/itemSchema";
+import { shopItemGetOutputSchema } from "@elycommerce/common";
 
 const router = Router();
 

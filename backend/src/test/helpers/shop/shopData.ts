@@ -1,5 +1,3 @@
-import { ShopCreationAttribute } from "../../../models/Shop";
-
 export const invalidShopValue = {
   name: [
     "",

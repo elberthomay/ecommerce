@@ -5,7 +5,7 @@ import Tag from "../../../models/Tag";
 import { createItem } from "../../../test/helpers/item/itemHelper";
 import { defaultShop } from "../../../test/helpers/shop/shopHelper";
 import Item, { ItemCreationAttribute } from "../../../models/Item";
-import { itemGetOutputSchema } from "../../../schemas/itemSchema";
+import { itemGetOutputSchema } from "@elycommerce/common";
 import { faker } from "@faker-js/faker";
 import ItemImage from "../../../models/ItemImage";
 import { z } from "zod";

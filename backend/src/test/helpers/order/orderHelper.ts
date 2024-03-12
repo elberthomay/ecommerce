@@ -1,8 +1,6 @@
 import { faker } from "@faker-js/faker";
-import Order, {
-  OrderCreationAttribute,
-  OrderStatuses,
-} from "../../../models/Order";
+import Order, { OrderCreationAttribute } from "../../../models/Order";
+import { OrderStatuses } from "@elycommerce/common";
 import OrderItem, {
   OrderItemCreationAttribute,
 } from "../../../models/OrderItem";

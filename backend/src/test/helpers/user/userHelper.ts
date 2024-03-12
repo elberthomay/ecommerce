@@ -2,9 +2,7 @@ import { faker } from "@faker-js/faker";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import User, { UserCreationAttribute } from "../../../models/User";
-import { TokenTypes } from "../../../types/TokenTypes";
 import _ from "lodash";
-import sequelize from "../../../models/sequelize";
 import { Response } from "supertest";
 import { defaultUser } from "./userData";
 
