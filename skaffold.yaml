@@ -10,7 +10,7 @@ build:
     push: false
   artifacts:
     - image: elberthomax/ecommerce
-      context: .
+      context: backend
       docker:
         dockerfile: Dockerfile
       sync:
