@@ -34,10 +34,10 @@ function collateOrderGenerationData(
   // generate price to calculate totalPrice, generate array if doesn't exist
   const itemCreationDatas: OrderItemGenerationAttribute =
     orderData.items === undefined
-      ? Math.floor(Math.random() * 6)
+      ? Math.floor(Math.random() * 5 + 1) // 1 to 6 item
       : orderData.items; //already itemCreationDatas
 
-  const createOrderData =
+  const generateOrderData =
     (
       data?: Partial<
         Omit<OrderCreationAttribute, "items" | "userId" | "shopId">
@@ -53,6 +53,9 @@ function collateOrderGenerationData(
           Object.values(OrderStatuses)[
             Math.floor(Math.random() * Object.values(OrderStatuses).length)
           ],
+
+        name: "", //placeholder to be replaced later
+        totalPrice: 0,
 
         phoneNumber:
           data?.phoneNumber ??
@@ -85,7 +88,7 @@ function collateOrderGenerationData(
     };
 
   return {
-    orderData: createOrderData(orderData)(),
+    orderData: generateOrderData(orderData)(),
     itemData: itemCreationDatas,
   };
 }
@@ -128,6 +131,12 @@ export const generateOrders = async (
           a.name.localeCompare(b.name)
         );
         newOrder.items = sortedItems;
+        //change placeholder to the correct data
+        await newOrder.update({ name: sortedItems[0].name });
+        await newOrder.update({
+          image: sortedItems[0].images[0]?.imageName ?? null,
+        });
+
         return newOrder;
       } else return order;
     })
@@ -135,6 +144,19 @@ export const generateOrders = async (
 
   return orders;
 };
+
+const generateOrderItemData =
+  (orderId: string, data?: Partial<OrderItemCreationAttribute>) =>
+  (): OrderItemCreationAttribute => {
+    return {
+      id: data?.id ?? faker.string.uuid(),
+      orderId,
+      name: data?.name ?? faker.commerce.productName(),
+      description: data?.description ?? faker.commerce.productDescription(),
+      price: data?.price ?? faker.number.int({ min: 0, max: 100000000 }),
+      quantity: data?.quantity ?? faker.number.int({ min: 0, max: 9999 }),
+    };
+  };
 
 export const generateOrderItem = async (
   creationData: OrderItemGenerationAttribute,
@@ -150,26 +172,16 @@ export const generateOrderItem = async (
   }
 
   let orderItemDatas: OrderItemCreationAttribute[];
-  //generate fake data
-  const createOrderItemData =
-    (data?: Partial<OrderItemCreationAttribute>) =>
-    (): OrderItemCreationAttribute => {
-      return {
-        id: data?.id ?? faker.string.uuid(),
-        orderId,
-        name: data?.name ?? faker.commerce.productName(),
-        description: data?.description ?? faker.commerce.productDescription(),
-        price: data?.price ?? faker.number.int({ min: 0, max: 100000000 }),
-        quantity: data?.quantity ?? faker.number.int({ min: 0, max: 9999 }),
-      };
-    };
 
   //expand if number, complete if order data partials
   if (typeof creationData === "number")
-    orderItemDatas = faker.helpers.multiple(createOrderItemData(), {
+    orderItemDatas = faker.helpers.multiple(generateOrderItemData(orderId), {
       count: creationData,
     });
-  else orderItemDatas = creationData.map((data) => createOrderItemData(data)());
+  else
+    orderItemDatas = creationData.map((data) =>
+      generateOrderItemData(orderId, data)()
+    );
 
   const orderItemImageDatas = orderItemDatas.map(({ id }, i) => {
     // try to get image creation data, randomly create between 0 to 6 images otherwise

@@ -23,6 +23,7 @@ import {
 import { faker } from "@faker-js/faker";
 import { formatOrderItem, orderItemOutputSchema } from "@elycommerce/common";
 import { defaultUser as defaultUserData } from "../../../test/helpers/user/userData";
+import { z } from "zod";
 
 const getUrl = (orderId: string, itemId: string) =>
   `/api/order/${orderId}/item/${itemId}`;
@@ -148,5 +149,13 @@ it("return 200 with correct item and correct format", async () => {
       validatedExpect(orderItemOutputSchema, (data, res) => {
         expect(data).toEqual(expectedResult);
       })
-    );
+    )
+    .expect(({ body }: { body: z.infer<typeof orderItemOutputSchema> }) => {
+      const sortedImageByOrder = [...body.images].sort(
+        (a, b) => a.order - b.order
+      );
+      expect(body.images, "images not sorted by order").toEqual(
+        sortedImageByOrder
+      );
+    });
 });

@@ -92,6 +92,7 @@ export async function getOrderItem(
   const orderItem = await OrderItem.findOne({
     where: { orderId, id: itemId },
     include: [getOrderItemImageInclude(OrderItem.tableName)],
+    order: [["images", "order", "ASC"]],
   });
   if (orderItem) return orderItem;
   else throw new NotFoundError("OrderItem");

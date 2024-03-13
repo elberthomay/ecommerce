@@ -32,6 +32,10 @@ export interface OrderCreationAttribute {
   shopId: string;
   status?: OrderStatuses;
 
+  name: string;
+  image?: string;
+  totalPrice: number;
+
   phoneNumber: string;
   longitude?: number;
   latitude?: number;
@@ -78,6 +82,24 @@ class Order extends Model<OrderCreationAttribute> {
     defaultValue: OrderStatuses.AWAITING,
   })
   status!: OrderStatuses;
+
+  @Column({
+    type: DataType.STRING,
+    allowNull: false,
+  })
+  name!: string;
+
+  @Column({
+    type: DataType.STRING,
+    allowNull: true,
+  })
+  image!: string | null;
+
+  @Column({
+    type: DataType.BIGINT,
+    allowNull: false,
+  })
+  totalPrice!: number;
 
   @Column({
     type: DataType.STRING(25),

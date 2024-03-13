@@ -13,6 +13,7 @@ import {
   confirmOrder,
   createOrders,
   deliverOrder,
+  getOrderDetail,
   getOrders,
 } from "../models/helpers/orderHelpers";
 import {
@@ -21,9 +22,10 @@ import {
   getOrdersParam,
   getOrdersQuery,
   orderStatusChangeParams,
-  formatOrder,
   formatOrderItem,
   getOrderItemParam,
+  formatOrderDetail,
+  formatOrder,
 } from "@elycommerce/common";
 import { authorization } from "../middlewares/authorize";
 import validator from "../middlewares/validator";
@@ -204,6 +206,36 @@ router.get(
       const { orderId, itemId } = req.params;
       const orderItem = await getOrderItem(orderId, itemId);
       const result = await formatOrderItem.parseAsync(orderItem);
+      res.json(result);
+    }
+  )
+);
+
+// get order detail of the given id
+router.get(
+  "/:orderId",
+  authenticate(true),
+  validator({ params: orderStatusChangeParams, query: getOrdersQuery }),
+  fetchCurrentUser,
+  fetch<OrderCreationAttribute, z.infer<typeof getOrderItemParam>>({
+    model: Order,
+    location: "params",
+    key: ["id", "orderId"],
+    destination: "order",
+    force: "exist",
+  }),
+  fetch<OrderCreationAttribute, TokenTypes>({
+    model: Shop,
+    location: "tokenData",
+    key: ["userId", "id"],
+    destination: "shop",
+  }),
+  authorizeAdminOrderShopOwnerOrUser,
+  catchAsync(
+    async (req: IGetOrderItemRequest, res: Response, next: NextFunction) => {
+      const orderId = req.params.orderId;
+      const order = await getOrderDetail(orderId);
+      const result = await formatOrderDetail.parseAsync(order);
       res.json(result);
     }
   )

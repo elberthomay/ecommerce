@@ -1,4 +1,4 @@
-import { Op, Transaction } from "sequelize";
+import { Includeable, Op, Transaction } from "sequelize";
 import Order, { orderOrderOptions } from "../Order";
 import { OrderStatuses } from "@elycommerce/common";
 import OrderItem from "../OrderItem";
@@ -43,18 +43,33 @@ export async function getOrders(options: z.infer<typeof getOrdersOption>) {
     },
     isUndefined
   );
+  const includeOption: Includeable[] = [Shop];
+  if (itemName)
+    includeOption.push({
+      model: OrderItem,
+      attributes: ["id"],
+      where: {
+        name: { [Op.substring]: itemName },
+      }, // inner join intended
+    });
   const orders = await Order.findAll({
     where: whereOption,
+    include: includeOption,
+    order: [orderOrderOptions[orderBy ?? "newest"]],
+    limit,
+    offset: limit * (page - 1),
+  });
+  return orders;
+}
+
+export async function getOrderDetail(orderId: string) {
+  const order = await Order.findOne({
+    where: { id: orderId },
     include: [
       Shop,
       {
         model: OrderItem,
         attributes: ["id", "orderId", "name", "price", "quantity"],
-        where: itemName
-          ? {
-              name: { [Op.substring]: itemName },
-            }
-          : undefined, // inner join intended
         include: [
           getOrderItemImageInclude("items", {
             where: { order: 0 },
@@ -63,11 +78,9 @@ export async function getOrders(options: z.infer<typeof getOrdersOption>) {
         ],
       },
     ],
-    order: [orderOrderOptions[orderBy ?? "newest"]],
-    limit,
-    offset: limit * (page - 1),
+    order: [["items", "name", "ASC"]],
   });
-  return orders;
+  return order;
 }
 
 /**
@@ -277,12 +290,24 @@ async function createOrder(
 
   const shopId = cartItems[0].item!.shopId;
 
+  //sort items ascending by item name
+  const sortedItems = cartItems
+    .map((cart) => cart.item)
+    .sort((a, b) => (a?.name ?? "").localeCompare(b?.name ?? ""));
+  const totalPrice = cartItems.reduce(
+    (sum, { quantity, item }) => sum + quantity * (item?.price ?? 0),
+    0
+  );
+
   // create the order
   const order = await Order.create(
     {
       userId,
       shopId,
       ...addressData,
+      name: sortedItems[0]?.name!,
+      totalPrice,
+      image: sortedItems[0]?.images[0]?.imageName,
     },
     { transaction }
   );
