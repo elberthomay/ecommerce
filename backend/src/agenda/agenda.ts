@@ -1,5 +1,6 @@
 import { Agenda } from "@hokify/agenda";
-import Order, { OrderStatuses } from "../models/Order";
+import Order from "../models/Order";
+import { OrderStatuses } from "@elycommerce/common";
 import sequelize from "../models/sequelize";
 
 const username = process.env.MONGO_INITDB_ROOT_USERNAME ?? "root";

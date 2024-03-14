@@ -38,21 +38,47 @@ export const orderSchema = z
     id: uuidSchema,
     userId: userSchema.shape.id,
     shopId: shopSchema.shape.id,
+    name: itemSchema.shape.name,
+    image: z.string().nullish(),
+    totalPrice: z.number(),
     status: z.nativeEnum(OrderStatuses),
     createdAt: z.date(),
   })
   .merge(orderAddressSchema);
 
-export const getOrdersOutputSchema = z.array(
-  orderSchema.extend({
-    totalPrice: z.number(),
-    items: z.array(shopItemGetOutputBase),
-    shopName: shopSchema.shape.name,
-    createdAt: z.string().datetime(),
-  })
-);
+//expected shape of output of updateOrder
+export const orderOutputSchema = orderSchema.extend({
+  shopName: shopSchema.shape.name,
+  createdAt: z.string().datetime(),
+});
 
+// expected shape of getOrders
+export const getOrdersOutputSchema = z.array(orderOutputSchema);
+
+// format order from Order
 export const formatOrder = orderSchema
+  .extend({
+    shop: z.object({ name: shopSchema.shape.name }),
+  })
+  .transform((order) => ({
+    ...order,
+    shop: undefined,
+    shopName: order.shop.name,
+    createdAt: order.createdAt.toISOString(),
+  }));
+
+//format getOrders from Order[]
+export const formatGetOrders = z.array(formatOrder);
+
+// expected shape of getOrderDetail
+export const getOrderDetailOutputSchema = orderSchema.extend({
+  items: z.array(shopItemGetOutputBase),
+  shopName: shopSchema.shape.name,
+  createdAt: z.string().datetime(),
+});
+
+// format order detail from Order
+export const formatOrderDetail = orderSchema
   .extend({
     shop: z.object({ name: shopSchema.shape.name }),
     items: z.array(
@@ -81,33 +107,6 @@ export const formatOrder = orderSchema
     ),
     createdAt: order.createdAt.toISOString(),
   }));
-
-export const orderOutputSchema = orderSchema
-  .extend({
-    shopName: shopSchema.shape.name,
-    totalPrice: z.number(),
-    items: z.array(
-      itemDetailsOutputSchema
-        .pick({
-          id: true,
-          name: true,
-          price: true,
-          quantity: true,
-        })
-        .extend({
-          image: z.string(),
-        })
-    ),
-    createdAt: z.string().datetime(),
-  })
-  .refine(
-    ({ items, totalPrice }) =>
-      items.reduce((sum, { price, quantity }) => sum + price * quantity, 0) ===
-      totalPrice,
-    "total price is incorrect"
-  );
-
-export const formatGetOrders = z.array(formatOrder);
 
 export const formatOrderItem = itemDetailsOutputSchema
   .pick({

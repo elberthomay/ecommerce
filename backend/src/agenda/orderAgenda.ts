@@ -1,4 +1,4 @@
-import { OrderStatuses } from "../models/Order";
+import { OrderStatuses } from "@elycommerce/common";
 import agenda, { orderTimeoutParamType } from "./agenda";
 
 export async function setCancelOrderTimeout(
