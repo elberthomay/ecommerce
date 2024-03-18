@@ -1,4 +1,5 @@
 node_modules
+local
 .env
 ecommerce-secret.yaml
 ecommerce-secret-test.yaml

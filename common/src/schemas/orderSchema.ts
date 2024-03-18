@@ -117,11 +117,32 @@ export const formatOrderItem = itemDetailsOutputSchema
     description: true,
     images: true,
   })
-  .extend({ createdAt: z.date().transform((date) => date.toISOString()) });
+  .extend({
+    createdAt: z.date().transform((date) => date.toISOString()),
+    order: z.object({
+      shopId: shopSchema.shape.id,
+      shop: shopSchema.pick({
+        name: true,
+      }),
+    }),
+  })
+  .transform((orderItem) => ({
+    ...orderItem,
+    order: undefined,
+    shopId: orderItem.order.shopId,
+    shopName: orderItem.order.shop.name,
+  }));
 
-export const orderItemOutputSchema = formatOrderItem
-  .omit({
-    createdAt: true,
+export const orderItemOutputSchema = itemDetailsOutputSchema
+  .pick({
+    id: true,
+    name: true,
+    price: true,
+    quantity: true,
+    description: true,
+    shopId: true,
+    images: true,
+    shopName: true,
   })
   .extend({ createdAt: z.string().datetime() });
 

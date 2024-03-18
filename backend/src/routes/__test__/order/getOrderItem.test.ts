@@ -12,10 +12,7 @@ import {
   forgeCookie,
 } from "../../../test/helpers/user/userHelper";
 import { createShop } from "../../../test/helpers/shop/shopHelper";
-import {
-  generateOrders,
-  generateOrderItem,
-} from "../../../test/helpers/order/orderHelper";
+import { generateOrders } from "../../../test/helpers/order/orderHelper";
 import {
   printedExpect,
   validatedExpect,
@@ -44,16 +41,12 @@ beforeEach(async () => {
   defaultShop = (await createShop(1))[0];
   defaultOrder = (
     await generateOrders(
-      [{ id: defaultOrderId }],
+      [{ id: defaultOrderId, items: [{ id: defaultOrderItemId }] }],
       { id: defaultUser.id },
       { id: defaultShop.id }
     )
   )[0];
-  defaultOrderItem = (
-    await generateOrderItem([{ id: defaultOrderItemId }], {
-      id: defaultOrder.id,
-    })
-  )[0];
+  defaultOrderItem = defaultOrder.items[0];
 });
 
 describe("pass authentication test", () => {
@@ -139,6 +132,9 @@ it("return 200 with correct item and correct format", async () => {
   const orderIndex = Math.floor(Math.random() * orders.length);
   const itemIndex = Math.floor(Math.random() * orders[0].items.length);
   const selectedItem = orders[orderIndex].items[itemIndex];
+  selectedItem.order = orders[orderIndex];
+  await selectedItem.order.reload({ include: [Shop] });
+
   const expectedResult = formatOrderItem.parse(selectedItem);
   await getRequest(
     getUrl(selectedItem.orderId, selectedItem.id),

@@ -11,6 +11,7 @@ import {
 import NotFoundError from "../errors/NotFoundError";
 import OrderItemImage, { getOrderItemImageInclude } from "./OrderItemImage";
 import Order from "./Order";
+import Shop from "./Shop";
 
 export interface OrderItemCreationAttribute {
   id: string;
@@ -91,7 +92,14 @@ export async function getOrderItem(
 ): Promise<OrderItem> {
   const orderItem = await OrderItem.findOne({
     where: { orderId, id: itemId },
-    include: [getOrderItemImageInclude(OrderItem.tableName)],
+    include: [
+      {
+        model: Order,
+        attributes: ["shopId"],
+        include: [{ model: Shop, attributes: ["name"] }],
+      },
+      getOrderItemImageInclude(OrderItem.tableName),
+    ],
     order: [["images", "order", "ASC"]],
   });
   if (orderItem) return orderItem;

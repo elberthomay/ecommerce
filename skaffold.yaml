@@ -17,6 +17,8 @@ build:
         manual:
           - src: "src/**/*.ts"
             dest: .
+          - src: "package.json"
+            dest: .
     - image: elberthomax/ecommerce-react-test
       context: ../e-commerce-react
       docker:
@@ -30,4 +32,6 @@ build:
           - src: "**/*.html"
             dest: .
           - src: "public/*.*"
+            dest: .
+          - src: "package.json"
             dest: .

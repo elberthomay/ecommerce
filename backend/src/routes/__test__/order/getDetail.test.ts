@@ -36,23 +36,27 @@ let defaultOrder: Order;
 const defaultOrderId = faker.string.uuid();
 
 beforeEach(async () => {
-  defaultUser = (await createUser([defaultUserData])).users[0];
-  defaultShop = (await createShop(1))[0];
-  defaultOrder = (
-    await generateOrders(
-      [
-        {
-          id: defaultOrderId,
-          items: Array(5)
-            .fill(undefined)
-            .map((_) => ({ images: 5 })),
-        },
-      ],
-      { id: defaultUser.id },
-      { id: defaultShop.id }
-    )
-  )[0];
-  defaultOrder.shop = defaultShop;
+  try {
+    defaultUser = (await createUser([defaultUserData])).users[0];
+    defaultShop = (await createShop(1))[0];
+    defaultOrder = (
+      await generateOrders(
+        [
+          {
+            id: defaultOrderId,
+            items: Array(5)
+              .fill(undefined)
+              .map((_) => ({ images: 5 })),
+          },
+        ],
+        { id: defaultUser.id },
+        { id: defaultShop.id }
+      )
+    )[0];
+    defaultOrder.shop = defaultShop;
+  } catch (e) {
+    console.log(e);
+  }
 });
 
 describe("passes authentication test", () => {

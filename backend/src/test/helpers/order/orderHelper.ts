@@ -11,87 +11,170 @@ import { UserCreationAttribute } from "../../../models/User";
 import { ShopCreationAttribute } from "../../../models/Shop";
 import { createUser } from "../user/userHelper";
 import { createShop } from "../shop/shopHelper";
+import { omit } from "lodash";
 
-type OrderGenerationAttribute = Partial<
-  Omit<OrderCreationAttribute, "items" | "userId" | "shopId">
-> & { items?: OrderItemGenerationAttribute };
+type PartialOrderGenerationAttribute = Partial<
+  Omit<OrderCreationAttribute, "items">
+> & {
+  items?: OrderItemGenerationAttribute;
+};
+
+type PartialOrderItemGenerationAttribute = Partial<
+  Omit<OrderItemCreationAttribute, "images">
+> & {
+  images?: OrderItemImageGenerationAttribute;
+};
+
+type OrderGenerationAttribute = number | PartialOrderGenerationAttribute[];
 type OrderItemGenerationAttribute =
   | number
-  | (Partial<OrderItemCreationAttribute> & {
-      images?: OrderItemImageGenerationAttribute;
-    })[];
+  | PartialOrderItemGenerationAttribute[];
 type OrderItemImageGenerationAttribute =
   | number
-  | Omit<OrderItemImageCreationAttribute, "orderId" | "itemId">[];
+  | Partial<OrderItemImageCreationAttribute>[];
 
-function collateOrderGenerationData(
-  orderData: OrderGenerationAttribute,
-  userId: string,
-  shopId: string
-) {
-  const orderId = orderData?.id ?? faker.string.uuid();
+const generateOrderData =
+  (data?: Partial<Omit<OrderCreationAttribute, "items">>) =>
+  (): Omit<OrderCreationAttribute, "items"> => {
+    return {
+      id: data?.id ?? faker.string.uuid(),
+      userId: data?.userId ?? faker.string.uuid(),
+      shopId: data?.shopId ?? faker.string.uuid(),
+      status:
+        data?.status ??
+        Object.values(OrderStatuses)[
+          Math.floor(Math.random() * Object.values(OrderStatuses).length)
+        ],
 
-  // generate price to calculate totalPrice, generate array if doesn't exist
-  const itemCreationDatas: OrderItemGenerationAttribute =
-    orderData.items === undefined
-      ? Math.floor(Math.random() * 5 + 1) // 1 to 6 item
-      : orderData.items; //already itemCreationDatas
+      image:
+        data?.image !== undefined ? data.image : `${faker.string.uuid()}.webp`,
+      name: data?.name ?? faker.commerce.productName(),
+      totalPrice:
+        data?.totalPrice ?? faker.number.int({ min: 0, max: 9999999999999 }),
 
-  const generateOrderData =
-    (
-      data?: Partial<
-        Omit<OrderCreationAttribute, "items" | "userId" | "shopId">
-      >
-    ) =>
-    (): OrderCreationAttribute => {
-      return {
+      phoneNumber:
+        data?.phoneNumber ??
+        // +{3 number}{space}{7-15 number that does not start with 0}
+        `+${faker.string.numeric(3)} ${faker.string.numeric({
+          length: 1,
+          exclude: ["0"],
+        })}${faker.string.numeric({
+          length: { min: 6, max: 14 },
+        })}`,
+      longitude: data?.longitude ?? faker.location.longitude(),
+      latitude: data?.latitude ?? faker.location.latitude(),
+      village: data?.village ?? faker.location.street().slice(0, 50),
+      district: data?.district ?? faker.location.county().slice(0, 50),
+      city: data?.city ?? faker.location.city().slice(0, 50),
+      province: data?.city ?? faker.location.state().slice(0, 50),
+      country: data?.country ?? faker.location.country().slice(0, 50),
+      recipient: data?.recipient ?? faker.person.fullName().slice(0, 60),
+      postCode:
+        data?.postCode ??
+        faker.number.int({ min: 10000, max: 99999 }).toString(),
+      addressDetail:
+        data?.addressDetail ??
+        faker.location.streetAddress({ useFullAddress: true }) +
+          " " +
+          faker.location.secondaryAddress(),
+
+      createdAt: data?.createdAt ?? new Date().toISOString(),
+    };
+  };
+
+const generateOrderItemData =
+  (data?: Partial<OrderItemCreationAttribute>) =>
+  (): OrderItemCreationAttribute => {
+    return {
+      ...data,
+      id: data?.id ?? faker.string.uuid(),
+      orderId: data?.orderId ?? faker.string.uuid(),
+      name: data?.name ?? faker.commerce.productName(),
+      description: data?.description ?? faker.commerce.productDescription(),
+      price: data?.price ?? faker.number.int({ min: 0, max: 100000000 }),
+      quantity: data?.quantity ?? faker.number.int({ min: 0, max: 9999 }),
+    };
+  };
+
+const generateOrderItemImageData =
+  (data?: Partial<OrderItemImageCreationAttribute>) =>
+  (): OrderItemImageCreationAttribute => {
+    return {
+      orderId: data?.orderId ?? faker.string.uuid(),
+      itemId: data?.itemId ?? faker.string.uuid(),
+      imageName: data?.imageName ?? faker.string.uuid() + ".webp",
+      order: data?.order ?? faker.number.int({ min: 0, max: 9 }),
+    };
+  };
+
+const fullGenerateOrderData =
+  (orderData?: PartialOrderGenerationAttribute) =>
+  (): Omit<OrderCreationAttribute, "items"> & {
+    items: (Omit<OrderItemCreationAttribute, "images"> & {
+      images: OrderItemImageCreationAttribute[];
+    })[];
+  } => {
+    const orderId = orderData?.id ?? faker.string.uuid();
+
+    const completeOrderItemData = expandGenerationAttribute(
+      orderData?.items ?? Math.floor(Math.random() * 5 + 1),
+      (data) => fullGenerateOrderItemData({ ...data, orderId })
+    );
+
+    // generate items to calculate totalPrice, generate array if doesn't exist
+
+    const firstItem = [...completeOrderItemData].sort((a, b) =>
+      a.name.localeCompare(b.name)
+    )[0];
+    const firstItemName = firstItem.name;
+    const firstItemImage = firstItem.images?.[0]?.imageName ?? null;
+    const totalPrice = completeOrderItemData.reduce(
+      (sum, { quantity, price }) => sum + quantity * price,
+      0
+    );
+
+    const completeOrderData = {
+      ...generateOrderData({
+        ...orderData,
         id: orderId,
-        userId,
-        shopId,
-        status:
-          data?.status ??
-          Object.values(OrderStatuses)[
-            Math.floor(Math.random() * Object.values(OrderStatuses).length)
-          ],
-
-        name: "", //placeholder to be replaced later
-        totalPrice: 0,
-
-        phoneNumber:
-          data?.phoneNumber ??
-          // +{3 number}{space}{7-15 number that does not start with 0}
-          `+${faker.string.numeric(3)} ${faker.string.numeric({
-            length: 1,
-            exclude: ["0"],
-          })}${faker.string.numeric({
-            length: { min: 6, max: 14 },
-          })}`,
-        longitude: data?.longitude ?? faker.location.longitude(),
-        latitude: data?.latitude ?? faker.location.latitude(),
-        village: data?.village ?? faker.location.street().slice(0, 50),
-        district: data?.district ?? faker.location.county().slice(0, 50),
-        city: data?.city ?? faker.location.city().slice(0, 50),
-        province: data?.city ?? faker.location.state().slice(0, 50),
-        country: data?.country ?? faker.location.country().slice(0, 50),
-        recipient: data?.recipient ?? faker.person.fullName().slice(0, 60),
-        postCode:
-          data?.postCode ??
-          faker.number.int({ min: 10000, max: 99999 }).toString(),
-        addressDetail:
-          data?.addressDetail ??
-          faker.location.streetAddress({ useFullAddress: true }) +
-            " " +
-            faker.location.secondaryAddress(),
-
-        createdAt: data?.createdAt ?? new Date().toISOString(),
-      };
+        name: firstItemName,
+        totalPrice,
+        image: firstItemImage,
+      })(),
+      items: completeOrderItemData,
     };
 
-  return {
-    orderData: generateOrderData(orderData)(),
-    itemData: itemCreationDatas,
+    return completeOrderData;
   };
-}
+
+const fullGenerateOrderItemData =
+  (orderItemData?: PartialOrderItemGenerationAttribute) =>
+  (): Omit<OrderItemCreationAttribute, "images"> & {
+    images: OrderItemImageCreationAttribute[];
+  } => {
+    const orderId = orderItemData?.orderId ?? faker.string.uuid();
+    const itemId = orderItemData?.id ?? faker.string.uuid();
+
+    const completeImageData = expandGenerationAttribute(
+      typeof orderItemData?.images === "object"
+        ? orderItemData?.images
+        : Array(orderItemData?.images ?? Math.floor(Math.random() * 6))
+            .fill(null)
+            .map((_, i) => ({ order: i })),
+      (data) => generateOrderItemImageData({ ...data, orderId, itemId })
+    );
+
+    const completeOrderItemData = {
+      ...generateOrderItemData({
+        ...orderItemData,
+        orderId,
+        id: itemId,
+      })(),
+      images: completeImageData,
+    };
+
+    return completeOrderItemData;
+  };
 
 /**
  * create items using count or array of fragmented item data.
@@ -101,7 +184,7 @@ function collateOrderGenerationData(
  * @param optionalShop Partial of ShopCreationAtrribute
  */
 export const generateOrders = async (
-  creationData: number | OrderGenerationAttribute[],
+  creationData: OrderGenerationAttribute,
   optionalUser?: Partial<UserCreationAttribute>,
   optionalShop?: Partial<ShopCreationAttribute>
 ) => {
@@ -110,32 +193,18 @@ export const generateOrders = async (
   } = await createUser(optionalUser ? [optionalUser] : 1);
   const [shop] = await createShop(optionalShop ? [optionalShop] : 1);
 
-  //expand if a number
-  const baseData: OrderGenerationAttribute[] =
-    typeof creationData === "number"
-      ? Array.from({ length: creationData }).map((_) => ({}))
-      : creationData;
-
-  const generatedData = baseData.map((data) =>
-    collateOrderGenerationData(data, user.id, shop.id)
+  const completeOrderData = expandGenerationAttribute(creationData, (data) =>
+    fullGenerateOrderData({ ...data, userId: user.id, shopId: shop.id })
   );
 
   const orders = await Promise.all(
-    generatedData.map(async ({ orderData, itemData }) => {
+    completeOrderData.map(async (orderData) => {
       const order = await Order.findOne({ where: { id: orderData.id } });
       //create order and item if doesn't exist
       if (!order) {
-        const newOrder = await Order.create(orderData);
-        const items = await generateOrderItem(itemData, newOrder.id);
-        const sortedItems = [...items].sort((a, b) =>
-          a.name.localeCompare(b.name)
-        );
+        const newOrder = await Order.create(omit(orderData, ["items"]));
+        const sortedItems = await generateOrderItem(orderData.items);
         newOrder.items = sortedItems;
-        //change placeholder to the correct data
-        await newOrder.update({ name: sortedItems[0].name });
-        await newOrder.update({
-          image: sortedItems[0].images[0]?.imageName ?? null,
-        });
 
         return newOrder;
       } else return order;
@@ -145,84 +214,37 @@ export const generateOrders = async (
   return orders;
 };
 
-const generateOrderItemData =
-  (orderId: string, data?: Partial<OrderItemCreationAttribute>) =>
-  (): OrderItemCreationAttribute => {
-    return {
-      id: data?.id ?? faker.string.uuid(),
-      orderId,
-      name: data?.name ?? faker.commerce.productName(),
-      description: data?.description ?? faker.commerce.productDescription(),
-      price: data?.price ?? faker.number.int({ min: 0, max: 100000000 }),
-      quantity: data?.quantity ?? faker.number.int({ min: 0, max: 9999 }),
-    };
-  };
-
-export const generateOrderItem = async (
-  creationData: OrderItemGenerationAttribute,
-  optionalOrder?: OrderGenerationAttribute | string
+// not to be used on it's own
+const generateOrderItem = async (
+  creationData: (Omit<OrderItemCreationAttribute, "images"> & {
+    images: OrderItemImageCreationAttribute[];
+  })[]
 ) => {
-  let orderId: string;
-  if (typeof optionalOrder === "string") orderId = optionalOrder;
-  else {
-    const [order] = await generateOrders(
-      optionalOrder ? [optionalOrder] : [{ items: [] }]
-    );
-    orderId = order.id;
-  }
-
-  let orderItemDatas: OrderItemCreationAttribute[];
-
-  //expand if number, complete if order data partials
-  if (typeof creationData === "number")
-    orderItemDatas = faker.helpers.multiple(generateOrderItemData(orderId), {
-      count: creationData,
-    });
-  else
-    orderItemDatas = creationData.map((data) =>
-      generateOrderItemData(orderId, data)()
-    );
-
-  const orderItemImageDatas = orderItemDatas.map(({ id }, i) => {
-    // try to get image creation data, randomly create between 0 to 6 images otherwise
-    const imageData: OrderItemImageGenerationAttribute =
-      (typeof creationData === "number"
-        ? undefined
-        : creationData[i]?.images) ?? Math.floor(Math.random() * 6);
-    let orderItemImageDatas: OrderItemImageCreationAttribute[];
-
-    const createOrderItemImageData =
-      (i: number, data?: Partial<OrderItemImageCreationAttribute>) =>
-      (): OrderItemImageCreationAttribute => {
-        return {
-          orderId,
-          itemId: id,
-          imageName: data?.imageName ?? faker.string.uuid() + ".webp",
-          order: i,
-        };
-      };
-
-    if (typeof imageData === "number")
-      orderItemImageDatas = Array.from({ length: imageData }).map((_, i) =>
-        createOrderItemImageData(i, undefined)()
-      );
-    else
-      orderItemImageDatas = imageData.map((data, i) =>
-        createOrderItemImageData(i, data)()
-      );
-    return orderItemImageDatas;
-  });
-
-  const items = await OrderItem.bulkCreate(orderItemDatas);
-
-  const completeItems = await Promise.all(
-    items.map(async (item, i) => {
-      const images = await OrderItemImage.bulkCreate(orderItemImageDatas[i]);
+  const orderItems = await Promise.all(
+    creationData.map(async (itemData) => {
+      const orderItem = await OrderItem.create(omit(itemData, ["images"]));
+      const images = await OrderItemImage.bulkCreate(itemData.images);
       const sortedImages = [...images].sort((a, b) => a.order - b.order);
-      item.images = sortedImages;
-      return item;
+      orderItem.images = sortedImages;
+      return orderItem;
     })
   );
 
-  return completeItems;
+  const orderedOrderItems = [...orderItems].sort((a, b) =>
+    a.name.localeCompare(b.name)
+  );
+
+  return orderedOrderItems;
 };
+
+function expandGenerationAttribute<I extends any, O extends any>(
+  creationData: number | I[],
+  expansionFunction: (arg?: I) => () => O
+): O[] {
+  //expand if number, complete if data partials
+  return typeof creationData === "number"
+    ? faker.helpers.multiple(expansionFunction(), {
+        count: creationData,
+      })
+    : creationData.map((data) => expansionFunction(data)());
+}
