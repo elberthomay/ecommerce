@@ -43,6 +43,8 @@ export const orderSchema = z
     totalPrice: z.number(),
     status: z.nativeEnum(OrderStatuses),
     createdAt: z.date(),
+    updatedAt: z.date(),
+    timeout: z.string().datetime().optional(),
   })
   .merge(orderAddressSchema);
 
@@ -50,6 +52,7 @@ export const orderSchema = z
 export const orderOutputSchema = orderSchema.extend({
   shopName: shopSchema.shape.name,
   createdAt: z.string().datetime(),
+  updatedAt: z.string().datetime(),
 });
 
 // expected shape of getOrders
@@ -65,6 +68,7 @@ export const formatOrder = orderSchema
     shop: undefined,
     shopName: order.shop.name,
     createdAt: order.createdAt.toISOString(),
+    updatedAt: order.createdAt.toISOString(),
   }));
 
 //format getOrders from Order[]
@@ -75,6 +79,7 @@ export const getOrderDetailOutputSchema = orderSchema.extend({
   items: z.array(shopItemGetOutputBase),
   shopName: shopSchema.shape.name,
   createdAt: z.string().datetime(),
+  updatedAt: z.string().datetime(),
 });
 
 // format order detail from Order
@@ -101,11 +106,8 @@ export const formatOrderDetail = orderSchema
     ...order,
     shop: undefined,
     shopName: order.shop.name,
-    totalPrice: order.items.reduce(
-      (sum, { price, quantity }) => sum + price * quantity,
-      0
-    ),
     createdAt: order.createdAt.toISOString(),
+    updatedAt: order.updatedAt.toISOString(),
   }));
 
 export const formatOrderItem = itemDetailsOutputSchema

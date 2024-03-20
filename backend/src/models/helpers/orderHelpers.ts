@@ -141,10 +141,10 @@ export async function confirmOrder(order: Order) {
       if (currentStatus === OrderStatuses.AWAITING) return true;
       else return "Order could only be confirmed if it has yet to be confirmed";
     },
-    ({ id, createdAt, status }) =>
+    ({ id, status, updatedAt }) =>
       setCancelOrderTimeout(
         id,
-        addMinutes(createdAt!, CONFIRMED_TIMEOUT_MINUTE),
+        addMinutes(updatedAt!, CONFIRMED_TIMEOUT_MINUTE),
         status
       )
   );
@@ -179,11 +179,11 @@ export async function deliverOrder(order: Order) {
       if (currentStatus === OrderStatuses.CONFIRMED) return true;
       else return "Order could only be delivered if it is currently confirmed";
     },
-    async ({ id, createdAt }) => {
+    async ({ id, createdAt, updatedAt }) => {
       // set timeout
       await setDeliverOrder(
         id,
-        addMinutes(createdAt!, DELIVERY_TIMEOUT_MINUTE)
+        addMinutes(updatedAt!, DELIVERY_TIMEOUT_MINUTE)
       );
     }
   );

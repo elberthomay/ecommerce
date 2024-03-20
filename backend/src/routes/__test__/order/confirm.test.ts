@@ -21,8 +21,9 @@ import Shop from "../../../models/Shop";
 import { createShop } from "../../../test/helpers/shop/shopHelper";
 import { formatOrder, orderOutputSchema } from "@elycommerce/common";
 import { setCancelOrderTimeout } from "../../../agenda/orderAgenda";
-import { addMinutes } from "date-fns";
+import { addMinutes, differenceInMilliseconds } from "date-fns";
 import { CONFIRMED_TIMEOUT_MINUTE } from "../../../var/constants";
+import { omit } from "lodash";
 
 const getUrl = (orderId: string) => `/api/order/${orderId}/confirm`;
 
@@ -124,23 +125,30 @@ it("return 409 when current status is not awaiting confirmation", async () => {
 it("return 200 with correct data and format", async () => {
   defaultOrder.shop = defaultShop;
   defaultOrder.status = OrderStatuses.CONFIRMED;
-  const expectedResult = JSON.parse(
-    JSON.stringify(formatOrder.parse(defaultOrder))
-  );
+  const expectedResult = {
+    ...JSON.parse(JSON.stringify(formatOrder.parse(defaultOrder))),
+  };
   await getRequest(getUrl(defaultOrderId), [
     forgeCookie({ id: defaultShop.userId }),
   ])
     .expect(printedExpect(200))
     .expect(
       validatedExpect(orderOutputSchema, (data, res) => {
-        expect(data).toEqual(expectedResult);
+        expect(omit(data, ["timeout"])).toEqual(
+          omit(expectedResult, ["timeout"])
+        );
         expect(setCancelOrderTimeout).toHaveBeenCalledTimes(1);
         const [orderId, timeout, status] = (setCancelOrderTimeout as jest.Mock)
           .mock.calls[0];
         expect(orderId).toBe(data.id);
-        expect(timeout).toEqual(
-          addMinutes(new Date(data.createdAt), CONFIRMED_TIMEOUT_MINUTE)
-        );
+        expect(data?.timeout).not.toBeUndefined();
+
+        expect(
+          differenceInMilliseconds(
+            timeout,
+            addMinutes(new Date(data.updatedAt), CONFIRMED_TIMEOUT_MINUTE)
+          ) < 1000
+        ).toBe(true);
         expect(status).toBe(OrderStatuses.CONFIRMED);
       })
     );

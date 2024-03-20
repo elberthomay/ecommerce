@@ -23,6 +23,7 @@ import {
   getOrderDetailOutputSchema,
 } from "@elycommerce/common";
 import { z } from "zod";
+import { omit } from "lodash";
 
 const getUrl = (orderId: string) => `/api/order/${orderId}`;
 
@@ -137,7 +138,7 @@ it("return correct data and format", async () => {
     .expect(printedExpect(200))
     .expect(
       validatedExpect(getOrderDetailOutputSchema, (data) => {
-        expect(data).toEqual(expectedResult);
+        expect(omit(data, ["timeout"])).toEqual(expectedResult);
       })
     );
 });

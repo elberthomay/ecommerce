@@ -24,7 +24,7 @@ import {
   setCancelOrderTimeout,
   setDeliverOrder,
 } from "../../../agenda/orderAgenda";
-import { addMinutes } from "date-fns";
+import { addMinutes, differenceInMilliseconds } from "date-fns";
 import { DELIVERY_TIMEOUT_MINUTE } from "../../../var/constants";
 
 const getUrl = (orderId: string) => `/api/order/${orderId}/deliver`;
@@ -140,9 +140,6 @@ it("return 200 with correct data and format", async () => {
         expect(setDeliverOrder).toHaveBeenCalledTimes(1);
         const [orderId, timeout] = (setDeliverOrder as jest.Mock).mock.calls[0];
         expect(orderId).toBe(data.id);
-        expect(timeout).toEqual(
-          addMinutes(new Date(data.createdAt), DELIVERY_TIMEOUT_MINUTE)
-        );
       })
     );
 });

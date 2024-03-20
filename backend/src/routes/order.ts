@@ -26,6 +26,7 @@ import {
   getOrderItemParam,
   formatOrderDetail,
   formatOrder,
+  OrderStatuses,
 } from "@elycommerce/common";
 import { authorization } from "../middlewares/authorize";
 import validator from "../middlewares/validator";
@@ -35,6 +36,11 @@ import OrderItem, { getOrderItem } from "../models/OrderItem";
 import { getOrderItemImageInclude } from "../models/OrderItemImage";
 import sequelize from "../models/sequelize";
 import NoAddressSelectedError from "../errors/NoAddressSelectedError";
+import { addMinutes } from "date-fns";
+import {
+  AWAITING_CONFIRMATION_TIMEOUT_MINUTE,
+  CONFIRMED_TIMEOUT_MINUTE,
+} from "../var/constants";
 
 const router = Router();
 
@@ -181,7 +187,7 @@ router.get(
   )
 );
 
-// get item snapshot of an order
+// get item snapshot of an order item
 router.get(
   "/:orderId/item/:itemId",
   authenticate(true),
@@ -235,7 +241,19 @@ router.get(
     async (req: IGetOrderItemRequest, res: Response, next: NextFunction) => {
       const orderId = req.params.orderId;
       const order = await getOrderDetail(orderId);
-      const result = await formatOrderDetail.parseAsync(order);
+      const timeoutMinute =
+        order?.status === OrderStatuses.AWAITING
+          ? AWAITING_CONFIRMATION_TIMEOUT_MINUTE
+          : order?.status === OrderStatuses.CONFIRMED
+          ? CONFIRMED_TIMEOUT_MINUTE
+          : undefined;
+      const timeout = timeoutMinute
+        ? addMinutes(order?.updatedAt!, timeoutMinute).toISOString()
+        : undefined;
+      const result = await formatOrderDetail.parseAsync({
+        ...order?.toJSON(),
+        timeout,
+      });
       res.json(result);
     }
   )
@@ -258,7 +276,15 @@ router.post(
       where: { userId: currentUser.id, selected: true },
     });
     const orders = await createOrders(selectedCarts, userAddress!);
-    const result = formatGetOrders.parse(orders);
+    const result = formatGetOrders.parse(
+      orders.map((order) => ({
+        ...order.toJSON(),
+        timeout: addMinutes(
+          order.updatedAt!,
+          AWAITING_CONFIRMATION_TIMEOUT_MINUTE
+        ).toISOString(),
+      }))
+    );
     return res.json(result);
   })
 );
@@ -308,7 +334,12 @@ router.post(
     ) => {
       const order = req.order!;
       const updatedOrder: Order = await confirmOrder(order);
-      const result = await formatOrder.parseAsync(updatedOrder);
+      const timeout = addMinutes(
+        updatedOrder.updatedAt!,
+        CONFIRMED_TIMEOUT_MINUTE
+      ).toISOString();
+      const orderWithTimeout = { ...updatedOrder.toJSON(), timeout };
+      const result = await formatOrder.parseAsync(orderWithTimeout);
       res.json(result);
     }
   )
