@@ -1,3 +1,5 @@
+# ecommerce
+Simple ecommerce application written using typescript
 ## Libraries used:
 - Backend application framework: **express.js**
 - ORM: **Sequelize-typescript** (mysql)
