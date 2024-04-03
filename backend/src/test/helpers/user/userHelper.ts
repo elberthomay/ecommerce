@@ -15,7 +15,7 @@ import { defaultUser } from "./userData";
  * @returns {users: User[], userDatas: UserCreationAttribute[]} Promise
  */
 export const createUser = async (
-  creationData: number | Partial<UserCreationAttribute>[]
+  creationData: number | Partial<UserCreationAttribute & { password: string }>[]
 ) => {
   let userDatas: (UserCreationAttribute & { password: string })[];
 

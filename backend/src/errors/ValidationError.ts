@@ -15,7 +15,7 @@ export default class ValidationError extends CustomError {
       query?: any;
     }>
   ) {
-    super("Error occured during validation");
+    super("Error occurred during validation");
     this.errors = errors;
   }
   serializeError(): FormattedError {

@@ -48,6 +48,7 @@
     "reflect-metadata": "^0.1.13",
     "sequelize": "^6.32.1",
     "sequelize-typescript": "^2.1.5",
+    "sharp": "^0.33.2",
     "ts-jest": "^29.1.1",
     "uuid": "^9.0.1",
     "zod": "^3.22.4"

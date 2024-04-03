@@ -11,7 +11,7 @@ export default class InvalidLoginError extends CustomError {
       errors: [
         {
           message:
-            "The provided credentials are incorrect. Please check your username and password and try again.",
+            "The provided credentials are incorrect. Please check your email or password and try again.",
         },
       ],
     };
