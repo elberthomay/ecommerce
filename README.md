@@ -1,10 +1,16 @@
 # ecommerce
 Simple ecommerce application written using typescript
+
+Front-end using React is available on [https://github.com/elberthomay/e-commerce-react](https://github.com/elberthomay/e-commerce-react)
+
+Live application available on [ecommercexyz.online](ecommercexyz.online)
+
+Login to demo account with email hasakisekai94@gmail.com and password 12345678
 ## Libraries used:
 - Backend application framework: **express.js**
 - ORM: **Sequelize-typescript** (mysql)
 - Authentication: **password.js**
-- Input validation: **Zod
+- Input validation: **Zod**
 - Testing: **Jest**, **Supertest**
 - Scheduling: **Agenda**
 
