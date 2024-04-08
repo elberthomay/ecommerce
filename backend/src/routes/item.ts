@@ -35,13 +35,16 @@ import ItemTag from "../models/ItemTag";
 import queryOptionToLimitOffset from "../helper/queryOptionToLimitOffset";
 import ItemImage from "../models/ItemImage";
 import processImage from "../middlewares/processImage";
-import ImageError from "../errors/ImageError";
 import { BUCKET_NAME } from "../var/constants";
 import { MAX_IMAGE_COUNT } from "@elycommerce/common";
-import MaxImageExceeded from "../errors/MaxImageExceeded";
 import { DeleteObjectsCommand, PutObjectCommand } from "@aws-sdk/client-s3";
 import s3Client from "../helper/s3Client";
 import { z } from "zod";
+import {
+  addImages,
+  deleteImages,
+  reorderImages,
+} from "../models/helpers/itemImageHelpers";
 
 const router = Router();
 
@@ -80,68 +83,32 @@ async function addTags(
   );
 }
 
-async function addImages(
-  item: Item,
-  images: Buffer[],
-  transaction?: Transaction,
-  order?: z.infer<typeof itemImageOrdersSchema>
-) {
-  const imagesMetadata = images.map((image, i) => ({
-    itemId: item.id,
-    imageName: `${uuid()}.webp`,
-    order: order ? order[i] : i,
-  }));
+async function addImagesS3(images: { data: Buffer; name: string }[]) {
+  if (images.length !== 0) {
+    const commandList = images.map(
+      ({ name, data }) =>
+        new PutObjectCommand({
+          Bucket: BUCKET_NAME,
+          Key: name,
+          Body: data,
+        })
+    );
 
-  const commandList = imagesMetadata.map(
-    ({ imageName }, i) =>
-      new PutObjectCommand({
-        Bucket: BUCKET_NAME,
-        Key: imageName,
-        Body: images[i],
-      })
-  );
-
-  await Promise.all(commandList.map((command) => s3Client.send(command)));
-
-  const result = await ItemImage.bulkCreate(imagesMetadata, {
-    transaction: transaction ?? null,
-  });
+    await Promise.all(commandList.map((command) => s3Client.send(command)));
+  }
 }
 
-async function deleteImages(
-  imagesToDelete: ItemImage[],
-  transaction: Transaction
-) {
-  const deleteCommand = new DeleteObjectsCommand({
-    Bucket: BUCKET_NAME,
-    Delete: {
-      Objects: imagesToDelete.map(({ imageName }) => ({ Key: imageName })),
-    },
-  });
+async function deleteImagesS3(imagesToDelete: string[]) {
+  if (imagesToDelete.length !== 0) {
+    const deleteCommand = new DeleteObjectsCommand({
+      Bucket: BUCKET_NAME,
+      Delete: {
+        Objects: imagesToDelete.map((name) => ({ Key: name })),
+      },
+    });
 
-  await s3Client.send(deleteCommand);
-
-  await Promise.all(
-    imagesToDelete.map((image) => image.destroy({ transaction }))
-  );
-}
-
-async function reorderImages(
-  images: ItemImage[],
-  orders?: number[],
-  transaction?: Transaction
-) {
-  await Promise.all(
-    images.map((image, i) =>
-      image.update({ order: -image.order }, { transaction })
-    )
-  );
-
-  await Promise.all(
-    images.map((image, i) =>
-      image.update({ order: orders ? orders[i] : i }, { transaction })
-    )
-  );
+    await s3Client.send(deleteCommand);
+  }
 }
 
 async function removeTags(item: Item, tagIds: number[]) {
@@ -291,6 +258,7 @@ router.post(
       const newItemData = req.body;
       //transaction to prevent created item with incomplete tags or image
       const newItem = await sequelize.transaction(async (transaction) => {
+        //create item
         const newItem = await Item.create(
           {
             ...omit(newItemData, "tags"),
@@ -298,10 +266,26 @@ router.post(
           },
           { transaction }
         );
+
+        //set tags if specified
         if (newItemData.tags)
           await addTags(newItem, newItemData.tags, transaction);
-        if (imageBuffers.length !== 0)
-          await addImages(newItem, imageBuffers, transaction);
+
+        //set images if specified
+        if (imageBuffers.length !== 0) {
+          const newImageItems = imageBuffers.map((buffer) => ({
+            data: buffer,
+            name: `${uuid()}.webp`,
+          }));
+          await addImages(
+            newItem,
+            newImageItems.map(({ name }) => name),
+            transaction
+          );
+          await addImagesS3(newImageItems);
+        }
+
+        //return new item
         return newItem;
       });
       const result = await formatItemDetailsOutput(newItem);
@@ -442,16 +426,18 @@ router.post(
       if (imageBuffers.length === 0)
         return res.status(200).json({ status: "success" });
 
-      //image more than MAX_IMAGE_COUNT
-      if (imageBuffers.length + item.images.length > MAX_IMAGE_COUNT)
-        throw new MaxImageExceeded();
-
-      //assign order sequentially after current order
-      const newOrder = [...Array(imageBuffers.length).keys()].map(
-        (i) => i + item.images.length
-      );
-
-      await addImages(item, imageBuffers, undefined, newOrder);
+      await sequelize.transaction(async (transaction) => {
+        const newImages = imageBuffers.map((buffer) => ({
+          data: buffer,
+          name: `${uuid()}.webp`,
+        }));
+        await addImages(
+          item,
+          newImages.map(({ name }) => name),
+          transaction
+        );
+        await addImagesS3(newImages);
+      });
 
       //success if addImages resolve
       res.status(200).json({ status: "success" });
@@ -480,27 +466,10 @@ router.patch(
       res: Response,
       next
     ) => {
-      let newOrder = [...new Set(req.body).values()];
       const item: Item = (req as any)[Item.name];
-      const sortedImages = [...item.images].sort((a, b) => a.order - b.order);
-
-      const invalidLength = newOrder.length !== item.images.length;
-      const hasOutOfBound = newOrder.some(
-        (order) => order >= item.images.length
-      );
-
-      if (hasOutOfBound || invalidLength)
-        throw new ImageError("invalid order array");
-
-      // //construct changes, images sorted ASC by default include
-      // const changesArray = sortedImages.map((image, i) => ({
-      //   itemId: item.id,
-      //   imageName: image.imageName,
-      //   order: newOrder[i],
-      // }));
 
       await sequelize.transaction(async (transaction) => {
-        await reorderImages(sortedImages, newOrder, transaction);
+        await reorderImages(item, req.body, transaction);
       });
 
       res.status(200).json({ status: "success" });
@@ -527,27 +496,12 @@ router.delete(
       res: Response,
       next
     ) => {
-      const deleteOrder = req.body;
       const item: Item = (req as any)[Item.name];
-      const sortedImages = [...item.images].sort((a, b) => a.order - b.order);
 
-      const imagesToDelete = sortedImages.filter((image) =>
-        includes(deleteOrder, image.order)
-      );
-      const remainingImages = sortedImages.filter(
-        (image) => !includes(deleteOrder, image.order)
-      );
-
-      if (imagesToDelete.length !== 0) {
-        const changedImages = await sequelize.transaction(
-          async (transaction) => {
-            //destroy image
-            await deleteImages(imagesToDelete, transaction);
-
-            await reorderImages(remainingImages, undefined, transaction);
-          }
-        );
-      }
+      await sequelize.transaction(async (transaction) => {
+        const destroyedImages = await deleteImages(item, req.body, transaction);
+        await deleteImagesS3(destroyedImages.map(({ imageName }) => imageName));
+      });
 
       res.status(200).json({ status: "success" });
     }

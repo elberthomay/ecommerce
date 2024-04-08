@@ -80,6 +80,12 @@ it("should return 400 with invalid order array", async () => {
       getDefaultRequest().send(array).expect(400)
     )
   );
+
+  const incompleteOrderArray = [
+    0,
+    ...Array.from({ length: defaultImageCount - 1 }, (v, i) => i),
+  ];
+  await getDefaultRequest().send(incompleteOrderArray).expect(400);
 });
 
 it("should return 404 when user item does not exist", async () => {
