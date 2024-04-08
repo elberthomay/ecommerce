@@ -12,7 +12,7 @@ import {
 import User from "../models/User";
 import Shop, { ShopCreationAttribute } from "../models/Shop";
 import fetch, { fetchCurrentUser } from "../middlewares/fetch";
-import Item, { ItemCreationAttribute } from "../models/Item";
+import Item, { ItemAttribute, ItemCreationAttribute } from "../models/Item";
 import { ParamsDictionary } from "express-serve-static-core";
 import { TokenTypes } from "../types/TokenTypes";
 import { FindOptions, Op, Order, Sequelize } from "sequelize";
@@ -29,6 +29,10 @@ import { BUCKET_NAME } from "../var/constants";
 import s3Client from "../helper/s3Client";
 import { z } from "zod";
 import { shopItemGetOutputSchema } from "@elycommerce/common";
+import {
+  createGetItemQueryOption,
+  formatGetItemOutput,
+} from "../models/helpers/itemHelpers";
 
 const router = Router();
 
@@ -67,49 +71,14 @@ router.get(
       res: Response<z.infer<typeof shopItemGetOutputSchema>>,
       next: NextFunction
     ) => {
-      const options = req.query;
-      const { orderBy, search } = options;
       const shopId = req.params.shopId;
 
-      const defaultOrder: Order = [
-        [sequelize.literal("(quantity != 0)"), "DESC"],
-      ];
-
-      const findOption: FindOptions<ItemCreationAttribute> = {
-        ...queryOptionToLimitOffset(options),
-        include: [
-          {
-            model: ItemImage,
-            attributes: ["imageName", "order"],
-            where: { order: 0 },
-            required: false,
-          },
-        ],
-        attributes: ["id", "name", "price", "quantity", "createdAt"],
-        where: search
-          ? Sequelize.and(
-              Sequelize.literal(
-                `MATCH(${Item.name}.name) AGAINST(:name IN NATURAL LANGUAGE MODE)`
-              ),
-              { shopId }
-            )
-          : { shopId },
-        order: orderBy
-          ? [...defaultOrder, orderNameEnum[orderBy]]
-          : defaultOrder,
-        replacements: search ? { name: search } : undefined,
-      };
-
-      const items = await Item.findAndCountAll(findOption);
+      const items = await Item.findAndCountAll(
+        createGetItemQueryOption({ ...req.query, shopId })
+      );
       const result = {
-        ...items,
-        rows: items.rows.map(({ id, name, price, quantity, images }) => ({
-          id,
-          name,
-          price,
-          quantity,
-          image: images[0]?.imageName ?? null,
-        })),
+        count: items.count,
+        rows: items.rows.map((item) => formatGetItemOutput(item.toJSON())),
       };
       res.json(result);
     }

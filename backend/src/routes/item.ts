@@ -11,7 +11,6 @@ import { TokenTypes } from "../types/TokenTypes";
 import { authorization } from "../middlewares/authorize";
 import {
   itemCreateSchema,
-  itemDetailsOutputSchema,
   itemGetOutputSchema,
   itemImageOrdersSchema,
   itemParamSchema,
@@ -19,27 +18,23 @@ import {
   itemTagEditSchema,
   itemUpdateSchema,
 } from "@elycommerce/common";
-import {
-  FindOptions,
-  Includeable,
-  Op,
-  Order,
-  Sequelize,
-  Transaction,
-} from "sequelize";
-import { orderNameEnum } from "@elycommerce/common";
+import { Transaction } from "sequelize";
 import User from "../models/User";
-import { omit, includes, pick } from "lodash";
+import { omit } from "lodash";
 import sequelize from "../models/sequelize";
 import ItemTag from "../models/ItemTag";
-import queryOptionToLimitOffset from "../helper/queryOptionToLimitOffset";
-import ItemImage from "../models/ItemImage";
 import processImage from "../middlewares/processImage";
 import { BUCKET_NAME } from "../var/constants";
 import { MAX_IMAGE_COUNT } from "@elycommerce/common";
 import { DeleteObjectsCommand, PutObjectCommand } from "@aws-sdk/client-s3";
 import s3Client from "../helper/s3Client";
 import { z } from "zod";
+import {
+  createGetItemQueryOption,
+  formatGetItemOutput,
+  formatItemDetailOutput,
+  itemDetailQueryOption,
+} from "../models/helpers/itemHelpers";
 import {
   addImages,
   deleteImages,
@@ -60,14 +55,6 @@ const authorizeStaffOrOwner = authorization(
   ],
   "Item"
 );
-
-const defaultItemInclude: Includeable[] = [
-  {
-    model: ItemImage,
-  },
-  { model: Shop },
-  { model: Tag, attributes: ["id", "name"] },
-];
 
 async function addTags(
   item: Item,
@@ -117,32 +104,6 @@ async function removeTags(item: Item, tagIds: number[]) {
   });
 }
 
-async function formatItemDetailsOutput(
-  item: Item
-): Promise<z.infer<typeof itemDetailsOutputSchema>> {
-  await item.reload({
-    include: [
-      { model: ItemImage, attributes: ["imageName", "order"] },
-      { model: Shop, attributes: ["name"] },
-      { model: Tag, attributes: ["id", "name"] },
-    ],
-  });
-  const { id, name, description, price, quantity, shop, shopId, tags, images } =
-    item;
-  const result = {
-    id,
-    name,
-    description,
-    price,
-    quantity,
-    shopId,
-    shopName: shop?.name!,
-    tags,
-    images,
-  };
-  return result;
-}
-
 /** get item detail by itemId */
 router.get(
   "/:itemId",
@@ -152,14 +113,13 @@ router.get(
     key: ["id", "itemId"],
     location: "params",
     force: "exist",
-    include: defaultItemInclude,
-    order: [["images", "order", "ASC"]],
+    ...itemDetailQueryOption,
   }),
-  catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+  (req: Request, res: Response) => {
     const item: Item = (req as any)[Item.name];
-    const result = await formatItemDetailsOutput(item);
+    const result = formatItemDetailOutput(item.toJSON());
     res.json(result);
-  })
+  }
 );
 
 /** get list of item and the count, optionally receive limit and page to handle pagination */
@@ -169,63 +129,16 @@ router.get(
   catchAsync(
     async (
       req: Request<unknown, unknown, unknown, z.infer<typeof itemQuerySchema>>,
-      res: Response<z.infer<typeof itemGetOutputSchema>>,
-      next: NextFunction
+      res: Response<z.infer<typeof itemGetOutputSchema>>
     ) => {
-      const options = req.query;
-      const { tagIds, orderBy, search } = options;
-      // load shop name and first image
-      const defaultInclude = [
-        { model: Shop, attributes: ["id", "name"] },
-        {
-          model: ItemImage,
-          attributes: ["imageName", "order"],
-          where: { order: 0 },
-          required: false,
-        },
-      ];
-      const defaultOrder: Order = [
-        [sequelize.literal("(quantity != 0)"), "DESC"],
-      ];
-
-      const findOption: FindOptions<ItemCreationAttribute> = {
-        ...queryOptionToLimitOffset(options),
-        include: tagIds
-          ? [
-              ...defaultInclude,
-              {
-                model: Tag,
-                where: { id: { [Op.in]: tagIds } },
-              },
-            ]
-          : defaultInclude,
-        // order: [["inStock", "DESC"]],
-        order: orderBy
-          ? [...defaultOrder, orderNameEnum[orderBy]]
-          : defaultOrder,
-        where: search
-          ? Sequelize.literal(
-              `MATCH(${Item.name}.name) AGAINST(:name IN NATURAL LANGUAGE MODE)`
-            )
-          : undefined,
-        replacements: search ? { name: options.search } : undefined,
-      };
-
-      const items = await Item.findAndCountAll(findOption);
+      const items = await Item.findAndCountAll(
+        createGetItemQueryOption(req.query)
+      );
       const result = {
-        ...items,
-        rows: items.rows.map(
-          ({ id, name, price, quantity, shopId, shop, images }) => ({
-            id,
-            name,
-            price,
-            quantity,
-            shopId,
-            shopName: shop?.name!,
-            image: images[0]?.imageName ?? null,
-          })
-        ),
+        count: items.count,
+        rows: items.rows.map((item) => formatGetItemOutput(item.toJSON())),
       };
+
       res.json(result);
     }
   )
@@ -256,6 +169,7 @@ router.post(
         : [];
 
       const newItemData = req.body;
+
       //transaction to prevent created item with incomplete tags or image
       const newItem = await sequelize.transaction(async (transaction) => {
         //create item
@@ -288,7 +202,8 @@ router.post(
         //return new item
         return newItem;
       });
-      const result = await formatItemDetailsOutput(newItem);
+      await newItem.reload(itemDetailQueryOption); //full reload
+      const result = formatItemDetailOutput(newItem.toJSON());
       res.status(201).json(result);
     }
   )
@@ -304,20 +219,18 @@ router.patch(
     key: ["id", "itemId"],
     location: "params",
     force: "exist",
-    include: [Shop],
+    ...itemDetailQueryOption,
   }),
   authorizeStaffOrOwner,
   catchAsync(
     async (
       req: Request<unknown, unknown, z.infer<typeof itemUpdateSchema>>,
-      res: Response,
-      next: NextFunction
+      res: Response
     ) => {
-      const changes = req.body;
       const item: Item = (req as any)[Item.name];
-      await item.set(changes).save();
+      await item.set(req.body).save();
 
-      const result = await formatItemDetailsOutput(item);
+      const result = formatItemDetailOutput(item.toJSON());
       res.json(result);
     }
   )
@@ -410,7 +323,7 @@ router.post(
     key: ["id", "itemId"],
     location: "params",
     force: "exist",
-    include: defaultItemInclude,
+    include: [Shop],
   }),
   authorizeStaffOrOwner,
   catchAsync(
@@ -457,14 +370,13 @@ router.patch(
     key: ["id", "itemId"],
     location: "params",
     force: "exist",
-    include: defaultItemInclude,
+    include: [Shop],
   }),
   authorizeStaffOrOwner,
   catchAsync(
     async (
       req: Request<unknown, unknown, z.infer<typeof itemImageOrdersSchema>>,
-      res: Response,
-      next
+      res: Response
     ) => {
       const item: Item = (req as any)[Item.name];
 
@@ -487,14 +399,13 @@ router.delete(
     key: ["id", "itemId"],
     location: "params",
     force: "exist",
-    include: defaultItemInclude,
+    include: [Shop],
   }),
   authorizeStaffOrOwner,
   catchAsync(
     async (
       req: Request<unknown, unknown, z.infer<typeof itemImageOrdersSchema>>,
-      res: Response,
-      next
+      res: Response
     ) => {
       const item: Item = (req as any)[Item.name];
 

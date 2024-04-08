@@ -7,16 +7,23 @@ import {
   Index,
   Table,
 } from "sequelize-typescript";
-import Item from "./Item";
+import Item, { ItemAttribute } from "./Item";
 
-interface ItemImageCreationAttribute {
+export interface ItemImageAttribute {
   itemId: string;
+  imageName: string;
+  order: number;
+  parentItem?: ItemAttribute;
+}
+
+export interface ItemImageCreationAttribute {
+  itemId?: string;
   imageName: string;
   order: number;
 }
 
 @Table
-class ItemImage extends Model<ItemImageCreationAttribute> {
+class ItemImage extends Model<ItemImageAttribute, ItemImageCreationAttribute> {
   @Index({
     name: "unq-order-idx",
     type: "UNIQUE",

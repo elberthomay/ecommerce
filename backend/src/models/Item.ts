@@ -14,11 +14,29 @@ import {
   Sequelize,
 } from "sequelize-typescript";
 import Shop, { ShopCreationAttribute } from "./Shop";
-import Tag, { TagCreationAttribute } from "./Tag";
+import Tag, { TagAttribute, TagCreationAttribute } from "./Tag";
 import ItemTag from "./ItemTag";
 import User, { UserCreationAttribute } from "./User";
 import Cart from "./Cart";
-import ItemImage from "./ItemImage";
+import ItemImage, {
+  ItemImageAttribute,
+  ItemImageCreationAttribute,
+} from "./ItemImage";
+
+export interface ItemAttribute {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  quantity: number;
+  shopId: string;
+  images?: ItemImageAttribute[];
+  shop?: ShopCreationAttribute;
+  tags?: TagAttribute[];
+  inCartUsers?: UserCreationAttribute[];
+  createdAt: string;
+  updatedAt: string;
+}
 
 export interface ItemCreationAttribute {
   id?: string;
@@ -27,6 +45,7 @@ export interface ItemCreationAttribute {
   price: number;
   quantity: number;
   shopId?: string;
+  images?: ItemImageCreationAttribute[];
   shop?: ShopCreationAttribute;
   tags?: TagCreationAttribute[];
   inCartUsers?: UserCreationAttribute[];
@@ -35,7 +54,7 @@ export interface ItemCreationAttribute {
 }
 
 @Table({ tableName: "Item" })
-class Item extends Model<ItemCreationAttribute> {
+class Item extends Model<ItemAttribute, ItemCreationAttribute> {
   @PrimaryKey
   @Default(DataType.UUIDV4)
   @Column(DataType.UUID)

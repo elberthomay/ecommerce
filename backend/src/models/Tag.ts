@@ -7,8 +7,14 @@ import {
   PrimaryKey,
   AutoIncrement,
 } from "sequelize-typescript";
-import Item, { ItemCreationAttribute } from "./Item";
+import Item, { ItemAttribute, ItemCreationAttribute } from "./Item";
 import ItemTag from "./ItemTag";
+
+export interface TagAttribute {
+  id: number;
+  name: string;
+  items?: ItemAttribute[];
+}
 
 export interface TagCreationAttribute {
   id?: number;
@@ -17,7 +23,7 @@ export interface TagCreationAttribute {
 }
 
 @Table({ tableName: "Tag" })
-class Tag extends Model<TagCreationAttribute> {
+class Tag extends Model<TagAttribute, TagCreationAttribute> {
   @PrimaryKey
   @AutoIncrement
   @Column({
