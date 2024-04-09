@@ -1,6 +1,6 @@
 {
   "name": "@elycommerce/common",
-  "version": "1.0.13",
+  "version": "1.0.14",
   "description": "common files for ecommerce",
   "main": "./build/index.js",
   "types": "./build/index.d.ts",

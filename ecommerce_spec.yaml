@@ -1,7 +1,9 @@
 openapi: 3.1.0
+x-stoplight:
+  id: 6ibxo8l315v7m
 info:
-  version: '1.0'
   title: ecommerce
+  version: '1.0'
   summary: Ecommerce backend API
   description: API for Ecommerce application
 servers:
@@ -11,10 +13,7 @@ paths:
   /user/register:
     post:
       summary: Register User
-      description: Register a new user. return 409 if email already exist
-      operationId: post-user-register
-      requestBody:
-        $ref: '#/components/requestBodies/user-local-register'
+      tags: []
       responses:
         '201':
           $ref: '#/components/responses/User-local-register'
@@ -22,18 +21,18 @@ paths:
           $ref: '#/components/responses/Bad-request-error'
         '409':
           $ref: '#/components/responses/Duplicate-data-error'
-      servers:
-        - url: 'https://ecommercexyz.online/api'
-          description: ''
+      operationId: post-user-register
+      x-stoplight:
+        id: kdzbvjfdf1eum
+      parameters: []
+      requestBody:
+        $ref: '#/components/requestBodies/user-local-register'
+      description: Register a new user. return 409 if email already exist
+    parameters: []
   /user/createAdmin:
     post:
       summary: Create New Admin
-      description: 'Create a new admin user, requires authorization of root privilege user'
       operationId: post-user-createAdmin
-      parameters:
-        - $ref: '#/components/parameters/jwt-token'
-      requestBody:
-        $ref: '#/components/requestBodies/user-local-register'
       responses:
         '201':
           $ref: '#/components/responses/User-local-register'
@@ -43,32 +42,26 @@ paths:
           $ref: '#/components/responses/Authorization-error'
         '409':
           $ref: '#/components/responses/Duplicate-data-error'
-      servers:
-        - url: 'https://ecommercexyz.online/api'
-          description: ''
+      requestBody:
+        $ref: '#/components/requestBodies/user-local-register'
+      description: 'Create a new admin user, requires authorization of root privilege user'
+      x-stoplight:
+        id: czbdewb9tykdk
+      parameters:
+        - $ref: '#/components/parameters/jwt-token'
+    parameters: []
   /user/login/password:
     post:
       summary: Login Local
-      description: Login user using email and password
-      operationId: post-user-login-password
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                email:
-                  type: string
-                  format: email
-                  maxLength: 320
-                password:
-                  type: string
-                  format: password
-                  minLength: 8
-                  maxLength: 90
+      tags: []
       responses:
         '200':
           description: OK
+          headers:
+            Set-Cookie:
+              schema:
+                type: string
+              description: 'jwt=[cookie containing jwt token encoded in base64]'
           content:
             application/json:
               schema:
@@ -76,12 +69,9 @@ paths:
                 properties:
                   status:
                     type: string
+                    x-stoplight:
+                      id: 7mzfcykuz7lr0
                     default: success
-          headers:
-            Set-Cookie:
-              schema:
-                type: string
-              description: 'jwt=[cookie containing jwt token encoded in base64]'
         '401':
           description: Return unauthorized when email or password is invalid
           content:
@@ -91,13 +81,21 @@ paths:
                 properties:
                   message:
                     type: string
+                    x-stoplight:
+                      id: cvr6iuo89oon1
                   errors:
                     type: array
+                    x-stoplight:
+                      id: 9c98sio4ynv2d
                     items:
+                      x-stoplight:
+                        id: 0ftgb4v1kntu3
                       type: object
                       properties:
                         message:
                           type: string
+                          x-stoplight:
+                            id: qdnbffpfk0845
               examples:
                 Example 1:
                   value:
@@ -113,34 +111,61 @@ paths:
                 properties:
                   message:
                     type: string
+                    x-stoplight:
+                      id: rgg6afissyl70
                     default: 'Password is not set, please login via Google Oauth'
                   errors:
                     type: array
+                    x-stoplight:
+                      id: xyo7196rvauxy
                     maxItems: 0
+                    minItems: 0
+                    items: {}
               examples:
                 Example 1:
                   value:
                     message: 'Password is not set, please login via Google Oauth'
                     errors: []
-      servers:
-        - url: 'https://ecommercexyz.online/api'
-          description: ''
+      operationId: post-user-login-password
+      x-stoplight:
+        id: 993b9u83ohnrk
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  x-stoplight:
+                    id: uiyr5kelx6h4o
+                  format: email
+                  maxLength: 320
+                password:
+                  type: string
+                  x-stoplight:
+                    id: 6tb8ocq3wcuao
+                  format: password
+                  minLength: 8
+                  maxLength: 90
+      description: Login user using email and password
   /user/login/auth:
     get:
       summary: Login Oauth2
-      description: Request authentication using Google Oauth2
-      operationId: get-login-oauth
+      tags: []
       responses:
         '200':
           description: OK
-      servers:
-        - url: 'https://ecommercexyz.online/api'
-          description: ''
+          headers: {}
+      operationId: get-login-oauth
+      x-stoplight:
+        id: 9uy2m1x0h3cp8
+      description: Request authentication using Google Oauth2
+    parameters: []
   /user/login/auth/callback:
     get:
       summary: Login Oauth2 Callback
-      description: authenticate using Google Oauth token
-      operationId: get-login-auth-callback
+      tags: []
       responses:
         '200':
           description: OK
@@ -149,14 +174,15 @@ paths:
               schema:
                 type: string
               description: 'jwt=[cookie containing jwt token encoded in base64]'
-      servers:
-        - url: 'https://ecommercexyz.online/api'
-          description: ''
+      operationId: get-login-auth-callback
+      x-stoplight:
+        id: odtfn0kl46cbt
+      description: authenticate using Google Oauth token
+    parameters: []
   /user/logout:
     post:
       summary: User Logout
-      description: 'Logout user, would issue Clear-Cookie header to clear jwt cookie'
-      operationId: post-user-logout
+      tags: []
       responses:
         '200':
           description: OK
@@ -167,22 +193,22 @@ paths:
                 properties:
                   status:
                     type: string
+                    x-stoplight:
+                      id: f3r4dzi15qn4a
                     default: success
           headers:
             Set-Cookie:
               schema:
                 type: string
               description: 'set jwt cookie to empty string, set expiry date to beginning of UNIX epoch'
-      servers:
-        - url: 'https://ecommercexyz.online/api'
-          description: ''
+      operationId: post-user-logout
+      x-stoplight:
+        id: qcfvlsjcmbxj0
+      description: 'Logout user, would issue Clear-Cookie header to clear jwt cookie'
   /user:
     get:
       summary: Get Current User
-      description: Get Information of the currently authenticated user. Would return empty object if not authenticated
-      operationId: get-user
-      parameters:
-        - $ref: '#/components/parameters/jwt-token'
+      tags: []
       responses:
         '200':
           description: Shared Response
@@ -190,13 +216,30 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/User'
-      servers:
-        - url: 'https://ecommercexyz.online/api'
-          description: ''
+      operationId: get-user
+      x-stoplight:
+        id: 38dep3n1gjb77
+      description: Get Information of the currently authenticated user. Would return empty object if not authenticated
+      parameters:
+        - $ref: '#/components/parameters/jwt-token'
     patch:
       summary: Update User
-      description: Update user data
+      tags: []
+      responses:
+        '200':
+          description: Shared Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          $ref: '#/components/responses/Bad-request-error'
+        '401':
+          $ref: '#/components/responses/Authentication-error'
       operationId: patch-user
+      x-stoplight:
+        id: hybsn9rhgmv54
+      description: Update user data
       parameters:
         - $ref: '#/components/parameters/jwt-token'
       requestBody:
@@ -207,35 +250,15 @@ paths:
               properties:
                 name:
                   type: string
+                  x-stoplight:
+                    id: lxlv8ykff48az
                   minLength: 3
                   maxLength: 60
-      responses:
-        '200':
-          description: Shared Response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/User'
-        '400':
-          $ref: '#/components/responses/Bad-request-error'
-        '401':
-          $ref: '#/components/responses/Authentication-error'
-      servers:
-        - url: 'https://ecommercexyz.online/api'
-          description: ''
+    parameters: []
   /user/avatar:
     post:
       summary: Update User Avatar Image
-      description: 'Change user''s avatar image, return 400 if no image is provided, or not of type webp'
-      operationId: post-user-avatar
-      parameters:
-        - $ref: '#/components/parameters/jwt-token'
-      requestBody:
-        content:
-          multipart/form-data:
-            schema:
-              type: string
-              contentMediaType: application/octet-stream
+      tags: []
       responses:
         '200':
           description: OK
@@ -246,6 +269,8 @@ paths:
                 properties:
                   status:
                     type: string
+                    x-stoplight:
+                      id: i46kihwcj1yvl
                     default: success
         '400':
           description: Bad Request
@@ -253,37 +278,53 @@ paths:
             application/json:
               schema:
                 type: object
-                properties:
-                  message:
-                    type: string
-                  errors:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        field:
-                          type: string
-                          default: images
-                        message:
-                          type: string
-                      required:
-                        - field
-                        - message
                 required:
                   - message
                   - errors
+                properties:
+                  message:
+                    type: string
+                    x-stoplight:
+                      id: a3uwkff1toih5
+                  errors:
+                    type: array
+                    x-stoplight:
+                      id: bl5d7s8sarg0p
+                    items:
+                      x-stoplight:
+                        id: 1tvwpt2iyjouk
+                      type: object
+                      required:
+                        - field
+                        - message
+                      properties:
+                        field:
+                          type: string
+                          x-stoplight:
+                            id: 4tv11eri9izsl
+                          default: images
+                        message:
+                          type: string
+                          x-stoplight:
+                            id: hgun3jbpf2494
         '401':
           $ref: '#/components/responses/Authentication-error'
-      servers:
-        - url: 'https://ecommercexyz.online/api'
-          description: ''
+      operationId: post-user-avatar
+      x-stoplight:
+        id: gbasmiqdvyui2
+      description: 'Change user''s avatar image, return 400 if no image is provided, or not of type webp'
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: string
+              format: binary
+      parameters:
+        - $ref: '#/components/parameters/jwt-token'
   /address/user:
     get:
       summary: Get User Addresses
-      description: Get address list of the current user
-      operationId: get-address-user
-      parameters:
-        - $ref: '#/components/parameters/jwt-token'
+      tags: []
       responses:
         '200':
           description: OK
@@ -293,22 +334,19 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Address'
+                  x-stoplight:
+                    id: q2xqzepshgpsn
         '401':
           $ref: '#/components/responses/Authentication-error'
-      servers:
-        - url: 'https://ecommercexyz.online/api'
-          description: ''
-    post:
-      summary: Add User Address
-      description: Add new User Address
-      operationId: post-address-user
+      operationId: get-address-user
+      x-stoplight:
+        id: buzcjqmpi92l5
+      description: Get address list of the current user
       parameters:
         - $ref: '#/components/parameters/jwt-token'
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/AddressBody'
+    post:
+      summary: Add User Address
+      tags: []
       responses:
         '201':
           description: Created
@@ -322,16 +360,21 @@ paths:
           $ref: '#/components/responses/Authentication-error'
         '409':
           $ref: '#/components/responses/Address-limit-exceeded-error'
-      servers:
-        - url: 'https://ecommercexyz.online/api'
-          description: ''
+      operationId: post-address-user
+      x-stoplight:
+        id: ketb8wlkbca9y
+      description: Add new User Address
+      parameters:
+        - $ref: '#/components/parameters/jwt-token'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddressBody'
   /address/shop:
     get:
       summary: Get Shop Addresses
-      description: 'Get addresses of client''s shop, return empty array if user has no shop'
-      operationId: get-address-shop
-      parameters:
-        - $ref: '#/components/parameters/jwt-token'
+      tags: []
       responses:
         '200':
           description: OK
@@ -341,21 +384,19 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Address'
+                  x-stoplight:
+                    id: gvbdu91atnko3
         '401':
           $ref: '#/components/responses/Authentication-error'
-      servers:
-        - url: 'https://ecommercexyz.online/api'
-          description: ''
-    post:
-      summary: Add Shop Address
-      operationId: post-address-shop
+      operationId: get-address-shop
+      x-stoplight:
+        id: qqe8f8s7mzpgy
       parameters:
         - $ref: '#/components/parameters/jwt-token'
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/AddressBody'
+      description: 'Get addresses of client''s shop, return empty array if user has no shop'
+    post:
+      summary: Add Shop Address
+      tags: []
       responses:
         '201':
           description: Created
@@ -369,47 +410,51 @@ paths:
           $ref: '#/components/responses/Authentication-error'
         '409':
           $ref: '#/components/responses/Address-limit-exceeded-error'
-      servers:
-        - url: 'https://ecommercexyz.online/api'
-          description: ''
-  '/address/{addressId}':
-    patch:
-      summary: Update Address
-      description: 'Update address, returns 403 if the client is not the owner of the address or an admin'
-      operationId: patch-address-addressId
+      operationId: post-address-shop
+      x-stoplight:
+        id: 3cxzire6uw1zp
       parameters:
         - $ref: '#/components/parameters/jwt-token'
-        - $ref: '#/components/parameters/addressId'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddressBody'
+  '/address/{addressId}':
+    parameters:
+      - $ref: '#/components/parameters/addressId'
+    patch:
+      summary: Update Address
+      tags: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Address'
+        '400':
+          $ref: '#/components/responses/Bad-request-error'
+        '401':
+          $ref: '#/components/responses/Authentication-error'
+        '403':
+          $ref: '#/components/responses/Authorization-error'
+        '404':
+          $ref: '#/components/responses/Not-found-error'
+      operationId: patch-address-addressId
+      x-stoplight:
+        id: cai4vaqeygtsb
+      parameters:
+        - $ref: '#/components/parameters/jwt-token'
       requestBody:
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/AddressBodyOptional'
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Address'
-        '400':
-          $ref: '#/components/responses/Bad-request-error'
-        '401':
-          $ref: '#/components/responses/Authentication-error'
-        '403':
-          $ref: '#/components/responses/Authorization-error'
-        '404':
-          $ref: '#/components/responses/Not-found-error'
-      servers:
-        - url: 'https://ecommercexyz.online/api'
-          description: ''
+      description: 'Update address, returns 403 if the client is not the owner of the address or an admin'
     delete:
       summary: Delete Address
-      description: 'Delete an address, return 403 if client is not the owner of the address or an admin'
-      operationId: delete-address-addressId
-      parameters:
-        - $ref: '#/components/parameters/jwt-token'
-        - $ref: '#/components/parameters/addressId'
+      tags: []
       responses:
         '200':
           description: OK
@@ -420,6 +465,8 @@ paths:
                 properties:
                   status:
                     type: string
+                    x-stoplight:
+                      id: 36h658drswgx2
                     default: success
         '401':
           $ref: '#/components/responses/Authentication-error'
@@ -427,17 +474,18 @@ paths:
           $ref: '#/components/responses/Authorization-error'
         '404':
           $ref: '#/components/responses/Not-found-error'
-      servers:
-        - url: 'https://ecommercexyz.online/api'
-          description: ''
+      operationId: delete-address-addressId
+      x-stoplight:
+        id: bqaarrw3403fc
+      description: 'Delete an address, return 403 if client is not the owner of the address or an admin'
+      parameters:
+        - $ref: '#/components/parameters/jwt-token'
   '/address/select/{addressId}':
+    parameters:
+      - $ref: '#/components/parameters/addressId'
     post:
       summary: Select User Address
-      description: Set User Address with provided id as selected user address. Return 404 if provided addressId is not address of the client
-      operationId: post-address-select-addressId
-      parameters:
-        - $ref: '#/components/parameters/jwt-token'
-        - $ref: '#/components/parameters/addressId'
+      tags: []
       responses:
         '200':
           description: OK
@@ -448,22 +496,25 @@ paths:
                 properties:
                   status:
                     type: string
+                    x-stoplight:
+                      id: 506qa290f2t13
                     default: success
         '401':
           $ref: '#/components/responses/Authentication-error'
         '404':
           $ref: '#/components/responses/Not-found-error'
-      servers:
-        - url: 'https://ecommercexyz.online/api'
-          description: ''
+      operationId: post-address-select-addressId
+      x-stoplight:
+        id: ik837ir6t7vzq
+      description: Set User Address with provided id as selected user address. Return 404 if provided addressId is not address of the client
+      parameters:
+        - $ref: '#/components/parameters/jwt-token'
   '/address/toggle/{addressId}':
+    parameters:
+      - $ref: '#/components/parameters/addressId'
     post:
       summary: Toggle Active Shop Address
-      description: 'Toggle status(active/ inactive) of shop address with provided id. '
-      operationId: post-address-toggle-addressId
-      parameters:
-        - $ref: '#/components/parameters/jwt-token'
-        - $ref: '#/components/parameters/addressId'
+      tags: []
       responses:
         '200':
           description: OK
@@ -474,21 +525,23 @@ paths:
                 properties:
                   status:
                     type: string
+                    x-stoplight:
+                      id: s9iuotlx35tfg
                     default: success
         '401':
           $ref: '#/components/responses/Authentication-error'
         '404':
           $ref: '#/components/responses/Not-found-error'
-      servers:
-        - url: 'https://ecommercexyz.online/api'
-          description: ''
+      operationId: post-address-toggle-addressId
+      x-stoplight:
+        id: epspwp78qk2cn
+      description: 'Toggle status(active/ inactive) of shop address with provided id. '
+      parameters:
+        - $ref: '#/components/parameters/jwt-token'
   /cart:
     get:
       summary: Get Carts
-      description: Get Cart of current user
-      operationId: get-cart
-      parameters:
-        - $ref: '#/components/parameters/jwt-token'
+      tags: []
       responses:
         '200':
           description: OK
@@ -498,22 +551,19 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/CartItem'
+                  x-stoplight:
+                    id: vsy5i4f4f3j2y
         '401':
           $ref: '#/components/responses/Authentication-error'
-      servers:
-        - url: 'https://ecommercexyz.online/api'
-          description: ''
-    post:
-      summary: Add New Item
-      description: Add item or quantiy to client's cart
-      operationId: post-cart
+      operationId: get-cart
+      x-stoplight:
+        id: 3vvasxkyujfxp
+      description: Get Cart of current user
       parameters:
         - $ref: '#/components/parameters/jwt-token'
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/Cart'
+    post:
+      summary: Add New Item
+      tags: []
       responses:
         '200':
           description: OK
@@ -523,15 +573,23 @@ paths:
                 allOf:
                   - $ref: '#/components/schemas/Cart'
                   - type: object
+                    x-stoplight:
+                      id: yvy79knxte0pj
                     properties:
                       userId:
                         type: string
+                        x-stoplight:
+                          id: 92ik5brlxjvfx
                         format: uuid
                       createdAt:
                         type: string
+                        x-stoplight:
+                          id: f7utte5ms4bna
                         format: date-time
                       updatedAt:
                         type: string
+                        x-stoplight:
+                          id: tzvg56k09wqwn
                         format: date-time
         '400':
           $ref: '#/components/responses/Bad-request-error'
@@ -539,13 +597,10 @@ paths:
           $ref: '#/components/responses/Authentication-error'
         '404':
           $ref: '#/components/responses/Not-found-error'
-      servers:
-        - url: 'https://ecommercexyz.online/api'
-          description: ''
-    patch:
-      summary: Update Cart Item
-      description: 'Update a single cart item, delete cart item and return {"status": "success"} if quantity is set to 0'
-      operationId: patch-cart
+      operationId: post-cart
+      x-stoplight:
+        id: mg16aexpjtaci
+      description: Add item or quantiy to client's cart
       parameters:
         - $ref: '#/components/parameters/jwt-token'
       requestBody:
@@ -553,6 +608,9 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/Cart'
+    patch:
+      summary: Update Cart Item
+      tags: []
       responses:
         '200':
           description: OK
@@ -563,20 +621,32 @@ paths:
                   - allOf:
                       - $ref: '#/components/schemas/Cart'
                       - type: object
+                        x-stoplight:
+                          id: yd0g029nx47a9
                         properties:
                           userId:
                             type: string
+                            x-stoplight:
+                              id: qm4l5x1bl28sv
                             format: uuid
                           createdAt:
                             type: string
+                            x-stoplight:
+                              id: q6uqp4ea3z5y7
                             format: date-time
                           updatedAt:
                             type: string
+                            x-stoplight:
+                              id: lhxxb98gd6z38
                             format: date-time
                   - type: object
+                    x-stoplight:
+                      id: ibgdjdm9k256m
                     properties:
                       status:
                         type: string
+                        x-stoplight:
+                          id: xktmi96c2uvdn
                         default: success
         '400':
           $ref: '#/components/responses/Bad-request-error'
@@ -584,13 +654,43 @@ paths:
           $ref: '#/components/responses/Authentication-error'
         '404':
           $ref: '#/components/responses/Not-found-error'
-      servers:
-        - url: 'https://ecommercexyz.online/api'
-          description: ''
+      operationId: patch-cart
+      x-stoplight:
+        id: 1f9komop3csop
+      description: 'Update a single cart item, delete cart item and return {"status": "success"} if quantity is set to 0'
+      parameters:
+        - $ref: '#/components/parameters/jwt-token'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Cart'
     delete:
       summary: Delete Cart
-      description: Delete cart item from client's cart
+      tags: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    x-stoplight:
+                      id: 0xl8j03forhe5
+                    default: success
+        '400':
+          $ref: '#/components/responses/Bad-request-error'
+        '401':
+          $ref: '#/components/responses/Authentication-error'
+        '404':
+          $ref: '#/components/responses/Not-found-error'
       operationId: delete-cart
+      x-stoplight:
+        id: payuc4rkbxto0
+      description: Delete cart item from client's cart
       parameters:
         - $ref: '#/components/parameters/jwt-token'
       requestBody:
@@ -601,34 +701,16 @@ paths:
               properties:
                 itemId:
                   type: string
+                  x-stoplight:
+                    id: 6bcjww2fcjitc
                   format: uuid
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  status:
-                    type: string
-                    default: success
-        '400':
-          $ref: '#/components/responses/Bad-request-error'
-        '401':
-          $ref: '#/components/responses/Authentication-error'
-        '404':
-          $ref: '#/components/responses/Not-found-error'
-      servers:
-        - url: 'https://ecommercexyz.online/api'
-          description: ''
+    parameters: []
   '/item/{itemId}':
+    parameters:
+      - $ref: '#/components/parameters/itemId'
     get:
       summary: Get Item Detail
-      description: Get item detail of provided item id
-      operationId: get-item-itemId
-      parameters:
-        - $ref: '#/components/parameters/itemId'
+      tags: []
       responses:
         '200':
           description: OK
@@ -638,21 +720,13 @@ paths:
                 $ref: '#/components/schemas/ItemDetail'
         '404':
           $ref: '#/components/responses/Not-found-error'
-      servers:
-        - url: 'https://ecommercexyz.online/api'
-          description: ''
+      operationId: get-item-itemId
+      x-stoplight:
+        id: q6e6w8qx6jgvr
+      description: Get item detail of provided item id
     patch:
       summary: Update Item
-      description: Update a single item with the provided id
-      operationId: patch-item-itemId
-      parameters:
-        - $ref: '#/components/parameters/jwt-token'
-        - $ref: '#/components/parameters/itemId'
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ItemBody'
+      tags: []
       responses:
         '200':
           description: OK
@@ -668,18 +742,44 @@ paths:
           $ref: '#/components/responses/Authorization-error'
         '404':
           $ref: '#/components/responses/Not-found-error'
-      servers:
-        - url: 'https://ecommercexyz.online/api'
-          description: ''
-    delete:
-      summary: Delete Item
-      description: Delete item with provided id
-      operationId: delete-item-itemId
+      operationId: patch-item-itemId
+      x-stoplight:
+        id: cl1b5x73pwpvj
+      description: "Update a single item with the provided id.\r\nInclude property imagesDelete containing order of image to be deleted to delete item image\r\nInclude propertyimagesReorder to reorder image.\r\nInclude images to add new image.\r\nThe operation order is delete -> add -> reorder\r\n"
       parameters:
         - $ref: '#/components/parameters/jwt-token'
-        - $ref: '#/components/parameters/itemId'
       requestBody:
-        content: {}
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '#/components/schemas/ItemBody'
+                  x-stoplight:
+                    id: a8glsyx3ihu1u
+                - type: object
+                  x-stoplight:
+                    id: mo6aqctqyf3sv
+                  properties:
+                    imagesDelete:
+                      $ref: '#/components/schemas/ItemImageOrderArray'
+                      x-stoplight:
+                        id: c61g5wjnwmjnl
+                    imagesReorder:
+                      $ref: '#/components/schemas/ItemImageOrderArray'
+                      x-stoplight:
+                        id: sga3s4squckep
+                    images:
+                      type: array
+                      x-stoplight:
+                        id: 9jtdcsgfrynns
+                      items:
+                        x-stoplight:
+                          id: jheknf57w4aug
+                        type: string
+                        format: binary
+    delete:
+      summary: Delete Item
+      tags: []
       responses:
         '200':
           description: OK
@@ -690,6 +790,8 @@ paths:
                 properties:
                   status:
                     type: string
+                    x-stoplight:
+                      id: phn6kokxe2hgz
                     default: success
         '400':
           $ref: '#/components/responses/Bad-request-error'
@@ -699,19 +801,18 @@ paths:
           $ref: '#/components/responses/Authorization-error'
         '404':
           description: Not Found
-      servers:
-        - url: 'https://ecommercexyz.online/api'
-          description: ''
+      operationId: delete-item-itemId
+      x-stoplight:
+        id: tqaf2lpj9mwyu
+      description: Delete item with provided id
+      parameters:
+        - $ref: '#/components/parameters/jwt-token'
+      requestBody:
+        content: {}
   /item:
     get:
       summary: Get Items
-      description: Find items using various query options
-      operationId: get-item
-      parameters:
-        - $ref: '#/components/parameters/searchQuery'
-        - $ref: '#/components/parameters/limitQuery'
-        - $ref: '#/components/parameters/pageQuery'
-        - $ref: '#/components/parameters/orderByQuery'
+      tags: []
       responses:
         '200':
           description: OK
@@ -721,15 +822,39 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/GetItemWithShopBody'
+                  x-stoplight:
+                    id: dvblmipqifa6e
         '400':
           $ref: '#/components/responses/Bad-request-error'
-      servers:
-        - url: 'https://ecommercexyz.online/api'
-          description: ''
+      operationId: get-item
+      x-stoplight:
+        id: g616c2nupvecr
+      description: Find items using various query options
+      parameters:
+        - $ref: '#/components/parameters/searchQuery'
+        - $ref: '#/components/parameters/limitQuery'
+        - $ref: '#/components/parameters/pageQuery'
+        - $ref: '#/components/parameters/orderByQuery'
     post:
       summary: Create Item
-      description: 'Create new item in client''s shop, return 404 if shop has yet to be created'
+      tags: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ItemDetail'
+        '400':
+          $ref: '#/components/responses/Bad-request-error'
+        '401':
+          $ref: '#/components/responses/Authentication-error'
+        '404':
+          $ref: '#/components/responses/Not-found-error'
       operationId: post-item
+      x-stoplight:
+        id: lkvgnr5wogc25
+      description: 'Create new item in client''s shop, return 404 if shop has yet to be created'
       parameters:
         - $ref: '#/components/parameters/jwt-token'
       requestBody:
@@ -741,51 +866,35 @@ paths:
                   properties:
                     images:
                       type: array
+                      x-stoplight:
+                        id: j0s4mh1e8tq3t
                       items:
+                        x-stoplight:
+                          id: 3esuhszp2vtb9
                         type: string
-                        contentMediaType: application/octet-stream
+                        format: binary
                 - $ref: '#/components/schemas/ItemBody'
+                  x-stoplight:
+                    id: yaeexjbw0rt1e
                 - type: object
+                  x-stoplight:
+                    id: zbgojp2v50fkf
                   properties:
                     tags:
                       type: array
+                      x-stoplight:
+                        id: p650m15gxyxmr
                       items:
+                        x-stoplight:
+                          id: qzfja3tsb6z7k
                         type: integer
                         minimum: 0
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ItemDetail'
-        '400':
-          $ref: '#/components/responses/Bad-request-error'
-        '401':
-          $ref: '#/components/responses/Authentication-error'
-        '404':
-          $ref: '#/components/responses/Not-found-error'
-      servers:
-        - url: 'https://ecommercexyz.online/api'
-          description: ''
   '/item/{itemId}/tag':
+    parameters:
+      - $ref: '#/components/parameters/itemId'
     post:
       summary: Add Tag to Item
-      description: 'Add tag to item, will ignore duplicate, both on request and server'
-      operationId: post-item-itemId-tag
-      parameters:
-        - $ref: '#/components/parameters/jwt-token'
-        - $ref: '#/components/parameters/itemId'
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                tags:
-                  type: array
-                  items:
-                    type: integer
+      tags: []
       responses:
         '200':
           description: OK
@@ -799,16 +908,12 @@ paths:
           $ref: '#/components/responses/Authentication-error'
         '403':
           $ref: '#/components/responses/Authorization-error'
-      servers:
-        - url: 'https://ecommercexyz.online/api'
-          description: ''
-    delete:
-      summary: Delete Tag From Item
-      description: 'Remove provided tags from item, ignore duplicates'
-      operationId: delete-item-itemId-tag
+      operationId: post-item-itemId-tag
+      x-stoplight:
+        id: 0uvhkjaknwlkm
+      description: 'Add tag to item, will ignore duplicate, both on request and server'
       parameters:
         - $ref: '#/components/parameters/jwt-token'
-        - $ref: '#/components/parameters/itemId'
       requestBody:
         content:
           application/json:
@@ -817,8 +922,15 @@ paths:
               properties:
                 tags:
                   type: array
+                  x-stoplight:
+                    id: t9akgeu3pf51p
                   items:
+                    x-stoplight:
+                      id: o7yat05is8vz9
                     type: integer
+    delete:
+      summary: Delete Tag From Item
+      tags: []
       responses:
         '200':
           description: OK
@@ -832,27 +944,32 @@ paths:
           $ref: '#/components/responses/Authentication-error'
         '403':
           description: Forbidden
-      servers:
-        - url: 'https://ecommercexyz.online/api'
-          description: ''
-  '/item/{itemId}/images':
-    post:
-      summary: Add Image To Item
-      operationId: post-item-itemId-images
+      operationId: delete-item-itemId-tag
+      x-stoplight:
+        id: o9gzudr92rg6n
       parameters:
         - $ref: '#/components/parameters/jwt-token'
-        - $ref: '#/components/parameters/itemId'
       requestBody:
         content:
-          multipart/form-data:
+          application/json:
             schema:
               type: object
               properties:
-                images:
+                tags:
                   type: array
+                  x-stoplight:
+                    id: 98ev0cc5y10ov
                   items:
-                    type: string
-                    contentMediaType: application/octet-stream
+                    x-stoplight:
+                      id: ou06aq5f2dtnd
+                    type: integer
+      description: 'Remove provided tags from item, ignore duplicates'
+  '/item/{itemId}/images':
+    parameters:
+      - $ref: '#/components/parameters/itemId'
+    post:
+      summary: Add Image To Item
+      tags: []
       responses:
         '200':
           description: OK
@@ -863,6 +980,8 @@ paths:
                 properties:
                   status:
                     type: string
+                    x-stoplight:
+                      id: 5uyhgrsfv0dgy
                     default: success
         '400':
           $ref: '#/components/responses/Bad-request-error'
@@ -879,24 +998,37 @@ paths:
                 properties:
                   message:
                     type: string
+                    x-stoplight:
+                      id: r0uner4ngotww
                     pattern: 'An item cannot contain more than [1-9]\d* items'
                   errors:
                     type: array
-      servers:
-        - url: 'https://ecommercexyz.online/api'
-          description: ''
-    delete:
-      summary: Remove Image From Item
-      operationId: delete-item-itemId-images
+                    x-stoplight:
+                      id: f7uegcxk534xe
+                    items: {}
+      operationId: post-item-itemId-images
+      x-stoplight:
+        id: arkyaxvpzm074
       parameters:
         - $ref: '#/components/parameters/jwt-token'
-        - $ref: '#/components/parameters/itemId'
       requestBody:
-        description: Remove image with provided order from item with provided id. Ignores nonexistent order but return 400 for order outside range
         content:
-          application/json:
+          multipart/form-data:
             schema:
-              $ref: '#/components/schemas/ItemImageOrderArray'
+              type: object
+              properties:
+                images:
+                  type: array
+                  x-stoplight:
+                    id: 8xf3ay7j1gj5p
+                  items:
+                    x-stoplight:
+                      id: tt0x2hm7fs0ug
+                    type: string
+                    format: binary
+    delete:
+      summary: Remove Image From Item
+      tags: []
       responses:
         '200':
           description: OK
@@ -907,6 +1039,8 @@ paths:
                 properties:
                   status:
                     type: string
+                    x-stoplight:
+                      id: rrhdbipnd3gxn
                     default: success
         '400':
           $ref: '#/components/responses/Bad-request-error'
@@ -916,21 +1050,20 @@ paths:
           $ref: '#/components/responses/Authorization-error'
         '404':
           $ref: '#/components/responses/Not-found-error'
-      servers:
-        - url: 'https://ecommercexyz.online/api'
-          description: ''
-    patch:
-      summary: Reorder Item Image
-      description: Reorder items to the provided order
-      operationId: patch-item-itemId-images
+      operationId: delete-item-itemId-images
+      x-stoplight:
+        id: 5s6zwcewr7fyn
       parameters:
         - $ref: '#/components/parameters/jwt-token'
-        - $ref: '#/components/parameters/itemId'
       requestBody:
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/ItemImageOrderArray'
+        description: Remove image with provided order from item with provided id. Ignores nonexistent order but return 400 for order outside range
+    patch:
+      summary: Reorder Item Image
+      tags: []
       responses:
         '200':
           description: OK
@@ -941,6 +1074,8 @@ paths:
                 properties:
                   status:
                     type: string
+                    x-stoplight:
+                      id: 59s8jx4phec9j
                     default: success
         '400':
           $ref: '#/components/responses/Not-found-error'
@@ -950,16 +1085,21 @@ paths:
           $ref: '#/components/responses/Authorization-error'
         '404':
           $ref: '#/components/responses/Not-found-error'
-      servers:
-        - url: 'https://ecommercexyz.online/api'
-          description: ''
+      operationId: patch-item-itemId-images
+      x-stoplight:
+        id: mvxv1eedk7ncf
+      description: Reorder items to the provided order
+      parameters:
+        - $ref: '#/components/parameters/jwt-token'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ItemImageOrderArray'
   /order/process:
     post:
       summary: Process Order
-      description: Process items in cart and create an order for each shop
-      operationId: post-order
-      parameters:
-        - $ref: '#/components/parameters/jwt-token'
+      tags: []
       responses:
         '200':
           description: OK
@@ -969,6 +1109,8 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/GetOrderBody'
+                  x-stoplight:
+                    id: ltfkubk2qz90u
         '401':
           $ref: '#/components/responses/Authentication-error'
         '422':
@@ -976,79 +1118,114 @@ paths:
           content:
             application/json:
               schema:
-                type: object
                 oneOf:
-                  - type: object
-                    properties:
+                  - properties:
                       message:
                         type: string
+                        x-stoplight:
+                          id: 8ctoq58eoftg1
                         default: Select a shipping address before proceeding with your order.
                       errors:
                         type: array
+                        x-stoplight:
+                          id: kxi7ia8q3z849
                         items:
+                          x-stoplight:
+                            id: pgd4d47n9403x
                           type: object
                           properties:
                             field:
                               type: string
+                              x-stoplight:
+                                id: 7uhwd5ivxqy3w
                               default: userAddress
                             message:
                               type: string
+                              x-stoplight:
+                                id: u55c6t5ujoqah
                               default: No address is selected
-                  - type: object
+                  - x-stoplight:
+                      id: 0pl8d52d3sfx8
                     properties:
                       message:
                         type: string
+                        x-stoplight:
+                          id: 7o08v0mhz22qx
                         default: No item in cart
                       errors:
                         type: array
+                        x-stoplight:
+                          id: oxvc2i9yd7d0j
+                        minItems: 0
                         maxItems: 0
-                  - type: object
+                        items: {}
+                  - x-stoplight:
+                      id: ujeeao94d1yy8
                     properties:
                       message:
                         type: string
+                        x-stoplight:
+                          id: k02bqm5pnsp1i
                         default: Item out of stock
                       errors:
-                        type: array
+                        x-stoplight:
+                          id: 58te64ap46njo
                         oneOf:
-                          - type: array
+                          - x-stoplight:
+                              id: 7nmyfalcxobds
                             minItems: 1
                             items:
+                              x-stoplight:
+                                id: 36rvb245pyy1j
                               type: object
                               properties:
                                 message:
                                   type: string
+                                  x-stoplight:
+                                    id: f7zpmcvgy1ya6
                                   default: Requested value exceed available inventory
                                 item:
                                   type: string
-                          - type: array
+                                  x-stoplight:
+                                    id: g4j8z2f63nyj8
+                          - x-stoplight:
+                              id: aokm9e4b6qs55
                             minItems: 1
                             maxItems: 1
                             items:
+                              x-stoplight:
+                                id: g39r1h1jo2udi
                               type: object
                               properties:
                                 message:
                                   type: string
+                                  x-stoplight:
+                                    id: qucuawhadn8vf
                                   default: Requested value exceed available inventory
                                 field:
                                   type: string
+                                  x-stoplight:
+                                    id: k0f32e485zhrq
                                   default: quantity
-      servers:
-        - url: 'https://ecommercexyz.online/api'
-          description: ''
-  '/order/{orderId}':
-    get:
-      summary: Get OrderDetail
-      description: |-
-        Fetch order detail of provided orderId.
-        Returns 403 if client is not creator of order or owner of target shop or an admin
-      operationId: get-order-orderId
+                        type: array
+                type: object
+      operationId: post-order
+      x-stoplight:
+        id: 1ozv6cf715ke9
+      description: Process items in cart and create an order for each shop
       parameters:
         - $ref: '#/components/parameters/jwt-token'
-        - name: orderId
-          in: path
-          required: true
-          schema:
-            type: string
+    parameters: []
+  '/order/{orderId}':
+    parameters:
+      - schema:
+          type: string
+        name: orderId
+        in: path
+        required: true
+    get:
+      summary: Get OrderDetail
+      tags: []
       responses:
         '200':
           description: OK
@@ -1062,28 +1239,64 @@ paths:
           $ref: '#/components/responses/Authentication-error'
         '403':
           $ref: '#/components/responses/Authorization-error'
-      servers:
-        - url: 'https://ecommercexyz.online/api'
-          description: ''
+      operationId: get-order-orderId
+      x-stoplight:
+        id: kluu0e705vgeh
+      description: |-
+        Fetch order detail of provided orderId.
+        Returns 403 if client is not creator of order or owner of target shop or an admin
+      parameters:
+        - $ref: '#/components/parameters/jwt-token'
   '/order/user/{userId}':
+    parameters:
+      - schema:
+          type: string
+        name: userId
+        in: path
+        required: true
     get:
       summary: Get User Orders
+      tags: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/GetOrderBody'
+                  x-stoplight:
+                    id: hqyhwv6c01mwy
+        '400':
+          $ref: '#/components/responses/Bad-request-error'
+        '401':
+          $ref: '#/components/responses/Authentication-error'
+        '403':
+          $ref: '#/components/responses/Authorization-error'
+      operationId: get-order-user-userId
+      x-stoplight:
+        id: 9mbsz2ykx51o6
+      parameters:
+        - $ref: '#/components/parameters/jwt-token'
+        - $ref: '#/components/parameters/getOrder-itemName'
+        - $ref: '#/components/parameters/getOrder-status'
+        - $ref: '#/components/parameters/getOrder-newerThan'
+        - $ref: '#/components/parameters/limitQuery'
+        - $ref: '#/components/parameters/pageQuery'
       description: |-
         Fetch orders made by the user with given id filtered using various query options.
         Return 403 if not accessed by the user itself or admin
-      operationId: get-order-user-userId
-      parameters:
-        - $ref: '#/components/parameters/getOrder-itemName'
-        - $ref: '#/components/parameters/getOrder-status'
-        - $ref: '#/components/parameters/getOrder-newerThan'
-        - $ref: '#/components/parameters/limitQuery'
-        - $ref: '#/components/parameters/pageQuery'
-        - $ref: '#/components/parameters/jwt-token'
-        - name: userId
-          in: path
-          required: true
-          schema:
-            type: string
+  '/order/shop/{shopId}':
+    parameters:
+      - schema:
+          type: string
+        name: shopId
+        in: path
+        required: true
+    get:
+      summary: Get Shop Orders
+      tags: []
       responses:
         '200':
           description: OK
@@ -1093,70 +1306,42 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/GetOrderBody'
+                  x-stoplight:
+                    id: qul7i9l08z9m3
         '400':
           $ref: '#/components/responses/Bad-request-error'
         '401':
           $ref: '#/components/responses/Authentication-error'
         '403':
           $ref: '#/components/responses/Authorization-error'
-      servers:
-        - url: 'https://ecommercexyz.online/api'
-          description: ''
-  '/order/shop/{shopId}':
-    get:
-      summary: Get Shop Orders
+      operationId: get-order-shop-shopId
+      x-stoplight:
+        id: rtermvwn8es86
+      parameters:
+        - $ref: '#/components/parameters/jwt-token'
+        - $ref: '#/components/parameters/getOrder-status'
+        - $ref: '#/components/parameters/getOrder-itemName'
+        - $ref: '#/components/parameters/getOrder-newerThan'
+        - $ref: '#/components/parameters/limitQuery'
+        - $ref: '#/components/parameters/pageQuery'
       description: |-
         Fetch Orders made to shop with given id filtered using various query options.
         Return 403 if not accessed by owner of the shop or admin
-      operationId: get-order-shop-shopId
-      parameters:
-        - $ref: '#/components/parameters/getOrder-status'
-        - $ref: '#/components/parameters/getOrder-itemName'
-        - $ref: '#/components/parameters/getOrder-newerThan'
-        - $ref: '#/components/parameters/limitQuery'
-        - $ref: '#/components/parameters/pageQuery'
-        - $ref: '#/components/parameters/jwt-token'
-        - name: shopId
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/GetOrderBody'
-        '400':
-          $ref: '#/components/responses/Bad-request-error'
-        '401':
-          $ref: '#/components/responses/Authentication-error'
-        '403':
-          $ref: '#/components/responses/Authorization-error'
-      servers:
-        - url: 'https://ecommercexyz.online/api'
-          description: ''
   '/order/{orderId}/item/{itemId}':
+    parameters:
+      - schema:
+          type: string
+        name: orderId
+        in: path
+        required: true
+      - schema:
+          type: string
+        name: itemId
+        in: path
+        required: true
     get:
       summary: Get Item Snapshot
-      description: |-
-        Fetch item snapshot of an order.
-        Return 403 if not creator or target shop or admin
-      operationId: get-orderId-item-itemId
-      parameters:
-        - name: orderId
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: itemId
-          in: path
-          required: true
-          schema:
-            type: string
+      tags: []
       responses:
         '200':
           description: OK
@@ -1166,29 +1351,30 @@ paths:
                 allOf:
                   - $ref: '#/components/schemas/ItemDetail'
                   - $ref: '#/components/schemas/Timestamp'
+                    x-stoplight:
+                      id: l8s72rkyd9855
         '400':
           $ref: '#/components/responses/Bad-request-error'
         '401':
           $ref: '#/components/responses/Authentication-error'
         '403':
           $ref: '#/components/responses/Authorization-error'
-      servers:
-        - url: 'https://ecommercexyz.online/api'
-          description: ''
+      operationId: get-orderId-item-itemId
+      x-stoplight:
+        id: b4inkm2shhbp3
+      description: |-
+        Fetch item snapshot of an order.
+        Return 403 if not creator or target shop or admin
   '/order/{orderId}/confirm':
+    parameters:
+      - schema:
+          type: string
+        name: orderId
+        in: path
+        required: true
     post:
       summary: Confirm Order
-      description: |-
-        Confirm an order with status awaiting.
-        Return 403 if not target shop or admin
-        Return 409 if status is not awaiting
-      operationId: post-order-orderId-confirm
-      parameters:
-        - name: orderId
-          in: path
-          required: true
-          schema:
-            type: string
+      tags: []
       responses:
         '200':
           description: OK
@@ -1209,34 +1395,43 @@ paths:
                 properties:
                   message:
                     type: string
+                    x-stoplight:
+                      id: kqjutirs0ozoi
                     default: Invalid order status
                   errors:
                     type: array
+                    x-stoplight:
+                      id: 5frageqif45jo
                     minItems: 1
                     maxItems: 1
                     items:
+                      x-stoplight:
+                        id: 3w1z66qpvvelx
                       type: object
                       properties:
                         message:
                           type: string
+                          x-stoplight:
+                            id: fvwnqyfg5484b
                           default: Order could only be confirmed if it has yet to be confirmed
-      servers:
-        - url: 'https://ecommercexyz.online/api'
-          description: ''
+              examples: {}
+      operationId: post-order-orderId-confirm
+      x-stoplight:
+        id: zu3az7d32ynz6
+      description: |-
+        Confirm an order with status awaiting.
+        Return 403 if not target shop or admin
+        Return 409 if status is not awaiting
   '/order/{orderId}/deliver':
+    parameters:
+      - schema:
+          type: string
+        name: orderId
+        in: path
+        required: true
     post:
       summary: Deliver Order
-      description: |-
-        Deliver order with status confirmed.
-        Return 403 if not target shop or admin.
-        Return 409 if order status is not confirmed
-      operationId: post-order-orderId-deliver
-      parameters:
-        - name: orderId
-          in: path
-          required: true
-          schema:
-            type: string
+      tags: []
       responses:
         '200':
           description: OK
@@ -1254,6 +1449,11 @@ paths:
             application/json:
               schema:
                 type: object
+                x-examples:
+                  Example 1:
+                    message: Invalid order status
+                    errors:
+                      - message: Order could only be confirmed if it has yet to be confirmed
                 properties:
                   message:
                     type: string
@@ -1268,28 +1468,24 @@ paths:
                         message:
                           type: string
                           default: Order could only be delivered if it is currently confirmed
-                x-examples:
-                  Example 1:
-                    message: Invalid order status
-                    errors:
-                      - message: Order could only be confirmed if it has yet to be confirmed
-      servers:
-        - url: 'https://ecommercexyz.online/api'
-          description: ''
+              examples: {}
+      operationId: post-order-orderId-deliver
+      x-stoplight:
+        id: vhf40huq6817u
+      description: |-
+        Deliver order with status confirmed.
+        Return 403 if not target shop or admin.
+        Return 409 if order status is not confirmed
   '/order/{orderId}/cancel':
+    parameters:
+      - schema:
+          type: string
+        name: orderId
+        in: path
+        required: true
     post:
       summary: Cancel Order
-      description: |-
-        Cancel order not currently completed
-        Return 403 if not creator, target or admin
-        Return 409 if status isn't awaiting(as creator) or if status isn't awaiting or confirmed(as target or admin).
-      operationId: post-order-orderId-cancel
-      parameters:
-        - name: orderId
-          in: path
-          required: true
-          schema:
-            type: string
+      tags: []
       responses:
         '200':
           description: OK
@@ -1307,6 +1503,11 @@ paths:
             application/json:
               schema:
                 type: object
+                x-examples:
+                  Example 1:
+                    message: Invalid order status
+                    errors:
+                      - message: Order could only be delivered if it is currently confirmed
                 properties:
                   message:
                     type: string
@@ -1316,41 +1517,37 @@ paths:
                     minItems: 1
                     maxItems: 1
                     items:
-                      type: object
                       oneOf:
-                        - type: object
-                          properties:
+                        - properties:
                             message:
                               type: string
                               default: Order could only be cancelled by user if it has yet to be confirmed
-                        - type: object
+                        - x-stoplight:
+                            id: 3ww7038w3vb5d
                           properties:
                             message:
                               type: string
+                              x-stoplight:
+                                id: td6a3gw8o2fvb
                               default: Order could only be cancelled if it has yet to be delivered
-                x-examples:
-                  Example 1:
-                    message: Invalid order status
-                    errors:
-                      - message: Order could only be delivered if it is currently confirmed
-      servers:
-        - url: 'https://ecommercexyz.online/api'
-          description: ''
+                      type: object
+      operationId: post-order-orderId-cancel
+      x-stoplight:
+        id: 3nbtxl9j9jt9o
+      description: |-
+        Cancel order not currently completed
+        Return 403 if not creator, target or admin
+        Return 409 if status isn't awaiting(as creator) or if status isn't awaiting or confirmed(as target or admin).
   '/shop/{shopId}/item':
+    parameters:
+      - schema:
+          type: string
+        name: shopId
+        in: path
+        required: true
     get:
       summary: Get Shop Item
-      description: fetch items from provided shop using various query
-      operationId: get-shop-shopId-item
-      parameters:
-        - $ref: '#/components/parameters/searchQuery'
-        - $ref: '#/components/parameters/limitQuery'
-        - $ref: '#/components/parameters/pageQuery'
-        - $ref: '#/components/parameters/orderByQuery'
-        - name: shopId
-          in: path
-          required: true
-          schema:
-            type: string
+      tags: []
       responses:
         '200':
           description: OK
@@ -1360,22 +1557,29 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/GetItemBody'
+                  x-stoplight:
+                    id: kp1ln762q7743
         '400':
           $ref: '#/components/responses/Bad-request-error'
-      servers:
-        - url: 'https://ecommercexyz.online/api'
-          description: ''
+      operationId: get-shop-shopId-item
+      x-stoplight:
+        id: ddkqp3t319fyy
+      description: fetch items from provided shop using various query
+      parameters:
+        - $ref: '#/components/parameters/searchQuery'
+        - $ref: '#/components/parameters/limitQuery'
+        - $ref: '#/components/parameters/pageQuery'
+        - $ref: '#/components/parameters/orderByQuery'
   '/shop/checkName/{name}':
+    parameters:
+      - schema:
+          type: string
+        name: name
+        in: path
+        required: true
     get:
       summary: Check Shop Name
-      description: Check if provided shop name has been taken
-      operationId: get-shop-checkName-name
-      parameters:
-        - name: name
-          in: path
-          required: true
-          schema:
-            type: string
+      tags: []
       responses:
         '200':
           description: OK
@@ -1383,25 +1587,23 @@ paths:
             application/json:
               schema:
                 type: object
+                required:
+                  - exist
                 properties:
                   exist:
                     type: boolean
-                required:
-                  - exist
+                    x-stoplight:
+                      id: a6d686kzlur6s
         '400':
           $ref: '#/components/responses/Bad-request-error'
-      servers:
-        - url: 'https://ecommercexyz.online/api'
-          description: ''
+      operationId: get-shop-checkName-name
+      x-stoplight:
+        id: t0b4g6skxmd28
+      description: Check if provided shop name has been taken
   /shop/myShop:
     get:
       summary: Get Current Shop
-      description: |-
-        Fetch information about the current shop. 
-        Return empty object if user currently has no shop
-      operationId: get-shop-myShop
-      parameters:
-        - $ref: '#/components/parameters/jwt-token'
+      tags: []
       responses:
         '200':
           description: OK
@@ -1411,20 +1613,24 @@ paths:
                 $ref: '#/components/schemas/Shop'
         '401':
           $ref: '#/components/responses/Authentication-error'
-      servers:
-        - url: 'https://ecommercexyz.online/api'
-          description: ''
+      operationId: get-shop-myShop
+      x-stoplight:
+        id: w3q3zkeu4btbg
+      description: |-
+        Fetch information about the current shop. 
+        Return empty object if user currently has no shop
+      parameters:
+        - $ref: '#/components/parameters/jwt-token'
   '/shop/{shopId}':
+    parameters:
+      - schema:
+          type: string
+        name: shopId
+        in: path
+        required: true
     get:
       summary: Get Shop
-      description: Fetch shop data of shop with provided id
-      operationId: get-shop-shopId
-      parameters:
-        - name: shopId
-          in: path
-          required: true
-          schema:
-            type: string
+      tags: []
       responses:
         '200':
           description: OK
@@ -1436,28 +1642,14 @@ paths:
           $ref: '#/components/responses/Bad-request-error'
         '404':
           $ref: '#/components/responses/Not-found-error'
-      servers:
-        - url: 'https://ecommercexyz.online/api'
-          description: ''
+      operationId: get-shop-shopId
+      x-stoplight:
+        id: mcqm3trsboz56
+      parameters: []
+      description: Fetch shop data of shop with provided id
     patch:
       summary: Update Shop
-      description: |-
-        Update shop with provided id
-        Return 403 if client is not shop owner or admin
-        Return 409 if new shop name already exist
-      operationId: patch-shop-shopId
-      parameters:
-        - $ref: '#/components/parameters/jwt-token'
-        - name: shopId
-          in: path
-          required: true
-          schema:
-            type: string
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ShopBody'
+      tags: []
       responses:
         '200':
           description: OK
@@ -1473,21 +1665,24 @@ paths:
           $ref: '#/components/responses/Authorization-error'
         '404':
           $ref: '#/components/responses/Not-found-error'
-      servers:
-        - url: 'https://ecommercexyz.online/api'
-          description: ''
-  /shop:
-    get:
-      summary: Activate Shop
+      operationId: patch-shop-shopId
+      x-stoplight:
+        id: kij9qcg6vkgx2
       description: |-
-        Create shop for current user
-        Return 409 if user already have a shop or if shop name already exist
-      operationId: get-shop
+        Update shop with provided id
+        Return 403 if client is not shop owner or admin
+        Return 409 if new shop name already exist
+      parameters:
+        - $ref: '#/components/parameters/jwt-token'
       requestBody:
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/ShopBody'
+  /shop:
+    get:
+      summary: Activate Shop
+      tags: []
       responses:
         '200':
           description: OK
@@ -1504,61 +1699,77 @@ paths:
           content:
             application/json:
               schema:
-                type: object
                 oneOf:
-                  - type: object
-                    properties:
+                  - properties:
                       message:
                         type: string
+                        x-stoplight:
+                          id: hurl1p292g5dj
                         default: name already existed
                       errors:
                         type: array
+                        x-stoplight:
+                          id: pfmsta4am1uai
                         minItems: 1
                         maxItems: 1
                         items:
+                          x-stoplight:
+                            id: jazui6f7ymani
                           type: object
                           properties:
                             field:
                               type: string
+                              x-stoplight:
+                                id: dbfjdc8tdf2v3
                               default: name
                             message:
                               type: string
-                  - type: object
+                              x-stoplight:
+                                id: 1ch9d7fsm6yky
+                  - x-stoplight:
+                      id: qjug1xfcl820h
                     properties:
                       message:
                         type: string
+                        x-stoplight:
+                          id: n8yb6qtret1wk
                         default: userId already existed
                       errors:
                         type: array
+                        x-stoplight:
+                          id: lcqoeg6nvaf2b
                         minItems: 1
                         maxItems: 1
                         items:
+                          x-stoplight:
+                            id: sv8rszlt98rl0
                           type: object
                           properties:
                             field:
                               type: string
+                              x-stoplight:
+                                id: f4gqh11z39tur
                               default: userId
                             message:
                               type: string
-      servers:
-        - url: 'https://ecommercexyz.online/api'
-          description: ''
+                              x-stoplight:
+                                id: ffeqt2q3z9c7c
+                type: object
+      operationId: get-shop
+      x-stoplight:
+        id: du5btlobrxkln
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ShopBody'
+      description: |-
+        Create shop for current user
+        Return 409 if user already have a shop or if shop name already exist
   /shop/avatar:
     post:
       summary: Update Shop avatar
-      description: Change shop avatar image of current user
-      operationId: post-shop-avatar
-      parameters:
-        - $ref: '#/components/parameters/jwt-token'
-      requestBody:
-        content:
-          multipart/form-data:
-            schema:
-              type: object
-              properties:
-                images:
-                  type: string
-                  contentMediaType: application/octet-stream
+      tags: []
       responses:
         '200':
           description: OK
@@ -1569,124 +1780,667 @@ paths:
                 properties:
                   status:
                     type: string
+                    x-stoplight:
+                      id: hc4av2z853ypg
                     default: success
         '401':
           $ref: '#/components/responses/Authentication-error'
-      servers:
-        - url: 'https://ecommercexyz.online/api'
-          description: ''
+      operationId: post-shop-avatar
+      x-stoplight:
+        id: zmbeeo07mgla8
+      description: Change shop avatar image of current user
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                images:
+                  type: string
+                  x-stoplight:
+                    id: q5o9odi72ava2
+                  format: binary
+      parameters:
+        - $ref: '#/components/parameters/jwt-token'
 components:
-  parameters:
-    searchQuery:
-      name: search
-      in: query
-      description: Search query string
-      required: false
-      allowEmptyValue: false
-      schema:
-        type: string
-    limitQuery:
-      name: limit
-      in: query
-      description: Maximum item count returned
-      required: false
-      allowEmptyValue: false
-      schema:
+  schemas:
+    AddressBody:
+      title: Address
+      x-stoplight:
+        id: 6zq3zptooj5tl
+      type: object
+      required:
+        - phoneNumber
+        - city
+        - province
+        - country
+        - recipient
+      properties:
+        name:
+          type: string
+          x-stoplight:
+            id: y3b6r3uca27e8
+        phoneNumber:
+          type: string
+          x-stoplight:
+            id: f21s1v2g2ykk4
+          pattern: '^\+\d{1,3}(?:-\d{1,3})? \d{7,15}$'
+        longitude:
+          type: number
+          x-stoplight:
+            id: mu73m8vyhmaku
+        latitude:
+          type: number
+          x-stoplight:
+            id: 0yhwle7hetuln
+          minimum: -90
+          maximum: 90
+        village:
+          type:
+            - string
+            - 'null'
+          x-stoplight:
+            id: 2vjzkzta35yl7
+          maxLength: 50
+        district:
+          type:
+            - string
+            - 'null'
+          x-stoplight:
+            id: c6xtwvaajrstx
+          maxLength: 50
+        city:
+          type: string
+          x-stoplight:
+            id: 97a3an0tcvmqd
+          maxLength: 50
+        province:
+          type: string
+          x-stoplight:
+            id: oxwlw1ibtx6w6
+          maxLength: 50
+        country:
+          type: string
+          x-stoplight:
+            id: 2vk8cyicollby
+          maxLength: 50
+        recipient:
+          type: string
+          x-stoplight:
+            id: l0oyn4wpapbh1
+          maxLength: 60
+        detail:
+          type: string
+          x-stoplight:
+            id: t9nxocqhebjjx
+          maxLength: 200
+    Address:
+      title: Address
+      x-stoplight:
+        id: mvvao3ompgglj
+      allOf:
+        - type: object
+          required:
+            - id
+          properties:
+            id:
+              type: string
+              x-stoplight:
+                id: b4yicxixfhaf9
+              format: uuid
+        - $ref: '#/components/schemas/AddressBody'
+          x-stoplight:
+            id: 267p8v0m1ffmp
+    User:
+      title: User
+      x-stoplight:
+        id: t2ecd5nza5imv
+      type: object
+      required:
+        - id
+        - name
+        - email
+        - privilege
+        - avatar
+        - selectedAddressId
+        - cartCount
+      properties:
+        id:
+          type: string
+          x-stoplight:
+            id: fswm319ll4y8y
+        name:
+          type: string
+          x-stoplight:
+            id: 8nli2jy0ku1nf
+        email:
+          type: string
+          x-stoplight:
+            id: yszb9id0y91g3
+          format: email
+        privilege:
+          type: integer
+          x-stoplight:
+            id: puontvkkk1dw4
+          minimum: 0
+          maximum: 2
+        avatar:
+          type:
+            - string
+            - 'null'
+          x-stoplight:
+            id: is5xtfbdwiiqs
+        selectedAddressId:
+          type:
+            - string
+            - 'null'
+          x-stoplight:
+            id: jffq1j08jyyc0
+        cartCount:
+          type: integer
+          x-stoplight:
+            id: 6wjo3gtpnhgob
+          minimum: 0
+    AddressBodyOptional:
+      type: object
+      x-examples:
+        Example 1:
+          name: string
+          phoneNumber: string
+          longitude: 0
+          latitude: -90
+          village: string
+          district: string
+          city: string
+          province: string
+          country: string
+          recipient: string
+          detail: string
+      properties:
+        name:
+          type: string
+        phoneNumber:
+          type: string
+        longitude:
+          type: integer
+        latitude:
+          type: integer
+        village:
+          type: string
+        district:
+          type: string
+        city:
+          type: string
+        province:
+          type: string
+        country:
+          type: string
+        recipient:
+          type: string
+        detail:
+          type: string
+    CartItem:
+      title: CartItem
+      x-stoplight:
+        id: mpr69t1jecwpl
+      allOf:
+        - $ref: '#/components/schemas/Cart'
+          x-stoplight:
+            id: zvi5csp0c2loa
+        - type: object
+          required:
+            - inventory
+            - name
+            - image
+            - price
+            - shopId
+            - shopName
+          properties:
+            inventory:
+              type: integer
+              x-stoplight:
+                id: c3v2vl7qsjl9t
+              minimum: 0
+              maximum: 9999
+            name:
+              type: string
+              x-stoplight:
+                id: 7ax2we1ws8rgi
+            image:
+              type:
+                - string
+                - 'null'
+              x-stoplight:
+                id: thhthd6s9y3xq
+            price:
+              type: number
+              x-stoplight:
+                id: 9kxmu67ljra3n
+              minimum: 0
+              maximum: 100000000
+            shopId:
+              type: string
+              x-stoplight:
+                id: w6nkjv8jkwp9v
+              format: uuid
+            shopName:
+              type: string
+              x-stoplight:
+                id: bldmpqjp2te6v
+    Cart:
+      title: CartUpdate
+      x-stoplight:
+        id: 5ceda9h409icd
+      type: object
+      required:
+        - itemId
+        - quantity
+        - selected
+      properties:
+        itemId:
+          type: string
+          x-stoplight:
+            id: 388z9jy0h5tn6
+          format: uuid
+        quantity:
+          type: integer
+          x-stoplight:
+            id: 878xpb3vl4dut
+          minimum: 1
+          maximum: 9999
+          default: 1
+        selected:
+          type: boolean
+          x-stoplight:
+            id: ddye0iawh0vtx
+    ItemDetail:
+      title: ItemDetail
+      x-stoplight:
+        id: syf0ngdd91yfx
+      allOf:
+        - $ref: '#/components/schemas/ItemBody'
+          x-stoplight:
+            id: z0b47kfjp0gva
+        - type: object
+          required:
+            - id
+            - shopId
+            - shopName
+            - images
+          properties:
+            id:
+              type: string
+              x-stoplight:
+                id: hyofulbuvkywd
+              format: uuid
+            shopId:
+              type: string
+              x-stoplight:
+                id: zfpwepyzaeeio
+              format: uuid
+            shopName:
+              type: string
+              x-stoplight:
+                id: zrzq8hg40p68r
+            tags:
+              type: array
+              x-stoplight:
+                id: ahgenf2ys24lg
+              items:
+                x-stoplight:
+                  id: 3aw24987gwffv
+                type: string
+            images:
+              type: array
+              x-stoplight:
+                id: 4ys3h5t7nnu9r
+              items:
+                $ref: '#/components/schemas/ItemImage'
+                x-stoplight:
+                  id: o0eb90rcvsg4p
+    ItemBody:
+      title: ItemBody
+      x-stoplight:
+        id: 3m81srftldnv2
+      type: object
+      required:
+        - name
+        - description
+        - price
+      properties:
+        name:
+          type: string
+          x-stoplight:
+            id: 8hmiq1iecgtjk
+          maxLength: 255
+          minLength: 1
+        description:
+          type: string
+          x-stoplight:
+            id: ma4tad3b5swr0
+          minLength: 1
+          maxLength: 2000
+        price:
+          type: number
+          x-stoplight:
+            id: ioa5kg4t2osiy
+          maximum: 100000000
+          minimum: 0
+          default: 0
+        quantity:
+          type: integer
+          x-stoplight:
+            id: x2km32s0day4d
+          default: 1
+    ItemImage:
+      title: ItemImage
+      x-stoplight:
+        id: p722aao0a0n2w
+      type: object
+      required:
+        - itemId
+        - imageName
+        - order
+      properties:
+        itemId:
+          type: string
+          x-stoplight:
+            id: sj4j8aasyi678
+          format: uuid
+        imageName:
+          type: string
+          x-stoplight:
+            id: jh6l3cccae3h7
+          minLength: 1
+        order:
+          type: integer
+          x-stoplight:
+            id: o4zk96glf58ev
+          minimum: 0
+    GetItemBody:
+      title: ItemListItem
+      x-stoplight:
+        id: 71u7qg0wy0rbm
+      type: object
+      required:
+        - id
+        - name
+        - price
+        - quantity
+        - image
+      properties:
+        id:
+          type: string
+          x-stoplight:
+            id: q5v69g5rpn527
+          format: uuid
+        name:
+          type: string
+          x-stoplight:
+            id: ctto6z2u7ui7l
+        price:
+          type: number
+          x-stoplight:
+            id: kzidkyfo4a5yi
+          maximum: 100000000
+          minimum: 0
+        quantity:
+          type: integer
+          x-stoplight:
+            id: hlc15lau0fj0q
+          minimum: 0
+          maximum: 9999
+        image:
+          type:
+            - string
+            - 'null'
+          x-stoplight:
+            id: pqyllf7p5cga5
+    ItemImageOrderArray:
+      title: ItemImageOrderArray
+      x-stoplight:
+        id: h2fr75pylce3o
+      type: array
+      minItems: 1
+      items:
+        x-stoplight:
+          id: 2xauc0gweutpw
         type: integer
-        minimum: 1
-        maximum: 500
-    pageQuery:
-      name: page
-      in: query
-      description: Pagination page
-      required: false
-      allowEmptyValue: false
-      schema:
-        type: integer
-        minimum: 1
-        maximum: 1000
-    orderByQuery:
-      name: orderBy
-      in: query
-      description: Query order setting
-      required: false
-      allowEmptyValue: false
-      schema:
-        type: string
-        enum:
-          - cheapest
-          - newest
-          - oldest
-          - mostExpensive
-    getOrder-status:
-      name: status
-      in: query
-      description: 'list of status delimited by comma. Will fetch status of provided status. '
-      schema:
-        type: string
-    getOrder-itemName:
-      name: itemName
-      in: query
-      description: find order containing the provided name
-      required: false
-      schema:
-        type: string
-    getOrder-newerThan:
-      name: newerThan
-      in: query
-      description: 'ISO string, return order newer than provided datetime'
-      required: false
-      schema:
-        type: string
-    jwt-token:
-      name: jwt
-      in: cookie
-      description: Search query string
-      required: false
-      schema:
-        type: string
-        pattern: '[a-zA-Z0-9_\-., ]+'
-        maxLength: 60
-    itemId:
-      name: itemId
-      in: path
-      description: itemId
-      required: true
-      schema:
-        type: string
-        format: uuid
-    addressId:
-      name: addressId
-      in: path
-      description: Address Id
-      required: true
-      schema:
-        type: string
-        format: uuid
+        minimum: 0
+        maximum: 9
+    Order:
+      title: Order
+      x-stoplight:
+        id: 2j8jsiwyuyjfz
+      type: object
+      required:
+        - id
+        - userId
+        - shopId
+        - name
+        - totalPrice
+        - status
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: string
+          x-stoplight:
+            id: waj05a3fxuk5d
+          format: uuid
+        userId:
+          type: string
+          x-stoplight:
+            id: 8me05zp5dq9os
+          format: uuid
+        shopId:
+          type: string
+          x-stoplight:
+            id: q4h2s84cyh41c
+          format: uuid
+        name:
+          type: string
+          x-stoplight:
+            id: 7e0l6w0tw7xhm
+        totalPrice:
+          type: number
+          x-stoplight:
+            id: dldqwq2d8blz1
+          minimum: 0
+        status:
+          x-stoplight:
+            id: hngo0wv95603s
+          enum:
+            - awaiting
+            - confirmed
+            - delivering
+            - delivered
+            - cancelled
+        createdAt:
+          type: string
+          x-stoplight:
+            id: 2j9gb5ogirfvj
+          format: date-time
+        updatedAt:
+          type: string
+          x-stoplight:
+            id: 8ecz3zup2hifn
+          format: date-time
+    GetOrderBody:
+      title: GetOrderBody
+      x-stoplight:
+        id: 1jkqrrq4tg5a0
+      allOf:
+        - $ref: '#/components/schemas/Order'
+        - type: object
+          x-stoplight:
+            id: 6baf8smfphd92
+          required:
+            - image
+          properties:
+            image:
+              type:
+                - string
+                - 'null'
+              x-stoplight:
+                id: eorcrsxkbi0wj
+    OrderDetailBody:
+      title: OrderDetailBody
+      x-stoplight:
+        id: wd668ezyaiakw
+      allOf:
+        - $ref: '#/components/schemas/Order'
+        - $ref: '#/components/schemas/Timestamp'
+          x-stoplight:
+            id: i0izcussr71j1
+        - type: object
+          x-stoplight:
+            id: q6b8qz81or5cc
+          required:
+            - shopName
+            - items
+          properties:
+            shopName:
+              type: string
+              x-stoplight:
+                id: c2u4tgymrckgy
+            items:
+              type: array
+              x-stoplight:
+                id: b0jy58xrw3w8g
+              items:
+                $ref: '#/components/schemas/GetItemWithShopBody'
+                x-stoplight:
+                  id: nawa2oj5j7nog
+            timeout:
+              type: string
+              x-stoplight:
+                id: g4ukmxjt0400o
+              format: date-time
+            addressDetail:
+              type: string
+              x-stoplight:
+                id: 3lhunc1lvwozp
+        - $ref: '#/components/schemas/AddressBody'
+          x-stoplight:
+            id: 67a3lhxnuya6s
+    Timestamp:
+      title: Timestamp
+      x-stoplight:
+        id: 9xle9tcfd56t3
+      type: object
+      properties:
+        createdAt:
+          type: string
+          x-stoplight:
+            id: cojm1u18ogapq
+          format: date-time
+        updatedAt:
+          type: string
+          x-stoplight:
+            id: fexdheyyrchf3
+          format: date-time
+    GetItemWithShopBody:
+      title: GetItemWithShopBody
+      x-stoplight:
+        id: oh7yucq5q4clw
+      allOf:
+        - $ref: '#/components/schemas/GetItemBody'
+        - type: object
+          x-stoplight:
+            id: w3aw3icqhc9ad
+          required:
+            - shopId
+            - shopName
+          properties:
+            shopId:
+              type: string
+              x-stoplight:
+                id: u9fgdy6v31pm1
+              format: uuid
+            shopName:
+              type: string
+              x-stoplight:
+                id: 596vqpizpj0cp
+    ShopBody:
+      x-examples:
+        Example 1:
+          id: edabb929-3dad-4115-b045-9521254267a7
+          name: Veum-Cormier
+          avatar: null
+          description: 'Hoppe - Sauer is a leading challenge company that specializes in e-commerce, architectures, niches, content, solutions, platforms. Virtual eco-centric hardware'
+          userId: 1e0d6f8d-6972-4f4d-a7b5-a1e98b06c7ce
+          createdAt: '2024-03-24T03:43:11.000Z'
+          updatedAt: '2024-03-24T03:43:11.000Z'
+      allOf:
+        - properties:
+            name:
+              type: string
+              minLength: 5
+              maxLength: 60
+            description:
+              type: string
+      type: object
+    Shop:
+      title: Shop
+      x-stoplight:
+        id: 81wi07lhsin09
+      allOf:
+        - $ref: '#/components/schemas/ShopBody'
+        - $ref: '#/components/schemas/Timestamp'
+          x-stoplight:
+            id: d2pm9tu4bgmn0
+        - type: object
+          x-stoplight:
+            id: bo4r9i3iigycv
+          properties:
+            id:
+              type: string
+              x-stoplight:
+                id: god7i0m5wn01j
+              format: uuid
+            avatar:
+              type:
+                - string
+                - 'null'
+              x-stoplight:
+                id: 50xx90kk8mnya
+            userId:
+              type: string
+              x-stoplight:
+                id: gq2efj14k7tqa
+              format: uuid
+  securitySchemes: {}
   requestBodies:
     user-local-register:
       content:
         application/json:
           schema:
             type: object
-            properties:
-              email:
-                type: string
-                format: email
-                maxLength: 320
-              name:
-                type: string
-                minLength: 3
-                maxLength: 60
-              password:
-                type: string
-                format: password
-                minLength: 3
-                maxLength: 80
             required:
               - email
               - name
               - password
+            properties:
+              email:
+                type: string
+                x-stoplight:
+                  id: ray4wb82izw82
+                format: email
+                maxLength: 320
+              name:
+                type: string
+                x-stoplight:
+                  id: wzah9n7d10qt5
+                minLength: 3
+                maxLength: 60
+              password:
+                type: string
+                x-stoplight:
+                  id: feqtg9h31u1y4
+                format: password
+                minLength: 3
+                maxLength: 80
   responses:
     User-local-register:
       description: success response of user create API
@@ -1694,17 +2448,21 @@ components:
         application/json:
           schema:
             type: object
-            properties:
-              success:
-                type: string
-                default: success
-              email:
-                type: string
-                format: email
-                maxLength: 320
             required:
               - success
               - email
+            properties:
+              success:
+                type: string
+                x-stoplight:
+                  id: pqgfhi41pvxed
+                default: success
+              email:
+                type: string
+                x-stoplight:
+                  id: npm49tpke5uxj
+                format: email
+                maxLength: 320
           examples:
             Example 1:
               value:
@@ -1716,25 +2474,35 @@ components:
         application/json:
           schema:
             type: object
-            properties:
-              message:
-                type: string
-                default: Error occurred during validation
-              errors:
-                type: object
-                properties:
-                  body:
-                    type: object
-                    minProperties: 1
-                  params:
-                    type: object
-                    minProperties: 1
-                  query:
-                    type: object
-                    minProperties: 1
             required:
               - message
               - errors
+            properties:
+              message:
+                type: string
+                x-stoplight:
+                  id: tcyxnwcbp15kf
+                default: Error occurred during validation
+              errors:
+                type: object
+                x-stoplight:
+                  id: obwcqb8r9hnha
+                properties:
+                  body:
+                    type: object
+                    x-stoplight:
+                      id: 9t5uyueu0gen2
+                    minProperties: 1
+                  params:
+                    type: object
+                    x-stoplight:
+                      id: eh141y5t7z8zb
+                    minProperties: 1
+                  query:
+                    type: object
+                    x-stoplight:
+                      id: su9triy0favrd
+                    minProperties: 1
           examples:
             Example 1:
               value:
@@ -1769,51 +2537,71 @@ components:
         application/json:
           schema:
             type: object
-            properties:
-              message:
-                type: string
-                pattern: '^[A-Za-z]+ already existed$'
-              errors:
-                type: array
-                items:
-                  type: object
-                  properties:
-                    field:
-                      type: string
-                    message:
-                      type: string
-                  required:
-                    - field
-                    - message
             required:
               - message
               - errors
+            properties:
+              message:
+                type: string
+                x-stoplight:
+                  id: uq08oibshpwwh
+                pattern: '^[A-Za-z]+ already existed$'
+              errors:
+                type: array
+                x-stoplight:
+                  id: h2b9qewqf1b40
+                items:
+                  x-stoplight:
+                    id: vdz7e7zwj76p1
+                  type: object
+                  required:
+                    - field
+                    - message
+                  properties:
+                    field:
+                      type: string
+                      x-stoplight:
+                        id: ecnx9k26h0n9q
+                    message:
+                      type: string
+                      x-stoplight:
+                        id: ur5yv89r1suj6
     Authorization-error:
       description: Client is not authorized to excecute the operation
       content:
         application/json:
           schema:
             type: object
-            properties:
-              message:
-                type: string
-                default: Unauthorized
-              errors:
-                type: array
-                items:
-                  type: object
-                  properties:
-                    resource:
-                      type: string
-                    message:
-                      type: string
-                      default: You're not authorized to access this resource
-                  required:
-                    - resource
-                    - message
             required:
               - message
               - errors
+            properties:
+              message:
+                type: string
+                x-stoplight:
+                  id: 484c33lqmwb0l
+                default: Unauthorized
+              errors:
+                type: array
+                x-stoplight:
+                  id: kh25zwny9u05r
+                items:
+                  x-stoplight:
+                    id: llwxjpni7u7gi
+                  type: object
+                  required:
+                    - resource
+                    - message
+                  properties:
+                    resource:
+                      type: string
+                      x-stoplight:
+                        id: lu8p1gs7s9yg2
+                    message:
+                      type: string
+                      x-stoplight:
+                        id: nq7pfqum86t4s
+                      default: You're not authorized to access this resource
     Authentication-error:
       description: Client is not authenticated
       content:
@@ -1823,14 +2611,22 @@ components:
             properties:
               message:
                 type: string
+                x-stoplight:
+                  id: qppifk2oosuwz
                 default: Authentication Failed
               errors:
                 type: array
+                x-stoplight:
+                  id: mk7n0pgf4rom3
                 items:
+                  x-stoplight:
+                    id: kuo5tktzfhjsl
                   type: object
                   properties:
                     message:
                       type: string
+                      x-stoplight:
+                        id: 44czv3fqu3f4g
                       default: You're not Authenticated
     Address-limit-exceeded-error:
       description: Address Limit exceeded
@@ -1841,16 +2637,26 @@ components:
             properties:
               message:
                 type: string
+                x-stoplight:
+                  id: tuisof1zafooc
                 default: Address limit exceeded
               errors:
                 type: array
+                x-stoplight:
+                  id: a7jxig2chear4
                 items:
+                  x-stoplight:
+                    id: m5p73ih8ui3cg
                   type: object
                   properties:
                     field:
                       type: string
+                      x-stoplight:
+                        id: 287jil0ofvk5r
                     message:
                       type: string
+                      x-stoplight:
+                        id: 00kr6toirh94r
                       pattern: '^User cannot have more than [1-9][0-9]* addresses$'
     Not-found-error:
       description: Resource cannot be found on the server
@@ -1861,425 +2667,100 @@ components:
             properties:
               message:
                 type: string
+                x-stoplight:
+                  id: 9jnzh5otrkbp5
                 pattern: '^[A-Za-z]+ Not Found'
               errors:
                 type: array
-  schemas:
-    User:
-      type: object
-      title: User
-      properties:
-        id:
-          type: string
-        name:
-          type: string
-        email:
-          type: string
-          format: email
-        privilege:
-          type: integer
-          minimum: 0
-          maximum: 2
-        avatar:
-          type:
-            - string
-            - 'null'
-        selectedAddressId:
-          type:
-            - string
-            - 'null'
-        cartCount:
-          type: integer
-          minimum: 0
-      required:
-        - id
-        - name
-        - email
-        - privilege
-        - avatar
-        - selectedAddressId
-        - cartCount
-    Address:
-      title: Address
-      allOf:
-        - type: object
-          properties:
-            id:
-              type: string
-              format: uuid
-          required:
-            - id
-        - $ref: '#/components/schemas/AddressBody'
-    AddressBody:
-      type: object
-      title: Address
-      properties:
-        name:
-          type: string
-        phoneNumber:
-          type: string
-          pattern: '^\+\d{1,3}(?:-\d{1,3})? \d{7,15}$'
-        longitude:
-          type: number
-        latitude:
-          type: number
-          minimum: -90
-          maximum: 90
-        village:
-          type:
-            - string
-            - 'null'
-          maxLength: 50
-        district:
-          type:
-            - string
-            - 'null'
-          maxLength: 50
-        city:
-          type: string
-          maxLength: 50
-        province:
-          type: string
-          maxLength: 50
-        country:
-          type: string
-          maxLength: 50
-        recipient:
-          type: string
-          maxLength: 60
-        detail:
-          type: string
-          maxLength: 200
-      required:
-        - phoneNumber
-        - city
-        - province
-        - country
-        - recipient
-    AddressBodyOptional:
-      type: object
-      properties:
-        name:
-          type: string
-        phoneNumber:
-          type: string
-        longitude:
-          type: integer
-        latitude:
-          type: integer
-        village:
-          type: string
-        district:
-          type: string
-        city:
-          type: string
-        province:
-          type: string
-        country:
-          type: string
-        recipient:
-          type: string
-        detail:
-          type: string
-      x-examples:
-        Example 1:
-          name: string
-          phoneNumber: string
-          longitude: 0
-          latitude: -90
-          village: string
-          district: string
-          city: string
-          province: string
-          country: string
-          recipient: string
-          detail: string
-    CartItem:
-      title: CartItem
-      allOf:
-        - $ref: '#/components/schemas/Cart'
-        - type: object
-          properties:
-            inventory:
-              type: integer
-              minimum: 0
-              maximum: 9999
-            name:
-              type: string
-            image:
-              type:
-                - string
-                - 'null'
-            price:
-              type: number
-              minimum: 0
-              maximum: 100000000
-            shopId:
-              type: string
-              format: uuid
-            shopName:
-              type: string
-          required:
-            - inventory
-            - name
-            - image
-            - price
-            - shopId
-            - shopName
-    Cart:
-      type: object
-      title: CartUpdate
-      properties:
-        itemId:
-          type: string
-          format: uuid
-        quantity:
-          type: integer
-          minimum: 1
-          maximum: 9999
-          default: 1
-        selected:
-          type: boolean
-      required:
-        - itemId
-        - quantity
-        - selected
-    ItemDetail:
-      title: ItemDetail
-      allOf:
-        - $ref: '#/components/schemas/ItemBody'
-        - type: object
-          properties:
-            id:
-              type: string
-              format: uuid
-            shopId:
-              type: string
-              format: uuid
-            shopName:
-              type: string
-            tags:
-              type: array
-              items:
-                type: string
-            images:
-              type: array
-              items:
-                $ref: '#/components/schemas/ItemImage'
-          required:
-            - id
-            - shopId
-            - shopName
-            - images
-    ItemBody:
-      type: object
-      title: ItemBody
-      properties:
-        name:
-          type: string
-          minLength: 1
-          maxLength: 255
-        description:
-          type: string
-          minLength: 1
-          maxLength: 2000
-        price:
-          type: number
-          minimum: 0
-          maximum: 100000000
-          default: 0
-        quantity:
-          type: integer
-          default: 1
-      required:
-        - name
-        - description
-        - price
-    ItemImage:
-      type: object
-      title: ItemImage
-      properties:
-        itemId:
-          type: string
-          format: uuid
-        imageName:
-          type: string
-          minLength: 1
-        order:
-          type: integer
-          minimum: 0
-      required:
-        - itemId
-        - imageName
-        - order
-    GetItemWithShopBody:
-      title: GetItemWithShopBody
-      allOf:
-        - $ref: '#/components/schemas/GetItemBody'
-        - type: object
-          properties:
-            shopId:
-              type: string
-              format: uuid
-            shopName:
-              type: string
-          required:
-            - shopId
-            - shopName
-    GetItemBody:
-      type: object
-      title: ItemListItem
-      properties:
-        id:
-          type: string
-          format: uuid
-        name:
-          type: string
-        price:
-          type: number
-          minimum: 0
-          maximum: 100000000
-        quantity:
-          type: integer
-          minimum: 0
-          maximum: 9999
-        image:
-          type:
-            - string
-            - 'null'
-      required:
-        - id
-        - name
-        - price
-        - quantity
-        - image
-    ItemImageOrderArray:
-      type: array
-      title: ItemImageOrderArray
-      minItems: 1
-      items:
+                x-stoplight:
+                  id: 6ce35ir6yahs9
+                items: {}
+  parameters:
+    jwt-token:
+      name: jwt
+      in: cookie
+      required: false
+      schema:
+        type: string
+        pattern: '[a-zA-Z0-9_\-., ]+'
+        maxLength: 60
+      description: Search query string
+    searchQuery:
+      name: search
+      in: query
+      required: false
+      schema:
+        type: string
+      description: Search query string
+      allowEmptyValue: false
+    limitQuery:
+      name: limit
+      in: query
+      required: false
+      schema:
         type: integer
-        minimum: 0
-        maximum: 9
-    GetOrderBody:
-      title: GetOrderBody
-      allOf:
-        - $ref: '#/components/schemas/Order'
-        - type: object
-          properties:
-            image:
-              type:
-                - string
-                - 'null'
-          required:
-            - image
-    Order:
-      type: object
-      title: Order
-      properties:
-        id:
-          type: string
-          format: uuid
-        userId:
-          type: string
-          format: uuid
-        shopId:
-          type: string
-          format: uuid
-        name:
-          type: string
-        totalPrice:
-          type: number
-          minimum: 0
-        status:
-          type: string
-          enum:
-            - awaiting
-            - confirmed
-            - delivering
-            - delivered
-            - cancelled
-        createdAt:
-          type: string
-          format: date-time
-        updatedAt:
-          type: string
-          format: date-time
-      required:
-        - id
-        - userId
-        - shopId
-        - name
-        - totalPrice
-        - status
-        - createdAt
-        - updatedAt
-    OrderDetailBody:
-      title: OrderDetailBody
-      allOf:
-        - $ref: '#/components/schemas/Order'
-        - $ref: '#/components/schemas/Timestamp'
-        - type: object
-          properties:
-            shopName:
-              type: string
-            items:
-              type: array
-              items:
-                $ref: '#/components/schemas/GetItemWithShopBody'
-            timeout:
-              type: string
-              format: date-time
-            addressDetail:
-              type: string
-          required:
-            - shopName
-            - items
-        - $ref: '#/components/schemas/AddressBody'
-    Timestamp:
-      type: object
-      title: Timestamp
-      properties:
-        createdAt:
-          type: string
-          format: date-time
-        updatedAt:
-          type: string
-          format: date-time
-    Shop:
-      title: Shop
-      allOf:
-        - $ref: '#/components/schemas/ShopBody'
-        - $ref: '#/components/schemas/Timestamp'
-        - type: object
-          properties:
-            id:
-              type: string
-              format: uuid
-            avatar:
-              type:
-                - string
-                - 'null'
-            userId:
-              type: string
-              format: uuid
-    ShopBody:
-      type: object
-      allOf:
-        - type: object
-          properties:
-            name:
-              type: string
-              minLength: 5
-              maxLength: 60
-            description:
-              type: string
-      x-examples:
-        Example 1:
-          id: edabb929-3dad-4115-b045-9521254267a7
-          name: Veum-Cormier
-          avatar: null
-          description: 'Hoppe - Sauer is a leading challenge company that specializes in e-commerce, architectures, niches, content, solutions, platforms. Virtual eco-centric hardware'
-          userId: 1e0d6f8d-6972-4f4d-a7b5-a1e98b06c7ce
-          createdAt: '2024-03-24T03:43:11.000Z'
-          updatedAt: '2024-03-24T03:43:11.000Z'
+        maxLength: 500
+        minLength: 1
+        minimum: 1
+        maximum: 500
+      description: Maximum item count returned
+      allowEmptyValue: false
+    pageQuery:
+      name: page
+      in: query
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 1000
+      description: Pagination page
+      allowEmptyValue: false
+    orderByQuery:
+      name: orderBy
+      in: query
+      required: false
+      schema:
+        type: string
+        enum:
+          - cheapest
+          - newest
+          - oldest
+          - mostExpensive
+      allowEmptyValue: false
+      description: Query order setting
+    itemId:
+      name: itemId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+      description: itemId
+    addressId:
+      name: addressId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+      description: Address Id
+    getOrder-status:
+      name: status
+      in: query
+      schema:
+        type: string
+      description: 'list of status delimited by comma. Will fetch status of provided status. '
+    getOrder-itemName:
+      name: itemName
+      in: query
+      required: false
+      schema:
+        type: string
+      description: find order containing the provided name
+    getOrder-newerThan:
+      name: newerThan
+      in: query
+      required: false
+      schema:
+        type: string
+      description: 'ISO string, return order newer than provided datetime'
