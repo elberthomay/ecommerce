@@ -16,6 +16,18 @@ export const itemSchema = z.object({
   quantity: z.number().min(0).max(9999).default(1),
 });
 
+export const itemImageOrdersSchema = z
+  .array(
+    z
+      .number()
+      .int()
+      .min(0)
+      .max(MAX_IMAGE_COUNT - 1)
+  )
+  .min(1)
+  .max(MAX_IMAGE_COUNT)
+  .transform((orders) => [...new Set(orders)]);
+
 const tagIdArray = z
   .array(tagSchema.shape.id)
   .transform((arr) => new Set(arr))
@@ -49,6 +61,10 @@ export const itemQuerySchema = searchSchema
 
 export const itemUpdateSchema = itemSchema
   .omit({ id: true })
+  .extend({
+    imagesDelete: itemImageOrdersSchema.optional(),
+    imagesReorder: itemImageOrdersSchema.optional(),
+  })
   .partial()
   .strict()
   .refine(...hasPropertyRefineArgument);
@@ -89,14 +105,3 @@ export const shopItemGetOutputSchema = z.object({
   count: z.number().int().min(0),
   rows: z.array(shopItemGetOutputBase),
 });
-
-export const itemImageOrdersSchema = z
-  .array(
-    z
-      .number()
-      .int()
-      .min(0)
-      .max(MAX_IMAGE_COUNT - 1)
-  )
-  .min(1)
-  .max(MAX_IMAGE_COUNT);

@@ -212,6 +212,7 @@ router.post(
 router.patch(
   "/:itemId",
   authenticate(true),
+  processImage(false, MAX_IMAGE_COUNT), // image is optional, json body allowed
   validator({ params: itemParamSchema, body: itemUpdateSchema }),
   fetchCurrentUser,
   fetch<ItemCreationAttribute, { itemId: string }>({
@@ -219,7 +220,7 @@ router.patch(
     key: ["id", "itemId"],
     location: "params",
     force: "exist",
-    ...itemDetailQueryOption,
+    include: [Shop],
   }),
   authorizeStaffOrOwner,
   catchAsync(
@@ -228,7 +229,56 @@ router.patch(
       res: Response
     ) => {
       const item: Item = (req as any)[Item.name];
-      await item.set(req.body).save();
+      const updateBody = omit(req.body, ["imageDelete", "imageReorder"]);
+      //@ts-ignore
+      const { imagesDelete, imagesReorder } = req.body;
+
+      const imageBuffers: Buffer[] = req.files
+        ? (req.files as Express.Multer.File[]).map((image) => image.buffer)
+        : [];
+
+      await sequelize.transaction(async (transaction) => {
+        //lock items and it's images and tags
+        await item.reload({
+          ...itemDetailQueryOption,
+          transaction,
+          lock: true,
+        });
+
+        //body update
+        if (Object.entries(updateBody).length !== 0)
+          await item.set(req.body).save({ transaction });
+
+        //image delete
+        if (imagesDelete) {
+          const deletedImages = await deleteImages(
+            item,
+            imagesDelete,
+            transaction
+          );
+          await deleteImagesS3(deletedImages.map((img) => img.imageName));
+        }
+
+        //image add
+        if (imageBuffers.length !== 0) {
+          const newImages = imageBuffers.map((buffer) => ({
+            data: buffer,
+            name: `${uuid()}.webp`,
+          }));
+          await addImages(
+            item,
+            newImages.map(({ name }) => name),
+            transaction
+          );
+          await addImagesS3(newImages);
+        }
+
+        //image reorder
+        if (imagesReorder)
+          await reorderImages(item, imagesReorder, transaction);
+      });
+
+      await item.reload(itemDetailQueryOption);
 
       const result = formatItemDetailOutput(item.toJSON());
       res.json(result);
