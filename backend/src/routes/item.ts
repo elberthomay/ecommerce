@@ -40,6 +40,8 @@ import {
   deleteImages,
   reorderImages,
 } from "../models/helpers/itemImageHelpers";
+import ValidationError from "../errors/ValidationError";
+import ValidationMessageError from "../errors/ValidationMessageError";
 
 const router = Router();
 
@@ -237,6 +239,8 @@ router.patch(
         ? (req.files as Express.Multer.File[]).map((image) => image.buffer)
         : [];
 
+      if (Object.keys(req.body).length === 0 && imageBuffers.length === 0)
+        throw new ValidationMessageError("No update property specified");
       await sequelize.transaction(async (transaction) => {
         //lock items and it's images and tags
         await item.reload({

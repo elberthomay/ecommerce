@@ -90,19 +90,23 @@ describe("should return 400 with image errors", () => {
 it("should return 400 validation error when accessed with invalid itemId", async () => {
   await Promise.all(
     invalidUuid.map((invalidId) =>
-      getRequest(invalidId, defaultCookie(), changesItemData).expect(400)
+      getRequest(invalidId, defaultCookie(), changesItemData).expect(
+        printedExpect(400)
+      )
     )
   );
 });
 
 it("should return 400 validation error when accessed with invalid update property", async () => {
-  getRequest(defaultItem.id!, defaultCookie(), {
+  await getRequest(defaultItem.id!, defaultCookie(), {
     ...changesItemData,
     invalidProperty: "hehehe",
   }).expect(400);
 });
 it("should return 400 validation error when accessed with no update property", async () => {
-  getRequest(defaultItem.id!, defaultCookie(), {}).expect(400);
+  await getRequest(defaultItem.id!, defaultCookie(), {}).expect(
+    printedExpect(400)
+  );
 });
 
 it("should return 200 when updated by admin, root, or owner", async () => {
