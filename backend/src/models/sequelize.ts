@@ -15,6 +15,9 @@ import Order from "./Order";
 import OrderItem from "./OrderItem";
 import OrderItemImage from "./OrderItemImage";
 import { addFKIfNotExistToModel } from "./helpers/modelHelpers";
+import TempOrderItemImage from "./temp/TempOrderItemImage";
+import TempOrderItem from "./temp/TempOrderItem";
+import OrderOrderItem from "./temp/OrderOrderItem";
 
 const sequelize = new Sequelize({
   database: process.env.DB_NAME ?? "ecommerce_test",
@@ -41,6 +44,10 @@ const sequelize = new Sequelize({
     Order,
     OrderItem,
     OrderItemImage,
+
+    TempOrderItem,
+    OrderOrderItem,
+    TempOrderItemImage,
   ],
   logging: false,
 });
@@ -49,6 +56,20 @@ OrderItemImage.afterSync(
   addFKIfNotExistToModel(OrderItemImage, OrderItem, [
     ["orderId", "orderId"],
     ["itemId", "id"],
+  ])
+);
+
+TempOrderItemImage.afterSync(
+  addFKIfNotExistToModel(TempOrderItemImage, TempOrderItem, [
+    ["itemId", "id"],
+    ["version", "version"],
+  ])
+);
+
+OrderOrderItem.afterSync(
+  addFKIfNotExistToModel(OrderOrderItem, TempOrderItem, [
+    ["itemId", "id"],
+    ["version", "version"],
   ])
 );
 

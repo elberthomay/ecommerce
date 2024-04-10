@@ -10,10 +10,7 @@ import {
   AllowNull,
   Default,
 } from "sequelize-typescript";
-import NotFoundError from "../../errors/NotFoundError";
-import OrderItemImage, { getOrderItemImageInclude } from "../OrderItemImage";
-import Order from "../Order";
-import Shop from "../Shop";
+import TempOrderItemImage from "./TempOrderItemImage";
 
 interface OrderItemCreationAttribute {
   id: string;
@@ -74,11 +71,8 @@ class TempOrderItem extends Model<OrderItemCreationAttribute> {
   })
   updatedAt?: string;
 
-  @BelongsTo(() => Order)
-  order!: Order;
-
-  @HasMany(() => OrderItemImage)
-  images!: OrderItemImage[];
+  @HasMany(() => TempOrderItemImage)
+  images!: TempOrderItemImage[];
 }
 
 export default TempOrderItem;
