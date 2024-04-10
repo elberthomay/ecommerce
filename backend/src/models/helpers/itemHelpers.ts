@@ -91,7 +91,12 @@ export const createGetItemQueryOption = ({
 export function formatItemDetailOutput(
   itemData: ItemAttribute
 ): z.infer<typeof itemDetailsOutputSchema> {
-  const filteredData = omit(itemData, ["updatedAt", "createdAt", "shop"]);
+  const filteredData = omit(itemData, [
+    "updatedAt",
+    "createdAt",
+    "shop",
+    "version",
+  ]);
   const { images, tags, shop } = itemData;
 
   if (images === undefined || tags === undefined || shop === undefined)

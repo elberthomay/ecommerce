@@ -276,6 +276,9 @@ router.patch(
         //image reorder
         if (imagesReorder)
           await reorderImages(item, imagesReorder, transaction);
+
+        //increments version
+        await item.update({ version: item.version + 1 }, { transaction });
       });
 
       await item.reload(itemDetailQueryOption);

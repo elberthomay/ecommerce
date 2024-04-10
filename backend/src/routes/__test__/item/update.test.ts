@@ -182,6 +182,8 @@ it("return 200 and reorder image", async () => {
 });
 
 it("return 200, updates item, delete, add and reorders item image", async () => {
+  const item = await Item.findOne({ where: { id: defaultItem.id } });
+  const currentVersion = item?.version ?? -1000;
   await getRequest(
     defaultItem.id!,
     defaultCookie(),
@@ -202,4 +204,30 @@ it("return 200, updates item, delete, add and reorders item image", async () => 
         body?.images?.slice(0, 3)?.map(({ imageName }) => imageName)
       ).toEqual(["image2.webp", "image3.webp", "image1.webp"]);
     });
+  await item?.reload();
+  expect(item?.version).toBe(currentVersion + 1);
+});
+
+it("increments item version with each update", async () => {
+  const item = await Item.findOne({ where: { id: defaultItem.id } });
+  const currentVersion = item?.version ?? -1000;
+  await getRequest(
+    defaultItem.id!,
+    defaultCookie(),
+    {
+      ...changesItemData,
+    },
+    ["350kb.webp", "350kb.webp", "350kb.webp"]
+  ).expect(printedExpect(200));
+
+  await item?.reload();
+  expect(item?.version).toBe(currentVersion + 1);
+
+  await getRequest(defaultItem.id!, defaultCookie(), {
+    imagesDelete: [0],
+    imagesReorder: [2, 0, 1, 3, 4, 5],
+  }).expect(printedExpect(200));
+
+  await item?.reload();
+  expect(item?.version).toBe(currentVersion + 2);
 });

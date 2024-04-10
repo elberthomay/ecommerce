@@ -34,6 +34,7 @@ export interface ItemAttribute {
   shop?: ShopCreationAttribute;
   tags?: TagAttribute[];
   inCartUsers?: UserCreationAttribute[];
+  version: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -49,6 +50,7 @@ export interface ItemCreationAttribute {
   shop?: ShopCreationAttribute;
   tags?: TagCreationAttribute[];
   inCartUsers?: UserCreationAttribute[];
+  version?: number;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -96,6 +98,13 @@ class Item extends Model<ItemAttribute, ItemCreationAttribute> {
     allowNull: false,
   })
   shopId!: string;
+
+  @Default(0)
+  @Column({
+    allowNull: false,
+    type: DataType.INTEGER,
+  })
+  version!: number;
 
   @Column({
     allowNull: false,

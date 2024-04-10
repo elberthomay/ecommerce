@@ -14,6 +14,7 @@ export const itemSchema = z.object({
   description: z.string().max(2000),
   price: z.number().min(0).max(100000000),
   quantity: z.number().min(0).max(9999).default(1),
+  version: z.number().min(0).default(0),
 });
 
 export const itemImageOrdersSchema = z
@@ -40,7 +41,7 @@ const tagIdArray = z
   );
 
 export const itemCreateSchema = itemSchema
-  .omit({ id: true, images: true, tags: true })
+  .omit({ id: true, images: true, tags: true, version: true })
   .merge(z.object({ tags: tagIdArray.optional() }))
   .strict();
 
@@ -66,8 +67,7 @@ export const itemUpdateSchema = itemSchema
     imagesReorder: itemImageOrdersSchema.optional(),
   })
   .partial()
-  .strict()
-  .refine(...hasPropertyRefineArgument);
+  .strict();
 
 export const itemTagEditSchema = z
   .object({
