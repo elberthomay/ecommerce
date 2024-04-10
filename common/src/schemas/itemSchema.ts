@@ -14,7 +14,6 @@ export const itemSchema = z.object({
   description: z.string().max(2000),
   price: z.number().min(0).max(100000000),
   quantity: z.number().min(0).max(9999).default(1),
-  version: z.number().min(0).default(0),
 });
 
 export const itemImageOrdersSchema = z
