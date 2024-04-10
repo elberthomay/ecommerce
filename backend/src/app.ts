@@ -41,6 +41,7 @@ app.use("/api/tag/", tagRouter);
 app.use("/api/cart/", cartRouter);
 app.use("/api/order/", orderRouter);
 app.use("/api/address/", addressRouter);
+app.get("/healthz/", (req, res) => res.sendStatus(200));
 app.use(pathNotFound);
 app.use(multerErrorHandler);
 app.use(databaseErrorHandler);
