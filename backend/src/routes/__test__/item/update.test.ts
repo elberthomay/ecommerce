@@ -235,3 +235,15 @@ it("increments item version with each update", async () => {
   await item?.reload();
   expect(item?.version).toBe(currentVersion + 2);
 });
+
+it("doesn't increment item version if only quantity is updated", async () => {
+  const item = await Item.findOne({ where: { id: defaultItem.id } });
+  const currentVersion = item?.version ?? -1000;
+
+  await getRequest(defaultItem.id!, defaultCookie(), {
+    quantity: 10,
+  }).expect(printedExpect(200));
+
+  await item?.reload();
+  expect(item?.version).toBe(currentVersion);
+});

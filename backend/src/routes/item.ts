@@ -250,8 +250,9 @@ router.patch(
         });
 
         //body update
-        if (Object.entries(updateBody).length !== 0)
-          await item.set(req.body).save({ transaction });
+        const propertyCount = Object.keys(updateBody).length;
+        if (propertyCount !== 0)
+          await item.set(updateBody).save({ transaction });
 
         //image delete
         if (imagesDelete) {
@@ -281,8 +282,16 @@ router.patch(
         if (imagesReorder)
           await reorderImages(item, imagesReorder, transaction);
 
-        //increments version
-        await item.update({ version: item.version + 1 }, { transaction });
+        //increments version images updated or properties updated
+        //doesn't increment if only quantity is updated
+        if (
+          imageBuffers.length !== 0 ||
+          imagesDelete ||
+          imagesReorder ||
+          propertyCount >= 2 ||
+          Object.keys(updateBody)[0] !== "quantity"
+        )
+          await item.update({ version: item.version + 1 }, { transaction });
       });
 
       await item.reload(itemDetailQueryOption);
