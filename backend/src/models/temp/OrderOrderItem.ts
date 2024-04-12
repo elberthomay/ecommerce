@@ -1,4 +1,4 @@
-import { AllowNull, Model, PrimaryKey } from "sequelize-typescript";
+import { AllowNull, HasOne, Model, PrimaryKey } from "sequelize-typescript";
 import {
   BelongsTo,
   Column,
@@ -8,7 +8,15 @@ import {
   Table,
 } from "sequelize-typescript";
 import TempOrderItem from "./TempOrderItem";
-import Order from "../Order";
+import Order, { OrderAttribute } from "../Order";
+import { IncludeOptions, Includeable, Op, col } from "sequelize";
+
+interface OrderOrderItemAttribute {
+  orderId: string;
+  itemId: string;
+  version: number;
+  order?: OrderAttribute;
+}
 
 interface OrderOrderItemCreationAttribute {
   orderId: string;
@@ -17,7 +25,10 @@ interface OrderOrderItemCreationAttribute {
 }
 
 @Table({ tableName: "OrderOrderItem" })
-class OrderOrderItem extends Model<OrderOrderItemCreationAttribute> {
+class OrderOrderItem extends Model<
+  OrderOrderItemAttribute,
+  OrderOrderItemCreationAttribute
+> {
   @PrimaryKey
   @ForeignKey(() => Order)
   @Column(DataType.UUID)
@@ -32,6 +43,20 @@ class OrderOrderItem extends Model<OrderOrderItemCreationAttribute> {
   @ForeignKey(() => TempOrderItem)
   @Column(DataType.INTEGER)
   version!: number;
+
+  @BelongsTo(() => Order, { onDelete: "CASCADE" })
+  order!: Order;
 }
+
+export const getOrderInclude = (
+  orderOrderItemTableName: string,
+  options: Omit<IncludeOptions, "model" | "on"> = {}
+): Includeable => ({
+  model: Order,
+  on: {
+    id: { [Op.eq]: col(`${orderOrderItemTableName}.orderId`) },
+  },
+  ...options,
+});
 
 export default OrderOrderItem;

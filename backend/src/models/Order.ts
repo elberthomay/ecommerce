@@ -14,8 +14,11 @@ import {
   Sequelize,
 } from "sequelize-typescript";
 import User from "./User";
-import Shop from "./Shop";
-import OrderItem, { OrderItemCreationAttribute } from "./OrderItem";
+import Shop, { ShopCreationAttribute } from "./Shop";
+import OrderItem, {
+  OrderItemAttribute,
+  OrderItemCreationAttribute,
+} from "./OrderItem";
 import { OrderStatuses } from "@elycommerce/common";
 
 export const orderOrderOptions: Record<
@@ -25,6 +28,34 @@ export const orderOrderOptions: Record<
   newest: ["createdAt", "DESC"],
   oldest: ["createdAt", "ASC"],
 };
+
+export interface OrderAttribute {
+  id: string;
+  userId: string;
+  shopId: string;
+  status: OrderStatuses;
+
+  name: string;
+  image: string | null;
+  totalPrice: number;
+
+  phoneNumber: string;
+  longitude: number | null;
+  latitude: number | null;
+  postCode: string | null;
+  addressDetail: string;
+  village: string | null;
+  district: string | null;
+  city: string;
+  province: string;
+  country: string;
+  recipient: string;
+
+  items?: OrderItemAttribute[];
+  shop?: ShopCreationAttribute;
+  createdAt: string;
+  updatedAt: string;
+}
 
 export interface OrderCreationAttribute {
   id?: string;
@@ -54,7 +85,7 @@ export interface OrderCreationAttribute {
 }
 
 @Table({ tableName: "Order" })
-class Order extends Model<OrderCreationAttribute> {
+class Order extends Model<OrderAttribute, OrderCreationAttribute> {
   @PrimaryKey
   @Default(DataType.UUIDV4)
   @Column(DataType.UUID)

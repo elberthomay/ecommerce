@@ -10,22 +10,38 @@ import {
   AllowNull,
   Default,
 } from "sequelize-typescript";
-import TempOrderItemImage from "./TempOrderItemImage";
+import TempOrderItemImage, {
+  TempOrderItemImageCreationAttribute,
+} from "./TempOrderItemImage";
 
-interface OrderItemCreationAttribute {
+interface TempOrderItemAttribute {
   id: string;
-  orderId: string;
   name: string;
   description: string;
   price: number;
   quantity: number;
-  version?: number;
+  version: number;
+  images?: TempOrderItemImageCreationAttribute[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface TempOrderItemCreationAttribute {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  quantity: number;
+  version: number;
   createdAt?: Date;
   updatedAt?: Date;
 }
 
 @Table({ tableName: "TempOrderItem" })
-class TempOrderItem extends Model<OrderItemCreationAttribute> {
+class TempOrderItem extends Model<
+  TempOrderItemAttribute,
+  TempOrderItemCreationAttribute
+> {
   @PrimaryKey
   @Column({ type: DataType.UUID, allowNull: false })
   id!: string;

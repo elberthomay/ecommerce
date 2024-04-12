@@ -1,6 +1,11 @@
 import { Includeable, Op, Transaction } from "sequelize";
 import Order, { orderOrderOptions } from "../Order";
-import { OrderStatuses } from "@elycommerce/common";
+import {
+  OrderStatuses,
+  getOrderDetailOutputSchema,
+  getOrdersOutputSchema,
+  orderOutputSchema,
+} from "@elycommerce/common";
 import OrderItem from "../OrderItem";
 import {
   formatOrderAddress,
@@ -17,7 +22,7 @@ import Item from "../Item";
 import ItemImage from "../ItemImage";
 import InventoryError from "../../errors/InventoryError";
 import { z } from "zod";
-import { isUndefined, omitBy } from "lodash";
+import { isUndefined, omit, omitBy } from "lodash";
 import Shop from "../Shop";
 import {
   setCancelOrderTimeout,
@@ -29,6 +34,11 @@ import {
   DELIVERY_TIMEOUT_MINUTE,
 } from "../../var/constants";
 import { addMinutes } from "date-fns";
+import TempOrderItem from "../temp/TempOrderItem";
+import TempOrderItemImage, {
+  getTempOrderItemImageInclude,
+} from "../temp/TempOrderItemImage";
+import OrderOrderItem from "../temp/OrderOrderItem";
 
 export async function getOrders(options: z.infer<typeof getOrdersOption>) {
   const { userId, shopId, status, itemName, newerThan, orderBy, page, limit } =
@@ -62,7 +72,67 @@ export async function getOrders(options: z.infer<typeof getOrdersOption>) {
   return orders;
 }
 
+function formatOrderDetail(
+  order: Order,
+  tempItems: TempOrderItem[]
+): z.infer<typeof getOrderDetailOutputSchema> {
+  const itemDetailTemp = tempItems.map((tempItem) => {
+    const tempItemAttribute = tempItem.toJSON();
+    const filteredTempItem = omit(tempItemAttribute, [
+      "images",
+      "createdAt",
+      "updatedAt",
+      "version",
+    ]);
+    const image =
+      tempItemAttribute?.images?.length && tempItemAttribute?.images?.length > 0
+        ? tempItemAttribute.images[0].imageName
+        : null;
+    return { ...filteredTempItem, image };
+  });
+
+  const orderAttribute = order.toJSON();
+  const filteredOrderAttribute = omit(orderAttribute, ["shop", "items"]);
+  const items =
+    orderAttribute.items?.map((item) => ({
+      ...omit(item, ["images"]),
+      image:
+        item?.images && item?.images.length > 0
+          ? item?.images[0].imageName
+          : null,
+    })) ?? [];
+  return {
+    ...filteredOrderAttribute,
+    items: [...itemDetailTemp, ...items],
+    shopName: orderAttribute?.shop?.name!,
+    longitude: orderAttribute.longitude ?? undefined,
+    latitude: orderAttribute.latitude ?? undefined,
+    postCode: orderAttribute.postCode ?? undefined,
+  };
+}
+
 export async function getOrderDetail(orderId: string) {
+  const tempTableOrderOrderItem = await OrderOrderItem.findAll({
+    where: { orderId },
+  });
+  const orderItemOnTempTable = (
+    await Promise.all(
+      tempTableOrderOrderItem.map((orderOrderItem) =>
+        TempOrderItem.findOne({
+          where: { id: orderOrderItem.itemId, version: orderOrderItem.version },
+          include: getTempOrderItemImageInclude(TempOrderItem.tableName, {
+            where: { order: 0 },
+            required: false,
+          }),
+        })
+      )
+    )
+  ).filter((orderItem): orderItem is TempOrderItem => Boolean(orderItem));
+
+  const orderItemOnTempTableSorted = [...orderItemOnTempTable].sort((a, b) =>
+    a.name.toLowerCase().localeCompare(b.name.toLowerCase())
+  );
+
   const order = await Order.findOne({
     where: { id: orderId },
     include: [
@@ -80,7 +150,8 @@ export async function getOrderDetail(orderId: string) {
     ],
     order: [["items", "name", "ASC"]],
   });
-  return order;
+  if (!order) throw new Error("getOrderDetail: order doesn't exist");
+  return formatOrderDetail(order, orderItemOnTempTableSorted);
 }
 
 /**
@@ -192,13 +263,16 @@ export async function deliverOrder(order: Order) {
 }
 
 /**
- * Create orders for cart items
+ * Create orders for cart items return getOrderOutputSchema 's type
  * @param cartItems cart items to be processed
  * @param address address of user, Address have to be eagerly loaded
  * @throws Error: eagerly loaded values unavailable
  * @throws InventoryError: some or all item out of stock
  */
-export async function createOrders(cartItems: Cart[], address: UserAddress) {
+export async function createOrders(
+  cartItems: Cart[],
+  address: UserAddress
+): Promise<z.infer<typeof getOrdersOutputSchema>> {
   if (cartItems.length === 0) throw new NoItemInCartError();
   const addressData = formatOrderAddress.safeParse(address.address);
   const userId = address.userId;
@@ -248,18 +322,20 @@ export async function createOrders(cartItems: Cart[], address: UserAddress) {
       );
 
       // set timeout
-      await Promise.all(
-        orders.map(async ({ id, status, createdAt }) => {
+      const ordersWithTimeout = await Promise.all(
+        orders.map(async (order) => {
+          const { id, createdAt, status } = order;
           if (!createdAt) throw Error("processOrder: createdAt not loaded");
-          await setCancelOrderTimeout(
-            id,
-            addMinutes(createdAt, AWAITING_CONFIRMATION_TIMEOUT_MINUTE),
-            status
+          const timeout = addMinutes(
+            createdAt,
+            AWAITING_CONFIRMATION_TIMEOUT_MINUTE
           );
+          await setCancelOrderTimeout(id, timeout, status);
+          return { ...order, timeout: timeout.toISOString() };
         })
       );
 
-      return orders;
+      return ordersWithTimeout;
     } //some item out of stock
     else
       throw new InventoryError(
@@ -284,7 +360,7 @@ async function createOrder(
   addressData: z.infer<typeof orderAddressSchema>,
   userId: string,
   transaction: Transaction
-): Promise<Order> {
+): Promise<z.infer<typeof orderOutputSchema>> {
   if (cartItems.length === 0)
     throw Error("Order.createOrder: creating order with no item");
 
@@ -313,31 +389,48 @@ async function createOrder(
   );
   await order.reload({ include: Shop, transaction });
 
-  order.items = await Promise.all(
+  const orderItems = await Promise.all(
     cartItems.map(async ({ quantity, item }) => {
-      const { id, name, description, price, images } = item!;
+      const { id, version, name, description, price, images } = item!;
       if (images === undefined) throw Error("images not eagerly loaded");
-      const createdItem = await OrderItem.create(
-        {
-          orderId: order.id,
+
+      // create OrderItem if item has yet to be bought
+      const [createdItem, created] = await TempOrderItem.findOrCreate({
+        where: { id, version },
+        include: [getTempOrderItemImageInclude(TempOrderItem.tableName)],
+        order: [["images", "order", "ASC"]],
+        defaults: {
           id,
+          version,
           name,
           description,
           price,
           quantity,
         },
-        { transaction }
-      );
-      const createdImages = await OrderItemImage.bulkCreate(
-        images.map(({ itemId, imageName, order: imageOrder }) => ({
+        transaction,
+      });
+
+      // create link
+      await OrderOrderItem.create(
+        {
           orderId: order.id,
-          itemId,
-          imageName,
-          order: imageOrder,
-        })),
+          itemId: id,
+          version,
+        },
         { transaction }
       );
-      createdItem.images = createdImages;
+      if (created) {
+        const createdImages = await TempOrderItemImage.bulkCreate(
+          images.map(({ itemId, imageName, order: imageOrder }) => ({
+            itemId,
+            version,
+            imageName,
+            order: imageOrder,
+          })),
+          { transaction }
+        );
+        createdItem.images = createdImages;
+      }
       return createdItem;
     })
   );
@@ -355,5 +448,12 @@ async function createOrder(
     })
   );
 
-  return order;
+  const filteredOrder = omit(order.toJSON(), ["shop"]);
+  return {
+    ...filteredOrder,
+    longitude: filteredOrder.longitude ?? undefined,
+    latitude: filteredOrder.latitude ?? undefined,
+    postCode: undefined,
+    shopName: order.shop?.name!,
+  };
 }

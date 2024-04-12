@@ -15,14 +15,14 @@ export const validatedExpect =
   ) =>
   async (res: Response) => {
     const validationResult = zodSchema.safeParse(res.body);
-    expect(
-      validationResult.success,
-      `${
-        !validationResult.success
-          ? JSON.stringify(validationResult.error.format(), null, 2)
-          : ""
-      }\nbody: \n${JSON.stringify(res.body, null, 2)}`,
-      { showPrefix: false, showMatcherMessage: false }
-    ).toBe(true);
+    const validationErrorMessage = `${
+      !validationResult.success
+        ? JSON.stringify(validationResult.error.format(), null, 2)
+        : ""
+    }\nbody: \n${JSON.stringify(res.body, null, 2)}`;
+    expect(validationResult.success, validationErrorMessage, {
+      showPrefix: false,
+      showMatcherMessage: false,
+    }).toBe(true);
     if (validationResult.success) await callback?.(validationResult.data, res);
   };

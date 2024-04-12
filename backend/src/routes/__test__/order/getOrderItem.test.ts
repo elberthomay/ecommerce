@@ -12,7 +12,10 @@ import {
   forgeCookie,
 } from "../../../test/helpers/user/userHelper";
 import { createShop } from "../../../test/helpers/shop/shopHelper";
-import { generateOrders } from "../../../test/helpers/order/orderHelper";
+import {
+  fullGenerateOrderData,
+  generateOrders,
+} from "../../../test/helpers/order/orderHelper";
 import {
   printedExpect,
   validatedExpect,
@@ -21,6 +24,10 @@ import { faker } from "@faker-js/faker";
 import { formatOrderItem, orderItemOutputSchema } from "@elycommerce/common";
 import { defaultUser as defaultUserData } from "../../../test/helpers/user/userData";
 import { z } from "zod";
+import OrderOrderItem from "../../../models/temp/OrderOrderItem";
+import TempOrderItemImage from "../../../models/temp/TempOrderItemImage";
+import TempOrderItem from "../../../models/temp/TempOrderItem";
+import { omit } from "lodash";
 
 const getUrl = (orderId: string, itemId: string) =>
   `/api/order/${orderId}/item/${itemId}`;
@@ -154,4 +161,63 @@ it("return 200 with correct item and correct format", async () => {
         sortedImageByOrder
       );
     });
+});
+
+describe("retrieve order item from new table", () => {
+  let orderWithNewItem: Order;
+  let newTableItems: TempOrderItem[];
+  beforeEach(async () => {
+    const orderData = fullGenerateOrderData({
+      items: Array(5)
+        .fill(null)
+        .map((_) => ({ images: 3 })),
+    })();
+    orderWithNewItem = await Order.create({
+      ...omit(orderData, ["items"]),
+      userId: defaultUser.id,
+      shopId: defaultShop.id,
+    });
+    newTableItems = await Promise.all(
+      orderData.items.map(async (itemData) => {
+        const item = await TempOrderItem.create({ ...itemData, version: 0 });
+
+        //create link
+        await OrderOrderItem.create({
+          orderId: orderWithNewItem.id,
+          itemId: item.id,
+          version: item.version,
+        });
+        //create images
+        item.images = await TempOrderItemImage.bulkCreate(
+          itemData.images.map((imageData) => ({
+            ...imageData,
+            version: item.version,
+          }))
+        );
+        return item;
+      })
+    );
+  });
+
+  it("return 200 and return data in correct format", async () => {
+    const item = newTableItems[0];
+    await getRequest(getUrl(orderWithNewItem.id, item.id), defaultCookie())
+      .expect(printedExpect(200))
+      .expect(validatedExpect(orderItemOutputSchema));
+  });
+
+  it("return 200 and return correct data", async () => {
+    const item = newTableItems[0];
+    await getRequest(getUrl(orderWithNewItem.id, item.id), defaultCookie())
+      .expect(200)
+      .expect(({ body }: { body: z.infer<typeof orderItemOutputSchema> }) => {
+        const { images, shopId, shopName, ...filteredItem } = body;
+        expect(filteredItem).toEqual({
+          ...item.toJSON(),
+          createdAt: (item.createdAt as any).toISOString(),
+          updatedAt: (item.updatedAt as any).toISOString(),
+        });
+        expect(images).toHaveLength(item.images.length);
+      });
+  });
 });

@@ -13,13 +13,16 @@ import Cart from "../../../models/Cart";
 import { createAddress } from "../../../test/helpers/address/addressHelper";
 import { printedExpect } from "../../../test/helpers/assertionHelper";
 import { z } from "zod";
-import { formatGetOrders } from "@elycommerce/common";
+import { formatGetOrders, getOrdersOutputSchema } from "@elycommerce/common";
 import {
   setCancelOrderTimeout,
   setDeliverOrder,
 } from "../../../agenda/orderAgenda";
 import { OrderStatuses } from "@elycommerce/common";
 import { AWAITING_CONFIRMATION_TIMEOUT_MINUTE } from "../../../var/constants";
+import Item from "../../../models/Item";
+import Order from "../../../models/Order";
+import TempOrderItem from "../../../models/temp/TempOrderItem";
 
 const url = "/api/order/process";
 const method = "post";
@@ -71,85 +74,173 @@ it("return 422 when quantity in cart is more than inventory", async () => {
   await getRequest(defaultCookie()).send().expect(422);
 });
 
-it("return 200 when order is successful, delete all selected item in cart, decrement inventory by the cart amount, schedule timeout", async () => {
+describe("successful order create", () => {
   const shopCount = 3;
-  //create items with random quantity
-  const itemsByShop = await Promise.all(
-    Array.from({ length: shopCount }).map((_) =>
-      createItem(
-        Array.from({ length: 15 }).map((_) => ({
-          quantity: Math.floor(Math.random() * 10 + 3),
-        }))
+  let itemsByShop: Item[][], selectedItems: Item[], unselectedItems: Item[];
+
+  beforeEach(async () => {
+    itemsByShop = await Promise.all(
+      Array.from({ length: shopCount }).map((_) =>
+        createItem(
+          Array.from({ length: 15 }).map((_) => ({
+            quantity: Math.floor(Math.random() * 10 + 3),
+          }))
+        )
       )
-    )
-  );
+    );
+    selectedItems = itemsByShop.map((items) => items.slice(0, 10)).flat();
+    unselectedItems = itemsByShop.map((items) => items.slice(10)).flat();
 
-  const selectedItems = itemsByShop.map((items) => items.slice(0, 10)).flat();
-  const unselectedItems = itemsByShop.map((items) => items.slice(10)).flat();
-
-  await Cart.bulkCreate(
-    selectedItems
-      .map((item) => ({
-        itemId: item.id,
-        userId: defaultUser.id,
-        selected: true,
-        quantity: item.quantity - 2,
-      }))
-      .concat(
-        unselectedItems.map((item) => ({
+    //create cart entry
+    await Cart.bulkCreate(
+      selectedItems
+        .map((item) => ({
           itemId: item.id,
           userId: defaultUser.id,
-          selected: false,
+          selected: true,
           quantity: item.quantity - 2,
         }))
-      )
-  );
+        .concat(
+          unselectedItems.map((item) => ({
+            itemId: item.id,
+            userId: defaultUser.id,
+            selected: false,
+            quantity: item.quantity - 2,
+          }))
+        )
+    );
+  });
 
-  await getRequest(defaultCookie())
-    .send()
-    .expect(printedExpect(200))
-    .expect(({ body }: { body: z.infer<typeof formatGetOrders> }) => {
-      expect(body).toHaveLength(shopCount);
-      expect(setCancelOrderTimeout).toHaveBeenCalledTimes(body.length);
-
-      (setCancelOrderTimeout as jest.Mock).mock.calls.forEach((argument) => {
-        const [orderId, timeout, initialStatus] = argument;
-        const order = body.find(({ id }) => id === orderId);
-
-        expect(order).not.toBeUndefined();
-        expect(initialStatus).toBe(OrderStatuses.AWAITING);
-        if (order) {
-          const expectedTimeout = new Date(
-            new Date(order.createdAt).setMinutes(
-              new Date(order.createdAt).getMinutes() +
-                AWAITING_CONFIRMATION_TIMEOUT_MINUTE
-            )
-          );
-          expect(timeout).toEqual(expectedTimeout);
-        }
+  it("return 200 and return correct format", async () => {
+    await getRequest(defaultCookie())
+      .send()
+      .expect(printedExpect(200))
+      .expect(({ body }) => {
+        const result = getOrdersOutputSchema.safeParse(body);
+        expect(result.success).toBe(true);
       });
-    });
+  });
 
-  //all selected cart entry destroyed
-  const newCarts = await Cart.findAll({ where: { userId: defaultUser.id } });
-  expect(newCarts).toHaveLength(unselectedItems.length);
+  it("return 200, created and return orders with length as shopCount", async () => {
+    await getRequest(defaultCookie())
+      .send()
+      .expect(200)
+      .expect(({ body }) => {
+        expect(body).toHaveLength(shopCount);
+      });
+    const orders = await Order.findAll({ where: { userId: defaultUser.id! } });
+    expect(orders).toHaveLength(shopCount);
+  });
 
-  // all selected item's inventory reduced
-  await Promise.all(
-    selectedItems.map(async (item) => {
-      await item.reload();
-      expect(item.quantity).toEqual(2);
-    })
-  );
+  it("delete all selected item in cart", async () => {
+    await getRequest(defaultCookie()).send().expect(200);
 
-  // all unselected item's inventory stays the same
-  await Promise.all(
-    unselectedItems.map(async (item) => {
-      const originalQuantity = item.quantity;
-      await item.reload();
-      expect(item.quantity).toEqual(originalQuantity);
-    })
-  );
+    //all selected cart entry destroyed
+    const newCarts = await Cart.findAll({ where: { userId: defaultUser.id } });
+    expect(newCarts).toHaveLength(unselectedItems.length);
+  });
+
+  it("return 200, set correct count of timeout with correct timeout", async () => {
+    await getRequest(defaultCookie())
+      .send()
+      .expect(printedExpect(200))
+      .expect(({ body }: { body: z.infer<typeof formatGetOrders> }) => {
+        expect(setCancelOrderTimeout).toHaveBeenCalledTimes(shopCount);
+
+        (setCancelOrderTimeout as jest.Mock).mock.calls.forEach((argument) => {
+          const [orderId, timeout, initialStatus] = argument;
+          const order = body.find(({ id }) => id === orderId);
+
+          expect(order).not.toBeUndefined();
+          expect(initialStatus).toBe(OrderStatuses.AWAITING);
+          if (order) {
+            const expectedTimeout = new Date(
+              new Date(order.createdAt).setMinutes(
+                new Date(order.createdAt).getMinutes() +
+                  AWAITING_CONFIRMATION_TIMEOUT_MINUTE
+              )
+            );
+            expect(timeout).toEqual(expectedTimeout);
+          }
+        });
+      });
+  });
+
+  it("return 200 and correctly reduce selected item's count", async () => {
+    await getRequest(defaultCookie()).send().expect(200);
+
+    // all selected item's inventory reduced
+    await Promise.all(
+      selectedItems.map(async (item) => {
+        await item.reload();
+        expect(item.quantity).toEqual(2);
+      })
+    );
+
+    // all unselected item's inventory stays the same
+    await Promise.all(
+      unselectedItems.map(async (item) => {
+        const originalQuantity = item.quantity;
+        await item.reload();
+        expect(item.quantity).toEqual(originalQuantity);
+      })
+    );
+  });
+
+  it("doesn't create additional entry of OrderItem when item version doesn't change", async () => {
+    // create order once
+    await getRequest(defaultCookie()).send().expect(200);
+    const orderItems = await TempOrderItem.findAll();
+
+    expect(orderItems.length).toBe(selectedItems.length);
+
+    //fill cart once again
+    await Cart.bulkCreate(
+      selectedItems.map(({ id: itemId }) => ({
+        itemId,
+        userId: defaultUser.id!,
+        quantity: 1,
+        selected: true,
+      }))
+    );
+
+    // create order once
+    await getRequest(defaultCookie()).send().expect(200);
+    const orderItemsSecond = await TempOrderItem.findAll();
+
+    // no new OrderItem created
+    expect(orderItemsSecond.length).toBe(selectedItems.length);
+  });
+
+  it(" create additional entry of OrderItem when item version changed", async () => {
+    // create order once
+    await getRequest(defaultCookie()).send().expect(200);
+    const orderItems = await TempOrderItem.findAll();
+
+    expect(orderItems.length).toBe(selectedItems.length);
+
+    // increment item version
+    await Promise.all(
+      selectedItems.map((item) => item.update({ version: item.version + 1 }))
+    );
+
+    //fill cart once again
+    await Cart.bulkCreate(
+      selectedItems.map(({ id: itemId }) => ({
+        itemId,
+        userId: defaultUser.id!,
+        quantity: 1,
+        selected: true,
+      }))
+    );
+
+    // create order once
+    await getRequest(defaultCookie()).send().expect(200);
+    const orderItemsSecond = await TempOrderItem.findAll();
+
+    // no new OrderItem created
+    expect(orderItemsSecond.length).toBe(selectedItems.length * 2);
+  });
 });
 
 it("kept integrity by failing orders when order race condition occur", async () => {

@@ -27,6 +27,7 @@ import {
   formatOrderDetail,
   formatOrder,
   OrderStatuses,
+  getOrdersOutputSchema,
 } from "@elycommerce/common";
 import { authorization } from "../middlewares/authorize";
 import validator from "../middlewares/validator";
@@ -211,8 +212,7 @@ router.get(
     async (req: IGetOrderItemRequest, res: Response, next: NextFunction) => {
       const { orderId, itemId } = req.params;
       const orderItem = await getOrderItem(orderId, itemId);
-      const result = await formatOrderItem.parseAsync(orderItem);
-      res.json(result);
+      res.json(orderItem);
     }
   )
 );
@@ -250,11 +250,7 @@ router.get(
       const timeout = timeoutMinute
         ? addMinutes(order?.updatedAt!, timeoutMinute).toISOString()
         : undefined;
-      const result = await formatOrderDetail.parseAsync({
-        ...order?.toJSON(),
-        timeout,
-      });
-      res.json(result);
+      res.json({ ...order, timeout });
     }
   )
 );
@@ -275,17 +271,11 @@ router.post(
     const selectedCarts = await Cart.findAll({
       where: { userId: currentUser.id, selected: true },
     });
-    const orders = await createOrders(selectedCarts, userAddress!);
-    const result = formatGetOrders.parse(
-      orders.map((order) => ({
-        ...order.toJSON(),
-        timeout: addMinutes(
-          order.updatedAt!,
-          AWAITING_CONFIRMATION_TIMEOUT_MINUTE
-        ).toISOString(),
-      }))
+    const orders: z.infer<typeof getOrdersOutputSchema> = await createOrders(
+      selectedCarts,
+      userAddress!
     );
-    return res.json(result);
+    return res.json(orders);
   })
 );
 

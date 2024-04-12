@@ -16,7 +16,7 @@ import {
 import TempOrderItem from "./TempOrderItem";
 import { IncludeOptions, Includeable, Op, col } from "sequelize";
 
-interface OrderItemImageCreationAttribute {
+export interface TempOrderItemImageCreationAttribute {
   itemId: string;
   version: number;
   order: number;
@@ -24,7 +24,7 @@ interface OrderItemImageCreationAttribute {
 }
 
 @Table({ tableName: "TempOrderItemImage" })
-class TempOrderItemImage extends Model<OrderItemImageCreationAttribute> {
+class TempOrderItemImage extends Model<TempOrderItemImageCreationAttribute> {
   @PrimaryKey
   @ForeignKey(() => TempOrderItem)
   @Column({
@@ -54,14 +54,15 @@ class TempOrderItemImage extends Model<OrderItemImageCreationAttribute> {
   imageName!: string;
 }
 
-export const getOrderItemImageInclude = (
-  orderItemTableName: string,
+export const getTempOrderItemImageInclude = (
+  tempOrderItemTableName: string,
   options: Omit<IncludeOptions, "model" | "on"> = {}
 ): Includeable => ({
   model: TempOrderItemImage,
+  as: "images",
   on: {
-    orderId: { [Op.eq]: col(`${orderItemTableName}.orderId`) },
-    version: { [Op.eq]: col(`${orderItemTableName}.version`) },
+    itemId: { [Op.eq]: col(`${tempOrderItemTableName}.id`) },
+    version: { [Op.eq]: col(`${tempOrderItemTableName}.version`) },
   },
   ...options,
 });
