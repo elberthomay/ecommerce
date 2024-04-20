@@ -3,7 +3,7 @@ kind: PersistentVolumeClaim
 metadata:
   name: ecommerce-db-pvc
 spec:
-  storageClassName: do-block-storage-retain
+  storageClassName: ibmc-vpc-block-retain-5iops-tier
   accessModes:
     - ReadWriteOnce
   resources:
