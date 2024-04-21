@@ -54,12 +54,6 @@ class TempOrderItem extends Model<OrderItemCreationAttribute> {
   price!: number;
 
   @Column({
-    type: DataType.INTEGER,
-    allowNull: false,
-  })
-  quantity!: number;
-
-  @Column({
     allowNull: false,
     type: DataType.DATE(6),
   })

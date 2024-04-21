@@ -14,6 +14,7 @@ interface OrderOrderItemCreationAttribute {
   orderId: string;
   itemId: string;
   version: number;
+  quantity: number;
 }
 
 @Table({ tableName: "OrderOrderItem" })
@@ -32,6 +33,25 @@ class OrderOrderItem extends Model<OrderOrderItemCreationAttribute> {
   @ForeignKey(() => TempOrderItem)
   @Column(DataType.INTEGER)
   version!: number;
+
+  @Column({
+    type: DataType.INTEGER,
+    allowNull: false,
+    default: 1,
+  })
+  quantity!: number;
+
+  @Column({
+    allowNull: false,
+    type: DataType.DATE(6),
+  })
+  createdAt?: Date;
+
+  @Column({
+    allowNull: false,
+    type: DataType.DATE(6),
+  })
+  updatedAt?: Date;
 }
 
 export default OrderOrderItem;
