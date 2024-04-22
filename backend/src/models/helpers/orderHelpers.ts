@@ -32,6 +32,21 @@ import { addMinutes } from "date-fns";
 import TempOrderItem from "../temp/TempOrderItem";
 import OrderOrderItem from "../temp/OrderOrderItem";
 import TempOrderItemImage from "../temp/TempOrderItemImage";
+import { getOrderDetailWithOldItemQuery } from "../../kysely/queries/orderQueries";
+import NotFoundError from "../../errors/NotFoundError";
+
+function getOrderTimeout(status: string, updatedAt: Date) {
+  const timeoutMinute =
+    status === OrderStatuses.AWAITING
+      ? AWAITING_CONFIRMATION_TIMEOUT_MINUTE
+      : status === OrderStatuses.CONFIRMED
+      ? CONFIRMED_TIMEOUT_MINUTE
+      : undefined;
+  const timeout = timeoutMinute
+    ? addMinutes(updatedAt, timeoutMinute)
+    : undefined;
+  return timeout;
+}
 
 export async function getOrders(options: z.infer<typeof getOrdersOption>) {
   const { userId, shopId, status, itemName, newerThan, orderBy, page, limit } =
@@ -66,24 +81,21 @@ export async function getOrders(options: z.infer<typeof getOrdersOption>) {
 }
 
 export async function getOrderDetail(orderId: string) {
-  const order = await Order.findOne({
-    where: { id: orderId },
-    include: [
-      Shop,
-      {
-        model: OrderItem,
-        attributes: ["id", "orderId", "name", "price", "quantity"],
-        include: [
-          getOrderItemImageInclude("items", {
-            where: { order: 0 },
-            required: false,
-          }),
-        ],
-      },
-    ],
-    order: [["items", "name", "ASC"]],
-  });
-  return order;
+  const order = await getOrderDetailWithOldItemQuery(
+    orderId
+  ).executeTakeFirst();
+  if (!order) throw new NotFoundError("Order");
+
+  const timeout = getOrderTimeout(order.status, order.updatedAt)?.toISOString();
+  return {
+    ...order,
+    timeout,
+    createdAt: order.createdAt.toISOString(),
+    updatedAt: order.updatedAt.toISOString(),
+    status: order.status as OrderStatuses,
+    longitude: Number(order.longitude),
+    latitude: Number(order.latitude),
+  };
 }
 
 /**

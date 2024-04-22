@@ -27,6 +27,7 @@ import {
   formatOrderDetail,
   formatOrder,
   OrderStatuses,
+  getOrderDetailOutputSchema,
 } from "@elycommerce/common";
 import { authorization } from "../middlewares/authorize";
 import validator from "../middlewares/validator";
@@ -240,21 +241,9 @@ router.get(
   catchAsync(
     async (req: IGetOrderItemRequest, res: Response, next: NextFunction) => {
       const orderId = req.params.orderId;
-      const order = await getOrderDetail(orderId);
-      const timeoutMinute =
-        order?.status === OrderStatuses.AWAITING
-          ? AWAITING_CONFIRMATION_TIMEOUT_MINUTE
-          : order?.status === OrderStatuses.CONFIRMED
-          ? CONFIRMED_TIMEOUT_MINUTE
-          : undefined;
-      const timeout = timeoutMinute
-        ? addMinutes(order?.updatedAt!, timeoutMinute).toISOString()
-        : undefined;
-      const result = await formatOrderDetail.parseAsync({
-        ...order?.toJSON(),
-        timeout,
-      });
-      res.json(result);
+      const orderData: z.infer<typeof getOrderDetailOutputSchema> =
+        await getOrderDetail(orderId);
+      res.json(orderData);
     }
   )
 );

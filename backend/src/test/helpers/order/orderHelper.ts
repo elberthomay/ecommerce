@@ -107,7 +107,7 @@ const generateOrderItemImageData =
     };
   };
 
-const fullGenerateOrderData =
+export const fullGenerateOrderData =
   (orderData?: PartialOrderGenerationAttribute) =>
   (): Omit<OrderCreationAttribute, "items"> & {
     items: (Omit<OrderItemCreationAttribute, "images"> & {

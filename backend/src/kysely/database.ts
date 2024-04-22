@@ -1,16 +1,17 @@
-import "dotenv/config";
 import { DB } from "./schema"; // this is the Database interface we defined earlier
 import { createPool } from "mysql2"; // do not use 'mysql2/promises'!
 import { Kysely, MysqlDialect } from "kysely";
 
 const dialect = new MysqlDialect({
   pool: createPool({
-    database: "ecommerce",
-    host: "localhost",
+    database: process.env.DB_NAME ?? "ecommerce_test",
+    host: process.env.DB_HOST ?? "ecommerce-db-srv",
     user: process.env.DB_USERNAME!,
     password: process.env.DB_PASSWORD!,
     port: 3306,
     connectionLimit: 10,
+    timezone: "Z",
+    supportBigNumbers: true,
   }),
 });
 
