@@ -29,6 +29,9 @@ import {
   DELIVERY_TIMEOUT_MINUTE,
 } from "../../var/constants";
 import { addMinutes } from "date-fns";
+import TempOrderItem from "../temp/TempOrderItem";
+import OrderOrderItem from "../temp/OrderOrderItem";
+import TempOrderItemImage from "../temp/TempOrderItemImage";
 
 export async function getOrders(options: z.infer<typeof getOrdersOption>) {
   const { userId, shopId, status, itemName, newerThan, orderBy, page, limit } =
@@ -225,43 +228,7 @@ export async function createOrders(cartItems: Cart[], address: UserAddress) {
       else throw new Error("createOrder: item and image not eagerly loaded");
     });
 
-    if (outOfStockCarts.length === 0) {
-      // group cart items by shopId
-      const cartsByShop = Object.entries(
-        cartItems.reduce((cartsByShop, cartItem) => {
-          const shopId = cartItem.item?.shopId!;
-          return {
-            ...cartsByShop,
-            // add cart to property if exist, create new one if not
-            [shopId]: cartsByShop[shopId]
-              ? [...cartsByShop[shopId], cartItem]
-              : [cartItem],
-          };
-        }, {} as Record<string, Cart[]>)
-      );
-
-      // create order for each shop
-      const orders = await Promise.all(
-        cartsByShop.map(([shopId, cartItems]) =>
-          createOrder(cartItems, addressData.data, userId, transaction)
-        )
-      );
-
-      // set timeout
-      await Promise.all(
-        orders.map(async ({ id, status, createdAt }) => {
-          if (!createdAt) throw Error("processOrder: createdAt not loaded");
-          await setCancelOrderTimeout(
-            id,
-            addMinutes(createdAt, AWAITING_CONFIRMATION_TIMEOUT_MINUTE),
-            status
-          );
-        })
-      );
-
-      return orders;
-    } //some item out of stock
-    else
+    if (outOfStockCarts.length !== 0) {
       throw new InventoryError(
         outOfStockCarts.map(({ quantity, item }) => ({
           id: item?.id ?? "", // undefined shouldn't happen
@@ -269,6 +236,39 @@ export async function createOrders(cartItems: Cart[], address: UserAddress) {
           quantity,
         }))
       );
+    }
+
+    // group cart items by shopId
+    const cartsByShop = Object.entries(
+      cartItems.reduce((cartsByShop, cartItem) => {
+        const shopId = cartItem.item?.shopId!;
+        // add cart to property if exist, create new one if not
+        cartsByShop[shopId] = cartsByShop[shopId]
+          ? [...cartsByShop[shopId], cartItem]
+          : [cartItem];
+        return cartsByShop;
+      }, {} as Record<string, Cart[]>)
+    );
+
+    // create order for each shop
+    const orders = await Promise.all(
+      cartsByShop.map(([shopId, cartItems]) =>
+        createOrder(cartItems, addressData.data, userId, shopId, transaction)
+      )
+    );
+
+    // set timeout
+    await Promise.all(
+      orders.map(async ({ id, status, createdAt }) => {
+        if (!createdAt) throw Error("processOrder: createdAt not loaded");
+        await setCancelOrderTimeout(
+          id,
+          addMinutes(createdAt, AWAITING_CONFIRMATION_TIMEOUT_MINUTE),
+          status
+        );
+      })
+    );
+    return orders;
   });
 }
 
@@ -277,23 +277,23 @@ export async function createOrders(cartItems: Cart[], address: UserAddress) {
  * @param cartItems cart item to be processed
  * @param addressData
  * @param transaction
- * @returns
+ * @returns order id of created order.
  */
 async function createOrder(
   cartItems: Cart[],
   addressData: z.infer<typeof orderAddressSchema>,
   userId: string,
+  shopId: string,
   transaction: Transaction
 ): Promise<Order> {
   if (cartItems.length === 0)
     throw Error("Order.createOrder: creating order with no item");
 
-  const shopId = cartItems[0].item!.shopId;
-
   //sort items ascending by item name
   const sortedItems = cartItems
     .map((cart) => cart.item)
     .sort((a, b) => (a?.name ?? "").localeCompare(b?.name ?? ""));
+
   const totalPrice = cartItems.reduce(
     (sum, { quantity, item }) => sum + quantity * (item?.price ?? 0),
     0
@@ -311,34 +311,44 @@ async function createOrder(
     },
     { transaction }
   );
+
   await order.reload({ include: Shop, transaction });
 
-  order.items = await Promise.all(
+  await Promise.all(
     cartItems.map(async ({ quantity, item }) => {
-      const { id, name, description, price, images } = item!;
+      const { id, name, description, price, images, version } = item!;
       if (images === undefined) throw Error("images not eagerly loaded");
-      const createdItem = await OrderItem.create(
-        {
-          orderId: order.id,
+      const [createdItem, created] = await TempOrderItem.findOrCreate({
+        where: { id, version },
+        defaults: {
           id,
+          version,
           name,
           description,
           price,
+        },
+        transaction,
+      });
+      if (created)
+        await TempOrderItemImage.bulkCreate(
+          images.map(({ itemId, imageName, order: imageOrder }) => ({
+            itemId,
+            version,
+            imageName,
+            order: imageOrder,
+          })),
+          { transaction }
+        );
+
+      await OrderOrderItem.create(
+        {
+          orderId: order.id,
+          itemId: id,
+          version,
           quantity,
         },
         { transaction }
       );
-      const createdImages = await OrderItemImage.bulkCreate(
-        images.map(({ itemId, imageName, order: imageOrder }) => ({
-          orderId: order.id,
-          itemId,
-          imageName,
-          order: imageOrder,
-        })),
-        { transaction }
-      );
-      createdItem.images = createdImages;
-      return createdItem;
     })
   );
 
@@ -354,6 +364,5 @@ async function createOrder(
       await cartItem.destroy({ transaction });
     })
   );
-
   return order;
 }

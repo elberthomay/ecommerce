@@ -37,7 +37,7 @@ class OrderOrderItem extends Model<OrderOrderItemCreationAttribute> {
   @Column({
     type: DataType.INTEGER,
     allowNull: false,
-    default: 1,
+    defaultValue: 1,
   })
   quantity!: number;
 

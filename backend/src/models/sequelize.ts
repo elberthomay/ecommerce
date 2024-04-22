@@ -67,6 +67,10 @@ TempOrderItemImage.afterSync(
 );
 
 OrderOrderItem.afterSync(
+  addFKIfNotExistToModel(OrderOrderItem, Order, [["orderId", "id"]])
+);
+
+OrderOrderItem.afterSync(
   addFKIfNotExistToModel(OrderOrderItem, TempOrderItem, [
     ["itemId", "id"],
     ["version", "version"],
