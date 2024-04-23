@@ -302,7 +302,12 @@ async function createOrder(
   //sort items ascending by item name
   const sortedItems = cartItems
     .map((cart) => cart.item)
-    .sort((a, b) => (a?.name ?? "").localeCompare(b?.name ?? ""));
+    .sort((a, b) =>
+      (a?.name.toLowerCase() ?? "").localeCompare(b?.name.toLowerCase() ?? "")
+    );
+  const sortedImages = sortedItems[0]?.images
+    .map((img) => img)
+    .sort((a, b) => a.order - b.order);
 
   const totalPrice = cartItems.reduce(
     (sum, { quantity, item }) => sum + quantity * (item?.price ?? 0),
@@ -317,7 +322,7 @@ async function createOrder(
       ...addressData,
       name: sortedItems[0]?.name!,
       totalPrice,
-      image: sortedItems[0]?.images[0]?.imageName,
+      image: sortedImages?.[0].imageName,
     },
     { transaction }
   );
