@@ -8,10 +8,10 @@ import {
   PrimaryKey,
   HasMany,
 } from "sequelize-typescript";
-import NotFoundError from "../errors/NotFoundError";
-import OrderItemImage, { getOrderItemImageInclude } from "./OrderItemImage";
+import OrderItemImage, {
+  OrderItemImageCreationAttribute,
+} from "./OrderItemImage";
 import Order from "./Order";
-import Shop from "./Shop";
 
 export interface OrderItemCreationAttribute {
   id: string;
@@ -22,6 +22,7 @@ export interface OrderItemCreationAttribute {
   quantity: number;
   createdAt?: Date;
   updatedAt?: Date;
+  images?: OrderItemImageCreationAttribute[];
 }
 
 @Table({ tableName: "OrderItem" })
@@ -84,26 +85,6 @@ class OrderItem extends Model<OrderItemCreationAttribute> {
     const defaultJson = super.toJSON();
     return defaultJson;
   }
-}
-
-export async function getOrderItem(
-  orderId: string,
-  itemId: string
-): Promise<OrderItem> {
-  const orderItem = await OrderItem.findOne({
-    where: { orderId, id: itemId },
-    include: [
-      {
-        model: Order,
-        attributes: ["shopId"],
-        include: [{ model: Shop, attributes: ["name"] }],
-      },
-      getOrderItemImageInclude(OrderItem.tableName),
-    ],
-    order: [["images", "order", "ASC"]],
-  });
-  if (orderItem) return orderItem;
-  else throw new NotFoundError("OrderItem");
 }
 
 export default OrderItem;

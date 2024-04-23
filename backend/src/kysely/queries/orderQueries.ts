@@ -120,3 +120,68 @@ export const getOrderDetailWithOldItemQuery = (orderId: string) =>
       ).as("items"),
     ])
     .where("Order.id", "=", orderId);
+
+export const getOrderItemWithOldItemQuery = (orderId: string, itemId: string) =>
+  db
+    .selectFrom("OrderOrderItem")
+    .innerJoin("TempOrderItem", (join) =>
+      join
+        .onRef("OrderOrderItem.itemId", "=", "TempOrderItem.id")
+        .onRef("OrderOrderItem.version", "=", "TempOrderItem.version")
+    )
+    .innerJoin("Order", "OrderOrderItem.orderId", "Order.id")
+    .innerJoin("Shop", "Order.shopId", "Shop.id")
+    .select((eb) => [
+      "TempOrderItem.id",
+      "TempOrderItem.name",
+      "price",
+      "OrderOrderItem.quantity",
+      "TempOrderItem.description",
+      "Order.shopId",
+      "Shop.name as shopName",
+      "OrderOrderItem.createdAt",
+      jsonArrayFrom(
+        eb
+          .selectFrom("TempOrderItemImage")
+          .select(["imageName", "order"])
+          .whereRef("TempOrderItemImage.itemId", "=", "TempOrderItem.id")
+          .whereRef("TempOrderItemImage.version", "=", "TempOrderItem.version")
+          .orderBy(
+            eb.fn
+              .agg<number>("row_number")
+              .over((ob: any) => ob.orderBy("order"))
+          )
+      ).as("images"),
+    ])
+    .where("OrderOrderItem.orderId", "=", orderId)
+    .where("OrderOrderItem.itemId", "=", itemId)
+    .unionAll((eb) =>
+      eb
+        .selectFrom("OrderItem")
+        .innerJoin("Order", "OrderItem.orderId", "Order.id")
+        .innerJoin("Shop", "Order.shopId", "Shop.id")
+        .select((eb) => [
+          "OrderItem.id",
+          "OrderItem.name",
+          "price",
+          "quantity",
+          "OrderItem.description",
+          "Order.shopId",
+          "Shop.name as shopName",
+          "OrderItem.createdAt",
+          jsonArrayFrom(
+            eb
+              .selectFrom("OrderItemImage")
+              .select(["imageName", "order"])
+              .whereRef("OrderItemImage.orderId", "=", "OrderItem.orderId")
+              .whereRef("OrderItemImage.itemId", "=", "OrderItem.id")
+              .orderBy(
+                eb.fn
+                  .agg<number>("row_number")
+                  .over((ob: any) => ob.orderBy("order"))
+              )
+          ).as("images"),
+        ])
+        .where("OrderItem.orderId", "=", orderId)
+        .where("OrderItem.id", "=", itemId)
+    );

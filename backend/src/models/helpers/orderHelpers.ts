@@ -32,7 +32,10 @@ import { addMinutes } from "date-fns";
 import TempOrderItem from "../temp/TempOrderItem";
 import OrderOrderItem from "../temp/OrderOrderItem";
 import TempOrderItemImage from "../temp/TempOrderItemImage";
-import { getOrderDetailWithOldItemQuery } from "../../kysely/queries/orderQueries";
+import {
+  getOrderDetailWithOldItemQuery,
+  getOrderItemWithOldItemQuery,
+} from "../../kysely/queries/orderQueries";
 import NotFoundError from "../../errors/NotFoundError";
 
 function getOrderTimeout(status: string, updatedAt: Date) {
@@ -78,6 +81,19 @@ export async function getOrders(options: z.infer<typeof getOrdersOption>) {
     offset: limit * (page - 1),
   });
   return orders;
+}
+
+export async function getOrderItem(orderId: string, itemId: string) {
+  const orderItem = await getOrderItemWithOldItemQuery(
+    orderId,
+    itemId
+  ).executeTakeFirst();
+  if (!orderItem) throw new NotFoundError("OrderItem");
+
+  return {
+    ...orderItem,
+    createdAt: orderItem.createdAt.toISOString(),
+  };
 }
 
 export async function getOrderDetail(orderId: string) {

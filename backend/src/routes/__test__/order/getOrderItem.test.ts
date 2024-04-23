@@ -2,7 +2,9 @@ import request from "supertest";
 import app from "../../../app";
 import authenticationTests from "../../../test/authenticationTests.test";
 import Order from "../../../models/Order";
-import OrderItem from "../../../models/OrderItem";
+import OrderItem, {
+  OrderItemCreationAttribute,
+} from "../../../models/OrderItem";
 import User from "../../../models/User";
 import Shop from "../../../models/Shop";
 import { invalidUuid } from "../../../test/helpers/commonData";
@@ -12,7 +14,11 @@ import {
   forgeCookie,
 } from "../../../test/helpers/user/userHelper";
 import { createShop } from "../../../test/helpers/shop/shopHelper";
-import { generateOrders } from "../../../test/helpers/order/orderHelper";
+import {
+  fullGenerateOrderData,
+  fullGenerateOrderItemData,
+  generateOrders,
+} from "../../../test/helpers/order/orderHelper";
 import {
   printedExpect,
   validatedExpect,
@@ -21,6 +27,9 @@ import { faker } from "@faker-js/faker";
 import { formatOrderItem, orderItemOutputSchema } from "@elycommerce/common";
 import { defaultUser as defaultUserData } from "../../../test/helpers/user/userData";
 import { z } from "zod";
+import TempOrderItem from "../../../models/temp/TempOrderItem";
+import OrderOrderItem from "../../../models/temp/OrderOrderItem";
+import TempOrderItemImage from "../../../models/temp/TempOrderItemImage";
 
 const getUrl = (orderId: string, itemId: string) =>
   `/api/order/${orderId}/item/${itemId}`;
@@ -154,4 +163,71 @@ it("return 200 with correct item and correct format", async () => {
         sortedImageByOrder
       );
     });
+});
+
+describe("with new table", () => {
+  let newTableOrder: Order;
+  let selectedOrderItemData: OrderItemCreationAttribute;
+  let expectedOrderItem: z.infer<typeof orderItemOutputSchema>;
+  //create order
+  beforeEach(async () => {
+    [newTableOrder] = await generateOrders(
+      [{ items: 1 }],
+      {
+        id: defaultUser.id,
+      },
+      { id: defaultShop.id, name: defaultShop.name }
+    ); // order without item
+
+    //create 2 item with same id, different version
+    selectedOrderItemData = fullGenerateOrderItemData({})();
+    const otherOrderItemData = fullGenerateOrderItemData({
+      id: selectedOrderItemData.id,
+    })();
+
+    await TempOrderItem.bulkCreate([
+      { ...selectedOrderItemData, version: 1 },
+      { ...otherOrderItemData, version: 0 },
+    ]);
+
+    await TempOrderItemImage.bulkCreate(
+      selectedOrderItemData.images!.map((img) => ({ ...img, version: 1 }))
+    );
+    await TempOrderItemImage.bulkCreate(
+      otherOrderItemData.images!.map((img) => ({ ...img, version: 0 }))
+    );
+
+    const additionalData = {
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      quantity: 10,
+    };
+
+    //link newer of them to created order
+    await OrderOrderItem.create({
+      orderId: newTableOrder.id,
+      itemId: selectedOrderItemData.id,
+      version: 1,
+      ...additionalData,
+    });
+
+    expectedOrderItem = orderItemOutputSchema.parse({
+      ...selectedOrderItemData,
+      shopName: defaultShop.name,
+      shopId: defaultShop.id,
+      orderId: newTableOrder.id,
+      ...additionalData,
+    });
+  });
+
+  it("return 200 with correct item", async () => {
+    await getRequest(
+      getUrl(newTableOrder.id, selectedOrderItemData.id),
+      defaultCookie()
+    )
+      .expect(printedExpect(200))
+      .expect(({ body }) => {
+        expect(body).toEqual(JSON.parse(JSON.stringify(expectedOrderItem)));
+      });
+  });
 });

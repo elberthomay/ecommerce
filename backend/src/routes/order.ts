@@ -14,6 +14,7 @@ import {
   createOrders,
   deliverOrder,
   getOrderDetail,
+  getOrderItem,
   getOrders,
 } from "../models/helpers/orderHelpers";
 import {
@@ -28,12 +29,13 @@ import {
   formatOrder,
   OrderStatuses,
   getOrderDetailOutputSchema,
+  orderItemOutputSchema,
 } from "@elycommerce/common";
 import { authorization } from "../middlewares/authorize";
 import validator from "../middlewares/validator";
 import { z } from "zod";
 import Shop, { ShopCreationAttribute } from "../models/Shop";
-import OrderItem, { getOrderItem } from "../models/OrderItem";
+import OrderItem from "../models/OrderItem";
 import { getOrderItemImageInclude } from "../models/OrderItemImage";
 import sequelize from "../models/sequelize";
 import NoAddressSelectedError from "../errors/NoAddressSelectedError";
@@ -211,9 +213,9 @@ router.get(
   catchAsync(
     async (req: IGetOrderItemRequest, res: Response, next: NextFunction) => {
       const { orderId, itemId } = req.params;
-      const orderItem = await getOrderItem(orderId, itemId);
-      const result = await formatOrderItem.parseAsync(orderItem);
-      res.json(result);
+      const orderItemData: z.infer<typeof orderItemOutputSchema> =
+        await getOrderItem(orderId, itemId);
+      res.json(orderItemData);
     }
   )
 );

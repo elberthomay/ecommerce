@@ -147,7 +147,7 @@ export const fullGenerateOrderData =
     return completeOrderData;
   };
 
-const fullGenerateOrderItemData =
+export const fullGenerateOrderItemData =
   (orderItemData?: PartialOrderItemGenerationAttribute) =>
   (): Omit<OrderItemCreationAttribute, "images"> & {
     images: OrderItemImageCreationAttribute[];
@@ -169,6 +169,7 @@ const fullGenerateOrderItemData =
         ...orderItemData,
         orderId,
         id: itemId,
+        images: undefined,
       })(),
       images: completeImageData,
     };
