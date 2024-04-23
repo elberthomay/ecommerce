@@ -30,6 +30,7 @@ import {
   OrderStatuses,
   getOrderDetailOutputSchema,
   orderItemOutputSchema,
+  getOrdersOutputSchema,
 } from "@elycommerce/common";
 import { authorization } from "../middlewares/authorize";
 import validator from "../middlewares/validator";
@@ -155,9 +156,10 @@ router.get(
         ...req.query,
         userId: user!.id,
       };
-      const orders = await getOrders(options);
-      const result = await formatGetOrders.parseAsync(orders);
-      res.json(result);
+      const orders: z.infer<typeof getOrdersOutputSchema> = await getOrders(
+        options
+      );
+      res.json(orders);
     }
   )
 );
@@ -183,9 +185,10 @@ router.get(
         ...req.query,
         shopId: shop!.id,
       };
-      const orders = await getOrders(options);
-      const result = await formatGetOrders.parseAsync(orders);
-      res.json(result);
+      const orders: z.infer<typeof getOrdersOutputSchema> = await getOrders(
+        options
+      );
+      res.json(orders);
     }
   )
 );

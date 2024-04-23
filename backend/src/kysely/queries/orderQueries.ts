@@ -1,14 +1,9 @@
-import { sql } from "kysely";
 import { db } from "../database";
 import { jsonArrayFrom, jsonObjectFrom } from "kysely/helpers/mysql";
-export const getOrdersQuery = (orderIds: string[]) =>
-  db
-    .selectFrom("Order")
-    .innerJoin("Shop", "Order.shopId", "Shop.id")
-    .selectAll("Order")
-    .select("Shop.name as shopName")
-    .where("Order.id", "in", orderIds)
-    .orderBy("Order.shopId");
+import { getOrdersOption } from "@elycommerce/common";
+import { z } from "zod";
+import { DB } from "../schema";
+import { SelectQueryBuilder } from "kysely";
 
 export const getOrderDetailQuery = (orderId: string) =>
   db
@@ -185,3 +180,53 @@ export const getOrderItemWithOldItemQuery = (orderId: string, itemId: string) =>
         .where("OrderItem.orderId", "=", orderId)
         .where("OrderItem.id", "=", itemId)
     );
+
+enum orderOrderOptions {
+  oldest = "Order.createdAt asc",
+  newest = "Order.createdAt desc",
+}
+
+export const getOrdersQuery = (options: z.infer<typeof getOrdersOption>) => {
+  const { userId, shopId, status, itemName, newerThan, orderBy, page, limit } =
+    options;
+  const offset = limit * (page - 1);
+  let query = db
+    .selectFrom("Order")
+    .innerJoin("Shop", "Shop.id", "Order.shopId")
+    .selectAll("Order")
+    .select(["Shop.name as shopName"])
+    .orderBy(orderOrderOptions[orderBy ?? "newest"])
+    .limit(limit)
+    .offset(offset);
+
+  if (userId) query = query.where("Order.userId", "=", userId);
+  if (shopId) query = query.where("Order.shopId", "=", shopId);
+  if (status) query = query.where("Order.status", "in", status);
+  if (newerThan) query = query.where("Order.createdAt", ">=", newerThan);
+  if (itemName)
+    query = query.where(({ exists, selectFrom }) =>
+      exists(
+        selectFrom((eb) =>
+          eb
+            .selectFrom("OrderOrderItem")
+            .innerJoin("TempOrderItem", (join) =>
+              join
+                .onRef("OrderOrderItem.itemId", "=", "TempOrderItem.id")
+                .onRef("OrderOrderItem.version", "=", "TempOrderItem.version")
+            )
+            .select(["TempOrderItem.name", "OrderOrderItem.orderId"])
+            .unionAll(
+              eb
+                .selectFrom("OrderItem")
+                .select(["OrderItem.name", "OrderItem.orderId"])
+            )
+            .as("searchSub")
+        )
+          .selectAll()
+          .whereRef("searchSub.orderId", "=", "Order.id")
+          .where("searchSub.name", "like", `%${itemName}%`)
+      )
+    );
+
+  return query;
+};

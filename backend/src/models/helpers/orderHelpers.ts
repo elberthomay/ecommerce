@@ -35,6 +35,7 @@ import TempOrderItemImage from "../temp/TempOrderItemImage";
 import {
   getOrderDetailWithOldItemQuery,
   getOrderItemWithOldItemQuery,
+  getOrdersQuery,
 } from "../../kysely/queries/orderQueries";
 import NotFoundError from "../../errors/NotFoundError";
 
@@ -52,35 +53,16 @@ function getOrderTimeout(status: string, updatedAt: Date) {
 }
 
 export async function getOrders(options: z.infer<typeof getOrdersOption>) {
-  const { userId, shopId, status, itemName, newerThan, orderBy, page, limit } =
-    options;
+  const orders = await getOrdersQuery(options).execute();
 
-  const whereOption = omitBy(
-    {
-      userId,
-      shopId,
-      status,
-      createdAt: newerThan ? { [Op.gte]: newerThan } : undefined,
-    },
-    isUndefined
-  );
-  const includeOption: Includeable[] = [Shop];
-  if (itemName)
-    includeOption.push({
-      model: OrderItem,
-      attributes: ["id"],
-      where: {
-        name: { [Op.substring]: itemName },
-      }, // inner join intended
-    });
-  const orders = await Order.findAll({
-    where: whereOption,
-    include: includeOption,
-    order: [orderOrderOptions[orderBy ?? "newest"]],
-    limit,
-    offset: limit * (page - 1),
-  });
-  return orders;
+  return orders.map((order) => ({
+    ...order,
+    createdAt: order.createdAt.toISOString(),
+    updatedAt: order.updatedAt.toISOString(),
+    longitude: Number(order.longitude),
+    latitude: Number(order.latitude),
+    status: order.status as OrderStatuses,
+  }));
 }
 
 export async function getOrderItem(orderId: string, itemId: string) {
