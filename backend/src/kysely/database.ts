@@ -6,8 +6,8 @@ const dialect = new MysqlDialect({
   pool: createPool({
     database: process.env.DB_NAME ?? "ecommerce_test",
     host: process.env.DB_HOST ?? "ecommerce-db-srv",
-    user: process.env.DB_USERNAME!,
-    password: process.env.DB_PASSWORD!,
+    user: process.env.BACKEND_DB_USERNAME!,
+    password: process.env.BACKEND_DB_PASSWORD!,
     port: 3306,
     connectionLimit: 10,
     timezone: "Z",
