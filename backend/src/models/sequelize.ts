@@ -25,8 +25,8 @@ const sequelize = new Sequelize({
   dialectOptions: {
     decimalNumbers: true,
   },
-  username: process.env.DB_USERNAME ?? "root",
-  password: process.env.DB_PASSWORD ?? "123456",
+  username: process.env.BACKEND_DB_USERNAME ?? "root",
+  password: process.env.BACKEND_DB_PASSWORD ?? "123456",
   host: process.env.DB_HOST ?? "ecommerce-db-srv",
   models: [
     User,

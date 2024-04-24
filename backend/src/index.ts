@@ -6,8 +6,8 @@ import agenda from "./agenda/agenda";
 (async () => {
   if (
     !process.env.DB_NAME ||
-    !process.env.DB_USERNAME ||
-    !process.env.DB_PASSWORD
+    !process.env.BACKEND_DB_USERNAME ||
+    !process.env.BACKEND_DB_PASSWORD
   )
     console.error("database secret value not set");
   else if (!process.env.AWS_ACCESS_KEY_ID || !process.env.AWS_SECRET_ACCESS_KEY)
