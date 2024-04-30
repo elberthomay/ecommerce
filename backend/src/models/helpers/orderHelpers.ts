@@ -30,8 +30,8 @@ import TempOrderItem from "../temp/TempOrderItem";
 import OrderOrderItem from "../temp/OrderOrderItem";
 import TempOrderItemImage from "../temp/TempOrderItemImage";
 import {
-  getOrderDetailWithOldItemQuery,
-  getOrderItemWithOldItemQuery,
+  getOrderDetailQuery,
+  getOrderItemQuery,
   getOrderQuery,
   getOrdersQuery,
 } from "../../kysely/queries/orderQueries";
@@ -80,10 +80,7 @@ export async function getOrders(options: z.infer<typeof getOrdersOption>) {
 }
 
 export async function getOrderItem(orderId: string, itemId: string) {
-  const orderItem = await getOrderItemWithOldItemQuery(
-    orderId,
-    itemId
-  ).executeTakeFirst();
+  const orderItem = await getOrderItemQuery(orderId, itemId).executeTakeFirst();
   if (!orderItem) throw new NotFoundError("OrderItem");
 
   return {
@@ -93,9 +90,7 @@ export async function getOrderItem(orderId: string, itemId: string) {
 }
 
 export async function getOrderDetail(orderId: string) {
-  const order = await getOrderDetailWithOldItemQuery(
-    orderId
-  ).executeTakeFirst();
+  const order = await getOrderDetailQuery(orderId).executeTakeFirst();
   if (!order) throw new NotFoundError("Order");
 
   const timeout = getOrderTimeout(order.status, order.updatedAt)?.toISOString();

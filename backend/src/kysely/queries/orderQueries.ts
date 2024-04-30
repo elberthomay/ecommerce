@@ -3,6 +3,11 @@ import { jsonArrayFrom, jsonObjectFrom } from "kysely/helpers/mysql";
 import { getOrdersOption } from "@elycommerce/common";
 import { z } from "zod";
 
+enum orderOrderOptions {
+  oldest = "Order.createdAt asc",
+  newest = "Order.createdAt desc",
+}
+
 export const getOrderQuery = (orderId: string) =>
   db
     .selectFrom("Order")
@@ -70,7 +75,6 @@ export const getOrderDetailQuery = (orderId: string) =>
           .selectFrom("OrderOrderItem")
           .innerJoin("TempOrderItem", (join) =>
             join
-              .onRef("OrderOrderItem.orderId", "=", "Order.id")
               .onRef("OrderOrderItem.itemId", "=", "TempOrderItem.id")
               .onRef("OrderOrderItem.version", "=", "TempOrderItem.version")
           )
@@ -80,72 +84,8 @@ export const getOrderDetailQuery = (orderId: string) =>
               .onRef("TempOrderItemImage.version", "=", "TempOrderItem.version")
               .on("TempOrderItemImage.order", "=", 0)
           )
-          .select((eb) => [
-            "id",
-            "name",
-            "price",
-            "quantity",
-            "imageName as image",
-          ])
-          .orderBy(
-            eb.fn
-              .agg<number>("row_number")
-              .over((ob: any) => ob.orderBy("TempOrderItem.name"))
-          )
-      ).as("items"),
-    ])
-    .where("Order.id", "=", orderId);
-
-export const getOrderDetailWithOldItemQuery = (orderId: string) =>
-  db
-    .selectFrom("Order")
-    .innerJoin("Shop", "Order.shopId", "Shop.id")
-    .selectAll("Order")
-    .select((eb) => [
-      "Shop.name as shopName",
-      jsonArrayFrom(
-        eb
-          .selectFrom(({ eb }) =>
-            eb
-              .selectFrom("OrderOrderItem")
-              .innerJoin("TempOrderItem", (join) =>
-                join
-                  .onRef("OrderOrderItem.itemId", "=", "TempOrderItem.id")
-                  .onRef("OrderOrderItem.version", "=", "TempOrderItem.version")
-              )
-              .leftJoin("TempOrderItemImage", (join) =>
-                join
-                  .onRef("TempOrderItemImage.itemId", "=", "TempOrderItem.id")
-                  .onRef(
-                    "TempOrderItemImage.version",
-                    "=",
-                    "TempOrderItem.version"
-                  )
-                  .on("TempOrderItemImage.order", "=", 0)
-              )
-              .select(["id", "name", "price", "quantity", "imageName as image"])
-              .whereRef("OrderOrderItem.orderId", "=", "Order.id")
-              .unionAll((ebUnused) =>
-                eb
-                  .selectFrom("OrderItem")
-                  .leftJoin("OrderItemImage", (join) =>
-                    join
-                      .onRef("OrderItem.orderId", "=", "OrderItemImage.orderId")
-                      .onRef("OrderItem.id", "=", "OrderItemImage.itemId")
-                      .on("OrderItemImage.order", "=", 0)
-                  )
-                  .select([
-                    "id",
-                    "name",
-                    "price",
-                    "quantity",
-                    "imageName as image",
-                  ])
-                  .whereRef("OrderItem.orderId", "=", "Order.id")
-              )
-              .as("comb")
-          )
-          .select(["id", "name", "price", "quantity", "image"])
+          .select(["id", "name", "price", "quantity", "imageName as image"])
+          .whereRef("OrderOrderItem.orderId", "=", "Order.id")
           .orderBy(
             eb.fn
               .agg<number>("row_number")
@@ -155,7 +95,7 @@ export const getOrderDetailWithOldItemQuery = (orderId: string) =>
     ])
     .where("Order.id", "=", orderId);
 
-export const getOrderItemWithOldItemQuery = (orderId: string, itemId: string) =>
+export const getOrderItemQuery = (orderId: string, itemId: string) =>
   db
     .selectFrom("OrderOrderItem")
     .innerJoin("TempOrderItem", (join) =>
@@ -188,37 +128,7 @@ export const getOrderItemWithOldItemQuery = (orderId: string, itemId: string) =>
       ).as("images"),
     ])
     .where("OrderOrderItem.orderId", "=", orderId)
-    .where("OrderOrderItem.itemId", "=", itemId)
-    .unionAll((eb) =>
-      eb
-        .selectFrom("OrderItem")
-        .innerJoin("Order", "OrderItem.orderId", "Order.id")
-        .innerJoin("Shop", "Order.shopId", "Shop.id")
-        .select((eb) => [
-          "OrderItem.id",
-          "OrderItem.name",
-          "price",
-          "quantity",
-          "OrderItem.description",
-          "Order.shopId",
-          "Shop.name as shopName",
-          "OrderItem.createdAt",
-          jsonArrayFrom(
-            eb
-              .selectFrom("OrderItemImage")
-              .select(["imageName", "order"])
-              .whereRef("OrderItemImage.orderId", "=", "OrderItem.orderId")
-              .whereRef("OrderItemImage.itemId", "=", "OrderItem.id")
-              .orderBy(
-                eb.fn
-                  .agg<number>("row_number")
-                  .over((ob: any) => ob.orderBy("order"))
-              )
-          ).as("images"),
-        ])
-        .where("OrderItem.orderId", "=", orderId)
-        .where("OrderItem.id", "=", itemId)
-    );
+    .where("OrderOrderItem.itemId", "=", itemId);
 
 export const getOrderItemQueryByVersion = (itemId: string, version: number) =>
   db
@@ -241,11 +151,6 @@ export const getOrderItemQueryByVersion = (itemId: string, version: number) =>
     .where("TempOrderItem.id", "=", itemId)
     .where("TempOrderItem.version", "=", version);
 
-enum orderOrderOptions {
-  oldest = "Order.createdAt asc",
-  newest = "Order.createdAt desc",
-}
-
 export const getOrdersQuery = (options: z.infer<typeof getOrdersOption>) => {
   const { userId, shopId, status, itemName, newerThan, orderBy, page, limit } =
     options;
@@ -266,25 +171,15 @@ export const getOrdersQuery = (options: z.infer<typeof getOrdersOption>) => {
   if (itemName)
     query = query.where(({ exists, selectFrom }) =>
       exists(
-        selectFrom((eb) =>
-          eb
-            .selectFrom("OrderOrderItem")
-            .innerJoin("TempOrderItem", (join) =>
-              join
-                .onRef("OrderOrderItem.itemId", "=", "TempOrderItem.id")
-                .onRef("OrderOrderItem.version", "=", "TempOrderItem.version")
-            )
-            .select(["TempOrderItem.name", "OrderOrderItem.orderId"])
-            .unionAll(
-              eb
-                .selectFrom("OrderItem")
-                .select(["OrderItem.name", "OrderItem.orderId"])
-            )
-            .as("searchSub")
-        )
-          .selectAll()
-          .whereRef("searchSub.orderId", "=", "Order.id")
-          .where("searchSub.name", "like", `%${itemName}%`)
+        selectFrom("OrderOrderItem")
+          .innerJoin("TempOrderItem", (join) =>
+            join
+              .onRef("OrderOrderItem.itemId", "=", "TempOrderItem.id")
+              .onRef("OrderOrderItem.version", "=", "TempOrderItem.version")
+          )
+          .select(["TempOrderItem.name", "OrderOrderItem.orderId"])
+          .whereRef("OrderOrderItem.orderId", "=", "Order.id")
+          .where("TempOrderItem.name", "like", `%${itemName}%`)
       )
     );
 

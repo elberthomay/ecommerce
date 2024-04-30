@@ -21,13 +21,10 @@ import {
   validatedExpect,
 } from "../../../test/helpers/assertionHelper";
 import { faker } from "@faker-js/faker";
-import { formatOrderItem, orderItemOutputSchema } from "@elycommerce/common";
+import { orderItemOutputSchema } from "@elycommerce/common";
 import { defaultUser as defaultUserData } from "../../../test/helpers/user/userData";
 import { z } from "zod";
-import TempOrderItem from "../../../models/temp/TempOrderItem";
-import OrderOrderItem from "../../../models/temp/OrderOrderItem";
-import TempOrderItemImage from "../../../models/temp/TempOrderItemImage";
-import { getOrderItemWithOldItemQuery } from "../../../kysely/queries/orderQueries";
+import { getOrderItemQuery } from "../../../kysely/queries/orderQueries";
 
 const getUrl = (orderId: string, itemId: string) =>
   `/api/order/${orderId}/item/${itemId}`;
@@ -143,7 +140,7 @@ it("return 200 with correct item and correct format", async () => {
   const orderIndex = Math.floor(Math.random() * orders.length);
   const itemIndex = Math.floor(Math.random() * orders[orderIndex].items.length);
 
-  const orderItemData = await getOrderItemWithOldItemQuery(
+  const orderItemData = await getOrderItemQuery(
     orders[orderIndex].id,
     orders[orderIndex].items[itemIndex].id
   ).executeTakeFirstOrThrow();
