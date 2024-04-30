@@ -23,28 +23,19 @@ import {
   getOrdersParam,
   getOrdersQuery,
   orderStatusChangeParams,
-  formatOrderItem,
   getOrderItemParam,
-  formatOrderDetail,
-  formatOrder,
-  OrderStatuses,
   getOrderDetailOutputSchema,
   orderItemOutputSchema,
   getOrdersOutputSchema,
+  orderOutputSchema,
 } from "@elycommerce/common";
 import { authorization } from "../middlewares/authorize";
 import validator from "../middlewares/validator";
 import { z } from "zod";
 import Shop, { ShopCreationAttribute } from "../models/Shop";
-import OrderItem from "../models/OrderItem";
-import { getOrderItemImageInclude } from "../models/OrderItemImage";
-import sequelize from "../models/sequelize";
 import NoAddressSelectedError from "../errors/NoAddressSelectedError";
 import { addMinutes } from "date-fns";
-import {
-  AWAITING_CONFIRMATION_TIMEOUT_MINUTE,
-  CONFIRMED_TIMEOUT_MINUTE,
-} from "../var/constants";
+import { AWAITING_CONFIRMATION_TIMEOUT_MINUTE } from "../var/constants";
 
 const router = Router();
 
@@ -292,20 +283,6 @@ const orderStatusChangeMiddlewareChain = [
     location: "params",
     key: ["id", "orderId"],
     destination: "order",
-    include: [
-      Shop,
-      {
-        model: OrderItem,
-        attributes: ["id", "name", "price", "quantity"],
-        include: [getOrderItemImageInclude("items")],
-      },
-    ],
-    order: [
-      sequelize.literal("`items`.`name` ASC"),
-      sequelize.literal("`items->images`.`order` ASC"),
-      // [OrderItem, "name", "ASC"],
-      // ["items.images", "order", "ASC"],
-    ],
     force: "exist",
   }),
   fetch<OrderCreationAttribute, TokenTypes>({
@@ -327,14 +304,9 @@ router.post(
       next: NextFunction
     ) => {
       const order = req.order!;
-      const updatedOrder: Order = await confirmOrder(order);
-      const timeout = addMinutes(
-        updatedOrder.updatedAt!,
-        CONFIRMED_TIMEOUT_MINUTE
-      ).toISOString();
-      const orderWithTimeout = { ...updatedOrder.toJSON(), timeout };
-      const result = await formatOrder.parseAsync(orderWithTimeout);
-      res.json(result);
+      const updatedOrder: z.infer<typeof orderOutputSchema> =
+        await confirmOrder(order);
+      res.json(updatedOrder);
     }
   )
 );
@@ -349,9 +321,9 @@ router.post(
       next: NextFunction
     ) => {
       const order = req.order!;
-      const updatedOrder: Order = await deliverOrder(order);
-      const result = await formatOrder.parseAsync(updatedOrder);
-      res.json(result);
+      const updatedOrder: z.infer<typeof orderOutputSchema> =
+        await deliverOrder(order);
+      res.json(updatedOrder);
     }
   )
 );
@@ -366,9 +338,11 @@ router.post(
       next: NextFunction
     ) => {
       const order = req.order!;
-      const updatedOrder: Order = await cancelOrder(order, req.side);
-      const result = await formatOrder.parseAsync(updatedOrder);
-      res.json(result);
+      const updatedOrder: z.infer<typeof orderOutputSchema> = await cancelOrder(
+        order,
+        req.side
+      );
+      res.json(updatedOrder);
     }
   )
 );

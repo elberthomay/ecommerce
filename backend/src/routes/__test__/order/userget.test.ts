@@ -157,13 +157,9 @@ describe("orders order by createdAt", () => {
 it("return order newer than certain date when newerThan is used", async () => {
   const threeMonthsAgo = new Date(
     new Date().setMonth(new Date().getMonth() - 3)
-  ).toISOString();
-  const twoMonthsAgo = new Date(
-    new Date().setMonth(new Date().getMonth() - 2)
-  ).toISOString();
-  const oneMonthAgo = new Date(
-    new Date().setMonth(new Date().getMonth() - 1)
-  ).toISOString();
+  );
+  const twoMonthsAgo = new Date(new Date().setMonth(new Date().getMonth() - 2));
+  const oneMonthAgo = new Date(new Date().setMonth(new Date().getMonth() - 1));
   await generateOrders(
     Array(10)
       .fill(undefined)
@@ -187,7 +183,7 @@ it("return order newer than certain date when newerThan is used", async () => {
   );
   await getRequest(
     defaultUser.id,
-    { newerThan: oneMonthAgo, limit: "100" },
+    { newerThan: oneMonthAgo.toISOString(), limit: "100" },
     defaultCookie()
   )
     .expect(printedExpect(200))

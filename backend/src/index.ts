@@ -1,3 +1,4 @@
+import "dotenv/config";
 import app from "./app";
 import sequelize from "./models/sequelize";
 import { DatabaseError } from "sequelize";

@@ -30,6 +30,7 @@ import { omit } from "lodash";
 import TempOrderItem from "../../../models/temp/TempOrderItem";
 import OrderOrderItem from "../../../models/temp/OrderOrderItem";
 import TempOrderItemImage from "../../../models/temp/TempOrderItemImage";
+import { getOrderDetailQuery } from "../../../kysely/queries/orderQueries";
 
 const getUrl = (orderId: string) => `/api/order/${orderId}`;
 
@@ -38,7 +39,6 @@ const getRequest = (url: string, cookie: string[]) =>
 
 let defaultUser: User;
 let defaultShop: Shop;
-let defaultOrder: Order;
 
 const defaultOrderId = faker.string.uuid();
 
@@ -46,21 +46,18 @@ beforeEach(async () => {
   try {
     defaultUser = (await createUser([defaultUserData])).users[0];
     defaultShop = (await createShop(1))[0];
-    defaultOrder = (
-      await generateOrders(
-        [
-          {
-            id: defaultOrderId,
-            items: Array(5)
-              .fill(undefined)
-              .map((_) => ({ images: 5 })),
-          },
-        ],
-        { id: defaultUser.id },
-        { id: defaultShop.id }
-      )
-    )[0];
-    defaultOrder.shop = defaultShop;
+    await generateOrders(
+      [
+        {
+          id: defaultOrderId,
+          items: Array(5)
+            .fill(undefined)
+            .map((_) => ({ images: 5 })),
+        },
+      ],
+      { id: defaultUser.id },
+      { id: defaultShop.id }
+    );
   } catch (e) {
     console.log(e);
   }
@@ -134,70 +131,59 @@ it("return correct data and format", async () => {
   //create a few more orders
   await generateOrders(3, { id: defaultUser.id }, { id: defaultShop.id });
 
-  const expectedResult = formatOrderDetail.parse(defaultOrder);
+  const expectedResult = await getOrderDetailQuery(
+    defaultOrderId
+  ).executeTakeFirstOrThrow();
+
   await getRequest(getUrl(defaultOrderId), defaultCookie())
     .expect(printedExpect(200))
     .expect(
       validatedExpect(getOrderDetailOutputSchema, async (data) => {
         expect(omit(data, ["timeout"])).toEqual(
-          JSON.parse(JSON.stringify(expectedResult))
+          JSON.parse(
+            JSON.stringify({
+              ...expectedResult,
+              latitude: Number(expectedResult.latitude),
+              longitude: Number(expectedResult.longitude),
+            })
+          )
         );
       })
     );
 });
 
 describe("successfuly fetch order with item in new table", () => {
-  let orderWithNewItem: Order;
-  let newTableItems: TempOrderItem[];
+  let fullOrder: Awaited<ReturnType<typeof generateOrders>>;
   beforeEach(async () => {
-    const orderData = fullGenerateOrderData({
-      items: Array(5)
-        .fill(null)
-        .map((_) => ({ images: 3 })),
-    })();
-    orderWithNewItem = await Order.create({
-      ...omit(orderData, ["items"]),
-      userId: defaultUser.id,
-      shopId: defaultShop.id,
-    });
-    newTableItems = await Promise.all(
-      orderData.items.map(async (itemData) => {
-        const item = await TempOrderItem.create({ ...itemData, version: 0 });
-
-        //create link
-        await OrderOrderItem.create({
-          orderId: orderWithNewItem.id,
-          itemId: item.id,
-          version: item.version,
-          quantity: itemData.quantity,
-        });
-        //create images
-        item.images = await TempOrderItemImage.bulkCreate(
-          itemData.images.map((imageData) => ({
-            ...imageData,
-            version: item.version,
-          }))
-        );
-        return item;
-      })
+    fullOrder = await generateOrders(
+      [
+        {
+          items: Array(5)
+            .fill(null)
+            .map((_) => ({ images: 3 })),
+        },
+      ],
+      { id: defaultUser.id },
+      { id: defaultShop.id }
     );
   });
 
   it("returns 200 and return order in correct format", async () => {
-    await getRequest(getUrl(orderWithNewItem.id), defaultCookie())
+    await getRequest(getUrl(fullOrder[0].id), defaultCookie())
       .expect(printedExpect(200))
       .expect(validatedExpect(getOrderDetailOutputSchema));
   });
 
   it("returns 200 and correct item and images", async () => {
-    await getRequest(getUrl(orderWithNewItem.id), defaultCookie())
+    await getRequest(getUrl(fullOrder[0].id), defaultCookie())
       .expect(200)
       .expect(
         ({ body }: { body: z.infer<typeof getOrderDetailOutputSchema> }) => {
           const receivedItems = body.items;
-          const sortedItems = [...newTableItems].sort((a, b) =>
-            a.name.toLowerCase().localeCompare(b.name.toLowerCase())
-          );
+
+          // returned order should already be sorted
+          const sortedItems = fullOrder[0].items;
+
           expect(receivedItems.length).toBe(sortedItems.length);
           sortedItems.map((item, i) => {
             expect(receivedItems[i]?.id).toBe(item.id);

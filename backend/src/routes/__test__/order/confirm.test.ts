@@ -1,7 +1,7 @@
 import request from "supertest";
 import app from "../../../app";
 import Order from "../../../models/Order";
-import { OrderStatuses } from "@elycommerce/common";
+import { OrderStatuses, getOrderDetailOutputSchema } from "@elycommerce/common";
 import authenticationTests from "../../../test/authenticationTests.test";
 import { generateOrders } from "../../../test/helpers/order/orderHelper";
 import { faker } from "@faker-js/faker";
@@ -24,6 +24,11 @@ import { setCancelOrderTimeout } from "../../../agenda/orderAgenda";
 import { addMinutes, differenceInMilliseconds } from "date-fns";
 import { CONFIRMED_TIMEOUT_MINUTE } from "../../../var/constants";
 import { omit } from "lodash";
+import {
+  getFullOrderQuery,
+  getOrderDetailQuery,
+  getOrderQuery,
+} from "../../../kysely/queries/orderQueries";
 
 const getUrl = (orderId: string) => `/api/order/${orderId}/confirm`;
 
@@ -32,26 +37,23 @@ const getRequest = (url: string, cookie: string[]) =>
 
 const defaultOrderId = faker.string.uuid();
 
-let defaultOrder: Order;
 let defaultUser: User;
 let defaultShop: Shop;
 
 beforeEach(async () => {
   defaultUser = (await createUser([defaultUserData])).users[0];
   defaultShop = (await createShop(1))[0];
-  defaultOrder = (
-    await generateOrders(
-      [
-        {
-          id: defaultOrderId,
-          status: OrderStatuses.AWAITING,
-          items: Array.from({ length: 4 }).map((_) => ({ images: 4 })),
-        },
-      ],
-      { id: defaultUser.id },
-      { id: defaultShop.id }
-    )
-  )[0];
+  await generateOrders(
+    [
+      {
+        id: defaultOrderId,
+        status: OrderStatuses.AWAITING,
+        items: Array.from({ length: 4 }).map((_) => ({ images: 4 })),
+      },
+    ],
+    { id: defaultUser.id },
+    { id: defaultShop.id }
+  );
   (setCancelOrderTimeout as jest.Mock).mockClear();
 });
 
@@ -123,11 +125,10 @@ it("return 409 when current status is not awaiting confirmation", async () => {
 });
 
 it("return 200 with correct data and format", async () => {
-  defaultOrder.shop = defaultShop;
-  defaultOrder.status = OrderStatuses.CONFIRMED;
-  const expectedResult = {
-    ...JSON.parse(JSON.stringify(formatOrder.parse(defaultOrder))),
-  };
+  const order = await getOrderQuery(defaultOrderId).executeTakeFirstOrThrow();
+  order.status = OrderStatuses.CONFIRMED;
+
+  const expectedResult = JSON.parse(JSON.stringify(order));
   await getRequest(getUrl(defaultOrderId), [
     forgeCookie({ id: defaultShop.userId }),
   ])
@@ -135,7 +136,15 @@ it("return 200 with correct data and format", async () => {
     .expect(
       validatedExpect(orderOutputSchema, (data, res) => {
         expect(omit(data, ["timeout"])).toEqual(
-          omit(expectedResult, ["timeout"])
+          omit(
+            {
+              ...expectedResult,
+              updatedAt: data.updatedAt, //would change, no need to be compared
+              latitude: Number(order.latitude),
+              longitude: Number(order.longitude),
+            },
+            ["timeout"]
+          )
         );
         expect(setCancelOrderTimeout).toHaveBeenCalledTimes(1);
         const [orderId, timeout, status] = (setCancelOrderTimeout as jest.Mock)

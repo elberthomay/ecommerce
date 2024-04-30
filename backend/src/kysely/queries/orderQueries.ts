@@ -2,10 +2,16 @@ import { db } from "../database";
 import { jsonArrayFrom, jsonObjectFrom } from "kysely/helpers/mysql";
 import { getOrdersOption } from "@elycommerce/common";
 import { z } from "zod";
-import { DB } from "../schema";
-import { SelectQueryBuilder } from "kysely";
 
-export const getOrderDetailQuery = (orderId: string) =>
+export const getOrderQuery = (orderId: string) =>
+  db
+    .selectFrom("Order")
+    .innerJoin("Shop", "Order.shopId", "Shop.id")
+    .selectAll("Order")
+    .select(["Shop.name as shopName"])
+    .where("Order.id", "=", orderId);
+
+export const getFullOrderQuery = (orderId: string) =>
   db
     .selectFrom("Order")
     .innerJoin("Shop", "Order.shopId", "Shop.id")
@@ -25,28 +31,61 @@ export const getOrderDetailQuery = (orderId: string) =>
             "id",
             "name",
             "price",
-            "version",
-            "OrderOrderItem.quantity",
+            "quantity",
             jsonArrayFrom(
               eb
                 .selectFrom("TempOrderItemImage")
                 .select(["imageName", "order"])
-                .whereRef(
-                  "TempOrderItemImage.itemId",
-                  "=",
-                  "OrderOrderItem.itemId"
-                )
+                .whereRef("TempOrderItemImage.itemId", "=", "TempOrderItem.id")
                 .whereRef(
                   "TempOrderItemImage.version",
                   "=",
-                  "OrderOrderItem.version"
+                  "TempOrderItem.version"
                 )
                 .orderBy(
                   eb.fn
                     .agg<number>("row_number")
-                    .over((ob: any) => ob.orderBy("TempOrderItemImage.order"))
+                    .over((ob: any) => ob.orderBy("order"))
                 )
             ).as("images"),
+          ])
+          .orderBy(
+            eb.fn
+              .agg<number>("row_number")
+              .over((ob: any) => ob.orderBy("TempOrderItem.name"))
+          )
+      ).as("items"),
+    ])
+    .where("Order.id", "=", orderId);
+
+export const getOrderDetailQuery = (orderId: string) =>
+  db
+    .selectFrom("Order")
+    .innerJoin("Shop", "Order.shopId", "Shop.id")
+    .selectAll("Order")
+    .select((eb) => [
+      "Shop.name as shopName",
+      jsonArrayFrom(
+        eb
+          .selectFrom("OrderOrderItem")
+          .innerJoin("TempOrderItem", (join) =>
+            join
+              .onRef("OrderOrderItem.orderId", "=", "Order.id")
+              .onRef("OrderOrderItem.itemId", "=", "TempOrderItem.id")
+              .onRef("OrderOrderItem.version", "=", "TempOrderItem.version")
+          )
+          .leftJoin("TempOrderItemImage", (join) =>
+            join
+              .onRef("TempOrderItemImage.itemId", "=", "TempOrderItem.id")
+              .onRef("TempOrderItemImage.version", "=", "TempOrderItem.version")
+              .on("TempOrderItemImage.order", "=", 0)
+          )
+          .select((eb) => [
+            "id",
+            "name",
+            "price",
+            "quantity",
+            "imageName as image",
           ])
           .orderBy(
             eb.fn
@@ -180,6 +219,27 @@ export const getOrderItemWithOldItemQuery = (orderId: string, itemId: string) =>
         .where("OrderItem.orderId", "=", orderId)
         .where("OrderItem.id", "=", itemId)
     );
+
+export const getOrderItemQueryByVersion = (itemId: string, version: number) =>
+  db
+    .selectFrom("TempOrderItem")
+    .selectAll()
+    .select((eb) => [
+      jsonArrayFrom(
+        eb
+          .selectFrom("TempOrderItemImage")
+          .select(["imageName", "order"])
+          .whereRef("TempOrderItemImage.itemId", "=", "TempOrderItem.id")
+          .whereRef("TempOrderItemImage.version", "=", "TempOrderItem.version")
+          .orderBy(
+            eb.fn
+              .agg<number>("row_number")
+              .over((ob: any) => ob.orderBy("order"))
+          )
+      ).as("images"),
+    ])
+    .where("TempOrderItem.id", "=", itemId)
+    .where("TempOrderItem.version", "=", version);
 
 enum orderOrderOptions {
   oldest = "Order.createdAt asc",

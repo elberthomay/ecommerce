@@ -1,6 +1,5 @@
 import request from "supertest";
 import app from "../../../app";
-import Order from "../../../models/Order";
 import { OrderStatuses } from "@elycommerce/common";
 import authenticationTests from "../../../test/authenticationTests.test";
 import { generateOrders } from "../../../test/helpers/order/orderHelper";
@@ -19,7 +18,13 @@ import {
 } from "../../../test/helpers/assertionHelper";
 import Shop from "../../../models/Shop";
 import { createShop } from "../../../test/helpers/shop/shopHelper";
-import { formatOrder, orderOutputSchema } from "@elycommerce/common";
+import { orderOutputSchema } from "@elycommerce/common";
+import {
+  getFullOrderQuery,
+  getOrderDetailQuery,
+  getOrderQuery,
+} from "../../../kysely/queries/orderQueries";
+import { omit } from "lodash";
 
 const getUrl = (orderId: string) => `/api/order/${orderId}/cancel`;
 
@@ -28,26 +33,23 @@ const getRequest = (url: string, cookie: string[]) =>
 
 const defaultOrderId = faker.string.uuid();
 
-let defaultOrder: Order;
 let defaultUser: User;
 let defaultShop: Shop;
 
 beforeEach(async () => {
   defaultUser = (await createUser([defaultUserData])).users[0];
   defaultShop = (await createShop(1))[0];
-  defaultOrder = (
-    await generateOrders(
-      [
-        {
-          id: defaultOrderId,
-          status: OrderStatuses.AWAITING,
-          items: Array.from({ length: 4 }).map((_) => ({ images: 4 })),
-        },
-      ],
-      { id: defaultUser.id },
-      { id: defaultShop.id }
-    )
-  )[0];
+  await generateOrders(
+    [
+      {
+        id: defaultOrderId,
+        status: OrderStatuses.AWAITING,
+        items: Array.from({ length: 4 }).map((_) => ({ images: 4 })),
+      },
+    ],
+    { id: defaultUser.id },
+    { id: defaultShop.id }
+  );
 });
 
 describe("passes authentication test", () => {
@@ -143,18 +145,27 @@ it("return 409 when current status is not awaiting confirmation when request by 
 });
 
 it("return 200 with correct data and format", async () => {
-  defaultOrder.shop = defaultShop;
-  defaultOrder.status = OrderStatuses.CANCELLED;
-  const expectedResult = JSON.parse(
-    JSON.stringify(formatOrder.parse(defaultOrder))
-  );
+  const order = await getOrderQuery(defaultOrderId).executeTakeFirstOrThrow();
+  order.status = OrderStatuses.CANCELLED;
+
+  const expectedResult = JSON.parse(JSON.stringify(order));
   await getRequest(getUrl(defaultOrderId), [
     forgeCookie({ id: defaultShop.userId }),
   ])
     .expect(printedExpect(200))
     .expect(
       validatedExpect(orderOutputSchema, (data, res) => {
-        expect(data).toEqual(expectedResult);
+        expect(data).toEqual({
+          ...expectedResult,
+          updatedAt: data.updatedAt, //would change, no need to be compared
+          latitude: Number(order.latitude),
+          longitude: Number(order.longitude),
+        });
       })
     );
+
+  const orderAfter = await getOrderQuery(
+    defaultOrderId
+  ).executeTakeFirstOrThrow();
+  expect(omit(order, ["updatedAt"])).toEqual(omit(orderAfter, ["updatedAt"]));
 });

@@ -1,13 +1,11 @@
 import { Includeable, Op, Transaction } from "sequelize";
 import Order, { orderOrderOptions } from "../Order";
 import { OrderStatuses } from "@elycommerce/common";
-import OrderItem from "../OrderItem";
 import {
   formatOrderAddress,
   getOrdersOption,
   orderAddressSchema,
 } from "@elycommerce/common";
-import OrderItemImage, { getOrderItemImageInclude } from "../OrderItemImage";
 import InvalidOrderStatusError from "../../errors/InvalidOrderStatusError";
 import Cart from "../Cart";
 import UserAddress from "../UserAddress";
@@ -17,7 +15,6 @@ import Item from "../Item";
 import ItemImage from "../ItemImage";
 import InventoryError from "../../errors/InventoryError";
 import { z } from "zod";
-import { isUndefined, omitBy } from "lodash";
 import Shop from "../Shop";
 import {
   setCancelOrderTimeout,
@@ -35,6 +32,7 @@ import TempOrderItemImage from "../temp/TempOrderItemImage";
 import {
   getOrderDetailWithOldItemQuery,
   getOrderItemWithOldItemQuery,
+  getOrderQuery,
   getOrdersQuery,
 } from "../../kysely/queries/orderQueries";
 import NotFoundError from "../../errors/NotFoundError";
@@ -50,6 +48,22 @@ function getOrderTimeout(status: string, updatedAt: Date) {
     ? addMinutes(updatedAt, timeoutMinute)
     : undefined;
   return timeout;
+}
+
+export async function getOrder(orderId: string) {
+  const order = await getOrderQuery(orderId).executeTakeFirst();
+  if (!order) throw new NotFoundError("Order");
+
+  const timeout = getOrderTimeout(order.status, order.updatedAt)?.toISOString();
+  return {
+    ...order,
+    createdAt: order.createdAt.toISOString(),
+    updatedAt: order.updatedAt.toISOString(),
+    longitude: Number(order.longitude),
+    latitude: Number(order.latitude),
+    status: order.status as OrderStatuses,
+    timeout,
+  };
 }
 
 export async function getOrders(options: z.infer<typeof getOrdersOption>) {
@@ -127,25 +141,6 @@ async function updateOrderStatus(
   });
 }
 
-async function reloadOrder(order: Order) {
-  await order.reload({
-    include: [
-      Shop,
-      {
-        model: OrderItem,
-        attributes: ["id", "name", "price", "quantity"],
-        include: [getOrderItemImageInclude("items")],
-      },
-    ],
-    order: [
-      sequelize.literal("`items`.`name` ASC"),
-      sequelize.literal("`items->images`.`order` ASC"),
-      // [OrderItem, "name", "ASC"],
-      // ["items.images", "order", "ASC"],
-    ],
-  });
-}
-
 export async function confirmOrder(order: Order) {
   const updatedOrder = await updateOrderStatus(
     order.id,
@@ -161,8 +156,7 @@ export async function confirmOrder(order: Order) {
         status
       )
   );
-  await reloadOrder(updatedOrder);
-  return updatedOrder;
+  return await getOrder(order.id);
 }
 
 export async function cancelOrder(order: Order, side?: "shop" | "user") {
@@ -180,8 +174,7 @@ export async function cancelOrder(order: Order, side?: "shop" | "user") {
       else return "Order could only be cancelled if it has yet to be delivered";
     }
   );
-  await reloadOrder(updatedOrder);
-  return updatedOrder;
+  return await getOrder(order.id);
 }
 
 export async function deliverOrder(order: Order) {
@@ -200,8 +193,7 @@ export async function deliverOrder(order: Order) {
       );
     }
   );
-  await reloadOrder(updatedOrder);
-  return updatedOrder;
+  return await getOrder(order.id);
 }
 
 /**
@@ -322,7 +314,7 @@ async function createOrder(
       ...addressData,
       name: sortedItems[0]?.name!,
       totalPrice,
-      image: sortedImages?.[0].imageName,
+      image: sortedImages?.[0]?.imageName,
     },
     { transaction }
   );
