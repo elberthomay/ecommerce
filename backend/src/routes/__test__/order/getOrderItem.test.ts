@@ -1,7 +1,6 @@
 import request from "supertest";
 import app from "../../../app";
 import authenticationTests from "../../../test/authenticationTests.test";
-import Order from "../../../models/Order";
 import User from "../../../models/User";
 import Shop from "../../../models/Shop";
 import { invalidUuid } from "../../../test/helpers/commonData";
@@ -11,11 +10,7 @@ import {
   forgeCookie,
 } from "../../../test/helpers/user/userHelper";
 import { createShop } from "../../../test/helpers/shop/shopHelper";
-import {
-  fullGenerateOrderData,
-  fullGenerateOrderItemData,
-  generateOrders,
-} from "../../../test/helpers/order/orderHelper";
+import { generateOrders } from "../../../test/helpers/order/orderHelper";
 import {
   printedExpect,
   validatedExpect,

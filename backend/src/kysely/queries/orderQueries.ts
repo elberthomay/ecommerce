@@ -26,11 +26,11 @@ export const getFullOrderQuery = (orderId: string) =>
       jsonArrayFrom(
         eb
           .selectFrom("OrderOrderItem")
-          .innerJoin("TempOrderItem", (join) =>
+          .innerJoin("OrderItem", (join) =>
             join
               .onRef("OrderOrderItem.orderId", "=", "Order.id")
-              .onRef("OrderOrderItem.itemId", "=", "TempOrderItem.id")
-              .onRef("OrderOrderItem.version", "=", "TempOrderItem.version")
+              .onRef("OrderOrderItem.itemId", "=", "OrderItem.id")
+              .onRef("OrderOrderItem.version", "=", "OrderItem.version")
           )
           .select((eb) => [
             "id",
@@ -39,14 +39,10 @@ export const getFullOrderQuery = (orderId: string) =>
             "quantity",
             jsonArrayFrom(
               eb
-                .selectFrom("TempOrderItemImage")
+                .selectFrom("OrderItemImage")
                 .select(["imageName", "order"])
-                .whereRef("TempOrderItemImage.itemId", "=", "TempOrderItem.id")
-                .whereRef(
-                  "TempOrderItemImage.version",
-                  "=",
-                  "TempOrderItem.version"
-                )
+                .whereRef("OrderItemImage.itemId", "=", "OrderItem.id")
+                .whereRef("OrderItemImage.version", "=", "OrderItem.version")
                 .orderBy(
                   eb.fn
                     .agg<number>("row_number")
@@ -57,7 +53,7 @@ export const getFullOrderQuery = (orderId: string) =>
           .orderBy(
             eb.fn
               .agg<number>("row_number")
-              .over((ob: any) => ob.orderBy("TempOrderItem.name"))
+              .over((ob: any) => ob.orderBy("OrderItem.name"))
           )
       ).as("items"),
     ])
@@ -73,16 +69,16 @@ export const getOrderDetailQuery = (orderId: string) =>
       jsonArrayFrom(
         eb
           .selectFrom("OrderOrderItem")
-          .innerJoin("TempOrderItem", (join) =>
+          .innerJoin("OrderItem", (join) =>
             join
-              .onRef("OrderOrderItem.itemId", "=", "TempOrderItem.id")
-              .onRef("OrderOrderItem.version", "=", "TempOrderItem.version")
+              .onRef("OrderOrderItem.itemId", "=", "OrderItem.id")
+              .onRef("OrderOrderItem.version", "=", "OrderItem.version")
           )
-          .leftJoin("TempOrderItemImage", (join) =>
+          .leftJoin("OrderItemImage", (join) =>
             join
-              .onRef("TempOrderItemImage.itemId", "=", "TempOrderItem.id")
-              .onRef("TempOrderItemImage.version", "=", "TempOrderItem.version")
-              .on("TempOrderItemImage.order", "=", 0)
+              .onRef("OrderItemImage.itemId", "=", "OrderItem.id")
+              .onRef("OrderItemImage.version", "=", "OrderItem.version")
+              .on("OrderItemImage.order", "=", 0)
           )
           .select(["id", "name", "price", "quantity", "imageName as image"])
           .whereRef("OrderOrderItem.orderId", "=", "Order.id")
@@ -98,28 +94,28 @@ export const getOrderDetailQuery = (orderId: string) =>
 export const getOrderItemQuery = (orderId: string, itemId: string) =>
   db
     .selectFrom("OrderOrderItem")
-    .innerJoin("TempOrderItem", (join) =>
+    .innerJoin("OrderItem", (join) =>
       join
-        .onRef("OrderOrderItem.itemId", "=", "TempOrderItem.id")
-        .onRef("OrderOrderItem.version", "=", "TempOrderItem.version")
+        .onRef("OrderOrderItem.itemId", "=", "OrderItem.id")
+        .onRef("OrderOrderItem.version", "=", "OrderItem.version")
     )
     .innerJoin("Order", "OrderOrderItem.orderId", "Order.id")
     .innerJoin("Shop", "Order.shopId", "Shop.id")
     .select((eb) => [
-      "TempOrderItem.id",
-      "TempOrderItem.name",
+      "OrderItem.id",
+      "OrderItem.name",
       "price",
       "OrderOrderItem.quantity",
-      "TempOrderItem.description",
+      "OrderItem.description",
       "Order.shopId",
       "Shop.name as shopName",
       "OrderOrderItem.createdAt",
       jsonArrayFrom(
         eb
-          .selectFrom("TempOrderItemImage")
+          .selectFrom("OrderItemImage")
           .select(["imageName", "order"])
-          .whereRef("TempOrderItemImage.itemId", "=", "TempOrderItem.id")
-          .whereRef("TempOrderItemImage.version", "=", "TempOrderItem.version")
+          .whereRef("OrderItemImage.itemId", "=", "OrderItem.id")
+          .whereRef("OrderItemImage.version", "=", "OrderItem.version")
           .orderBy(
             eb.fn
               .agg<number>("row_number")
@@ -132,15 +128,15 @@ export const getOrderItemQuery = (orderId: string, itemId: string) =>
 
 export const getOrderItemQueryByVersion = (itemId: string, version: number) =>
   db
-    .selectFrom("TempOrderItem")
+    .selectFrom("OrderItem")
     .selectAll()
     .select((eb) => [
       jsonArrayFrom(
         eb
-          .selectFrom("TempOrderItemImage")
+          .selectFrom("OrderItemImage")
           .select(["imageName", "order"])
-          .whereRef("TempOrderItemImage.itemId", "=", "TempOrderItem.id")
-          .whereRef("TempOrderItemImage.version", "=", "TempOrderItem.version")
+          .whereRef("OrderItemImage.itemId", "=", "OrderItem.id")
+          .whereRef("OrderItemImage.version", "=", "OrderItem.version")
           .orderBy(
             eb.fn
               .agg<number>("row_number")
@@ -148,8 +144,8 @@ export const getOrderItemQueryByVersion = (itemId: string, version: number) =>
           )
       ).as("images"),
     ])
-    .where("TempOrderItem.id", "=", itemId)
-    .where("TempOrderItem.version", "=", version);
+    .where("OrderItem.id", "=", itemId)
+    .where("OrderItem.version", "=", version);
 
 export const getOrdersQuery = (options: z.infer<typeof getOrdersOption>) => {
   const { userId, shopId, status, itemName, newerThan, orderBy, page, limit } =
@@ -172,14 +168,14 @@ export const getOrdersQuery = (options: z.infer<typeof getOrdersOption>) => {
     query = query.where(({ exists, selectFrom }) =>
       exists(
         selectFrom("OrderOrderItem")
-          .innerJoin("TempOrderItem", (join) =>
+          .innerJoin("OrderItem", (join) =>
             join
-              .onRef("OrderOrderItem.itemId", "=", "TempOrderItem.id")
-              .onRef("OrderOrderItem.version", "=", "TempOrderItem.version")
+              .onRef("OrderOrderItem.itemId", "=", "OrderItem.id")
+              .onRef("OrderOrderItem.version", "=", "OrderItem.version")
           )
-          .select(["TempOrderItem.name", "OrderOrderItem.orderId"])
+          .select(["OrderItem.name", "OrderOrderItem.orderId"])
           .whereRef("OrderOrderItem.orderId", "=", "Order.id")
-          .where("TempOrderItem.name", "like", `%${itemName}%`)
+          .where("OrderItem.name", "like", `%${itemName}%`)
       )
     );
 

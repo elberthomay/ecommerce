@@ -15,7 +15,6 @@ import {
 } from "sequelize-typescript";
 import User from "./User";
 import Shop from "./Shop";
-import OrderItem, { OrderItemCreationAttribute } from "./OrderItem";
 import { OrderStatuses } from "@elycommerce/common";
 
 export const orderOrderOptions: Record<
@@ -48,7 +47,6 @@ export interface OrderCreationAttribute {
   country: string;
   recipient: string;
 
-  items?: OrderItemCreationAttribute[];
   createdAt?: string;
   updatedAt?: string;
 }
@@ -172,9 +170,6 @@ class Order extends Model<OrderCreationAttribute> {
     type: DataType.DATE(6),
   })
   updatedAt?: Date;
-
-  @HasMany(() => OrderItem)
-  items!: OrderItem[];
 
   @BelongsTo(() => Shop)
   shop!: Shop | null;

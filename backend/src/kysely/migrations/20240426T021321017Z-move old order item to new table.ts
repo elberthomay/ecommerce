@@ -3,7 +3,7 @@ import { jsonArrayFrom } from "kysely/helpers/mysql";
 import { DB } from "../schema";
 import crypto from "crypto";
 
-export async function up(db: Kysely<DB>): Promise<void> {
+export async function up(db: Kysely<any>): Promise<void> {
   let itemIds: string[];
   do {
     itemIds = (
@@ -78,6 +78,7 @@ export async function up(db: Kysely<DB>): Promise<void> {
                   updatedAt,
                 },
               ],
+              //@ts-ignore
               itemData: {
                 ...itemData,
                 version,

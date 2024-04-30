@@ -10,10 +10,7 @@ import {
   forgeCookie,
 } from "../../../test/helpers/user/userHelper";
 import { createShop } from "../../../test/helpers/shop/shopHelper";
-import {
-  fullGenerateOrderData,
-  generateOrders,
-} from "../../../test/helpers/order/orderHelper";
+import { generateOrders } from "../../../test/helpers/order/orderHelper";
 import authenticationTests from "../../../test/authenticationTests.test";
 import { faker } from "@faker-js/faker";
 import { invalidUuid } from "../../../test/helpers/commonData";
@@ -27,9 +24,6 @@ import {
 } from "@elycommerce/common";
 import { z } from "zod";
 import { omit } from "lodash";
-import TempOrderItem from "../../../models/temp/TempOrderItem";
-import OrderOrderItem from "../../../models/temp/OrderOrderItem";
-import TempOrderItemImage from "../../../models/temp/TempOrderItemImage";
 import { getOrderDetailQuery } from "../../../kysely/queries/orderQueries";
 
 const getUrl = (orderId: string) => `/api/order/${orderId}`;

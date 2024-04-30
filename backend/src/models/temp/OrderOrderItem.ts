@@ -7,8 +7,8 @@ import {
   Index,
   Table,
 } from "sequelize-typescript";
-import TempOrderItem from "./TempOrderItem";
 import Order from "../Order";
+import OrderItem from "../OrderItem";
 
 interface OrderOrderItemCreationAttribute {
   orderId: string;
@@ -25,12 +25,12 @@ class OrderOrderItem extends Model<OrderOrderItemCreationAttribute> {
   orderId!: string;
 
   @PrimaryKey
-  @ForeignKey(() => TempOrderItem)
+  @ForeignKey(() => OrderItem)
   @Column(DataType.UUID)
   itemId!: string;
 
   @PrimaryKey
-  @ForeignKey(() => TempOrderItem)
+  @ForeignKey(() => OrderItem)
   @Column(DataType.INTEGER)
   version!: number;
 

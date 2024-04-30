@@ -26,9 +26,7 @@ import {
   DELIVERY_TIMEOUT_MINUTE,
 } from "../../var/constants";
 import { addMinutes } from "date-fns";
-import TempOrderItem from "../temp/TempOrderItem";
 import OrderOrderItem from "../temp/OrderOrderItem";
-import TempOrderItemImage from "../temp/TempOrderItemImage";
 import {
   getOrderDetailQuery,
   getOrderItemQuery,
@@ -36,6 +34,8 @@ import {
   getOrdersQuery,
 } from "../../kysely/queries/orderQueries";
 import NotFoundError from "../../errors/NotFoundError";
+import OrderItem from "../OrderItem";
+import OrderItemImage from "../OrderItemImage";
 
 function getOrderTimeout(status: string, updatedAt: Date) {
   const timeoutMinute =
@@ -320,7 +320,7 @@ async function createOrder(
     cartItems.map(async ({ quantity, item }) => {
       const { id, name, description, price, images, version } = item!;
       if (images === undefined) throw Error("images not eagerly loaded");
-      const [createdItem, created] = await TempOrderItem.findOrCreate({
+      const [createdItem, created] = await OrderItem.findOrCreate({
         where: { id, version },
         defaults: {
           id,
@@ -332,7 +332,7 @@ async function createOrder(
         transaction,
       });
       if (created)
-        await TempOrderItemImage.bulkCreate(
+        await OrderItemImage.bulkCreate(
           images.map(({ itemId, imageName, order: imageOrder }) => ({
             itemId,
             version,

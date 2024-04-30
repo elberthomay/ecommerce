@@ -6,23 +6,21 @@ import { createUser } from "../user/userHelper";
 import { createShop } from "../shop/shopHelper";
 import {
   OrderOrderItem,
-  TempOrderItem,
   Order,
-  TempOrderItemImage,
   OrderItemImage,
+  OrderItem,
 } from "../../../kysely/schema";
 import { Insertable } from "kysely";
 import { db } from "../../../kysely/database";
 import {
   getFullOrderQuery,
-  getOrderDetailQuery,
   getOrderItemQueryByVersion,
 } from "../../../kysely/queries/orderQueries";
 
 type OrderItemComponents = {
-  orderItem: Insertable<TempOrderItem>;
+  orderItem: Insertable<OrderItem>;
   orderOrderItem: Insertable<OrderOrderItem>;
-  images: Insertable<TempOrderItemImage>[];
+  images: Insertable<OrderItemImage>[];
 };
 
 type PartialOrderGenerationAttribute = Partial<Insertable<Order>> & {
@@ -30,7 +28,7 @@ type PartialOrderGenerationAttribute = Partial<Insertable<Order>> & {
 };
 
 type PartialOrderItemGenerationAttribute = Partial<
-  Insertable<TempOrderItem> & Omit<Insertable<OrderOrderItem>, "itemId">
+  Insertable<OrderItem> & Omit<Insertable<OrderOrderItem>, "itemId">
 > & {
   images?: OrderItemImageGenerationAttribute;
 };
@@ -43,7 +41,7 @@ type OrderItemGenerationAttribute =
 
 type OrderItemImageGenerationAttribute =
   | number
-  | Partial<Insertable<TempOrderItemImage>>[];
+  | Partial<Insertable<OrderItemImage>>[];
 
 const generateOrderData =
   (data?: Partial<Insertable<Order>>) => (): Insertable<Order> => {
@@ -95,8 +93,7 @@ const generateOrderData =
   };
 
 const generateOrderItemData =
-  (data?: Partial<Insertable<TempOrderItem>>) =>
-  (): Insertable<TempOrderItem> => {
+  (data?: Partial<Insertable<OrderItem>>) => (): Insertable<OrderItem> => {
     return {
       id: data?.id ?? faker.string.uuid(),
       version: data?.version ?? faker.number.int(),
@@ -122,8 +119,8 @@ const generateOrderOrderItemData =
   };
 
 const generateOrderItemImageData =
-  (data?: Partial<Insertable<TempOrderItemImage>>) =>
-  (): Insertable<TempOrderItemImage> => {
+  (data?: Partial<Insertable<OrderItemImage>>) =>
+  (): Insertable<OrderItemImage> => {
     return {
       itemId: data?.itemId ?? faker.string.uuid(),
       version: data?.version ?? faker.number.int(),
@@ -179,9 +176,9 @@ export const fullGenerateOrderData =
 export const fullGenerateOrderItemData =
   (orderItemData?: PartialOrderItemGenerationAttribute) =>
   (): {
-    orderItem: Insertable<TempOrderItem>;
+    orderItem: Insertable<OrderItem>;
     orderOrderItem: Insertable<OrderOrderItem>;
-    images: Insertable<TempOrderItemImage>[];
+    images: Insertable<OrderItemImage>[];
   } => {
     const orderId = orderItemData?.orderId ?? faker.string.uuid();
     const itemId = orderItemData?.id ?? faker.string.uuid();
@@ -237,9 +234,9 @@ export const generateOrders = async (
 
   const orderDatas: Insertable<Order>[] = [];
   const OrderItemComponents: OrderItemComponents[] = [];
-  const orderItemDatas: Insertable<TempOrderItem>[] = [];
+  const orderItemDatas: Insertable<OrderItem>[] = [];
   const orderOrderItemDatas: Insertable<OrderOrderItem>[] = [];
-  const orderItemImagesDatas: Insertable<TempOrderItemImage>[] = [];
+  const orderItemImagesDatas: Insertable<OrderItemImage>[] = [];
 
   completeOrderDatas.map(({ items, ...other }) => {
     orderDatas.push(other);
@@ -255,11 +252,7 @@ export const generateOrders = async (
   await db.insertInto("Order").ignore().values(orderDatas).execute();
 
   if (orderItemDatas.length > 0)
-    await db
-      .insertInto("TempOrderItem")
-      .ignore()
-      .values(orderItemDatas)
-      .execute();
+    await db.insertInto("OrderItem").ignore().values(orderItemDatas).execute();
 
   if (orderOrderItemDatas.length > 0)
     await db
@@ -269,7 +262,7 @@ export const generateOrders = async (
       .execute();
   if (orderItemImagesDatas.length > 0)
     await db
-      .insertInto("TempOrderItemImage")
+      .insertInto("OrderItemImage")
       .ignore()
       .values(orderItemImagesDatas)
       .execute();
@@ -299,13 +292,9 @@ export const generateOrderItems = async (
     .map(({ images }) => images)
     .flat();
 
+  await db.insertInto("OrderItem").ignore().values(orderItemDatas).execute();
   await db
-    .insertInto("TempOrderItem")
-    .ignore()
-    .values(orderItemDatas)
-    .execute();
-  await db
-    .insertInto("TempOrderItemImage")
+    .insertInto("OrderItemImage")
     .ignore()
     .values(orderItemImageDatas)
     .execute();

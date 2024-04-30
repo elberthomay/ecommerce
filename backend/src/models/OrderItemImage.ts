@@ -1,4 +1,10 @@
-import { Model, PrimaryKey, Unique } from "sequelize-typescript";
+import {
+  AllowNull,
+  Default,
+  Model,
+  PrimaryKey,
+  Unique,
+} from "sequelize-typescript";
 import {
   BelongsTo,
   Column,
@@ -10,11 +16,11 @@ import {
 import OrderItem from "./OrderItem";
 import { IncludeOptions, Includeable, Op, col } from "sequelize";
 
-export interface OrderItemImageCreationAttribute {
-  orderId: string;
+interface OrderItemImageCreationAttribute {
   itemId: string;
-  imageName: string;
+  version: number;
   order: number;
+  imageName: string;
 }
 
 @Table({ tableName: "OrderItemImage" })
@@ -25,21 +31,13 @@ class OrderItemImage extends Model<OrderItemImageCreationAttribute> {
     type: DataType.UUID,
     // unique: "unq-item-order-idx",
   })
-  orderId!: string;
+  itemId!: string;
 
   @PrimaryKey
   @ForeignKey(() => OrderItem)
-  @Column({
-    type: DataType.UUID,
-    // unique: "unq-item-order-idx",
-  })
-  itemId!: string;
-
-  @Column({
-    type: DataType.STRING,
-    allowNull: false,
-  })
-  imageName!: string;
+  @AllowNull(false)
+  @Column(DataType.INTEGER)
+  version!: number;
 
   @PrimaryKey
   @Column({
@@ -48,6 +46,12 @@ class OrderItemImage extends Model<OrderItemImageCreationAttribute> {
     // unique: "unq-item-order-idx",
   })
   order!: number;
+
+  @Column({
+    type: DataType.STRING,
+    allowNull: false,
+  })
+  imageName!: string;
 }
 
 export const getOrderItemImageInclude = (
@@ -57,7 +61,7 @@ export const getOrderItemImageInclude = (
   model: OrderItemImage,
   on: {
     orderId: { [Op.eq]: col(`${orderItemTableName}.orderId`) },
-    itemId: { [Op.eq]: col(`${orderItemTableName}.id`) },
+    version: { [Op.eq]: col(`${orderItemTableName}.version`) },
   },
   ...options,
 });

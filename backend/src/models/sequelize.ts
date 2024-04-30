@@ -54,8 +54,8 @@ const sequelize = new Sequelize({
 
 OrderItemImage.afterSync(
   addFKIfNotExistToModel(OrderItemImage, OrderItem, [
-    ["orderId", "orderId"],
     ["itemId", "id"],
+    ["version", "version"],
   ])
 );
 
@@ -71,7 +71,7 @@ OrderOrderItem.afterSync(
 );
 
 OrderOrderItem.afterSync(
-  addFKIfNotExistToModel(OrderOrderItem, TempOrderItem, [
+  addFKIfNotExistToModel(OrderOrderItem, OrderItem, [
     ["itemId", "id"],
     ["version", "version"],
   ])

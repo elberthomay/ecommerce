@@ -2,7 +2,6 @@ import request from "supertest";
 import authenticationTests from "../../../test/authenticationTests.test";
 import app from "../../../app";
 import {
-  createDefaultUser,
   createUser,
   defaultCookie,
   forgeCookie,
@@ -22,7 +21,7 @@ import { OrderStatuses } from "@elycommerce/common";
 import { AWAITING_CONFIRMATION_TIMEOUT_MINUTE } from "../../../var/constants";
 import Item from "../../../models/Item";
 import Order from "../../../models/Order";
-import TempOrderItem from "../../../models/temp/TempOrderItem";
+import OrderItem from "../../../models/OrderItem";
 import OrderOrderItem from "../../../models/temp/OrderOrderItem";
 
 const url = "/api/order/process";
@@ -191,7 +190,7 @@ describe("successful order create", () => {
   it("doesn't create additional entry of OrderItem when item version doesn't change", async () => {
     // create order once
     await getRequest(defaultCookie()).send().expect(200);
-    const orderItems = await TempOrderItem.findAll();
+    const orderItems = await OrderItem.findAll();
     const connector = await OrderOrderItem.findAll();
 
     expect(orderItems.length).toBe(selectedItems.length);
@@ -209,7 +208,7 @@ describe("successful order create", () => {
 
     // create order once again
     await getRequest(defaultCookie()).send().expect(200);
-    const orderItemsSecond = await TempOrderItem.findAll();
+    const orderItemsSecond = await OrderItem.findAll();
     const connectorSecond = await OrderOrderItem.findAll();
 
     // no new OrderItem created
@@ -220,7 +219,7 @@ describe("successful order create", () => {
   it("create additional entry of OrderItem when item version changed", async () => {
     // create order once
     await getRequest(defaultCookie()).send().expect(200);
-    const orderItems = await TempOrderItem.findAll();
+    const orderItems = await OrderItem.findAll();
 
     expect(orderItems.length).toBe(selectedItems.length);
 
@@ -241,7 +240,7 @@ describe("successful order create", () => {
 
     // create order once
     await getRequest(defaultCookie()).send().expect(200);
-    const orderItemsSecond = await TempOrderItem.findAll();
+    const orderItemsSecond = await OrderItem.findAll();
 
     // no new OrderItem created
     expect(orderItemsSecond.length).toBe(selectedItems.length * 2);

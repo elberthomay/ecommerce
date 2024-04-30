@@ -97,10 +97,9 @@ export interface OrderItem {
   description: string;
   id: string;
   name: string;
-  orderId: string;
   price: number;
-  quantity: number;
   updatedAt: Date;
+  version: Generated<number>;
 }
 
 export interface OrderItemImage {
@@ -108,8 +107,8 @@ export interface OrderItemImage {
   imageName: string;
   itemId: string;
   order: number;
-  orderId: string;
   updatedAt: Date;
+  version: number;
 }
 
 export interface OrderOrderItem {

@@ -7,22 +7,19 @@ import {
   ForeignKey,
   PrimaryKey,
   HasMany,
+  AllowNull,
+  Default,
 } from "sequelize-typescript";
-import OrderItemImage, {
-  OrderItemImageCreationAttribute,
-} from "./OrderItemImage";
-import Order from "./Order";
+import OrderItemImage from "./OrderItemImage";
 
 export interface OrderItemCreationAttribute {
   id: string;
-  orderId: string;
+  version: number;
   name: string;
   description: string;
   price: number;
-  quantity: number;
   createdAt?: Date;
   updatedAt?: Date;
-  images?: OrderItemImageCreationAttribute[];
 }
 
 @Table({ tableName: "OrderItem" })
@@ -32,12 +29,9 @@ class OrderItem extends Model<OrderItemCreationAttribute> {
   id!: string;
 
   @PrimaryKey
-  @ForeignKey(() => Order)
-  @Column({
-    type: DataType.UUID,
-    allowNull: false,
-  })
-  orderId!: string;
+  @Default(1)
+  @Column(DataType.INTEGER)
+  version!: number;
 
   @Column({
     type: DataType.STRING,
@@ -58,12 +52,6 @@ class OrderItem extends Model<OrderItemCreationAttribute> {
   price!: number;
 
   @Column({
-    type: DataType.INTEGER,
-    allowNull: false,
-  })
-  quantity!: number;
-
-  @Column({
     allowNull: false,
     type: DataType.DATE(6),
   })
@@ -75,16 +63,8 @@ class OrderItem extends Model<OrderItemCreationAttribute> {
   })
   updatedAt?: string;
 
-  @BelongsTo(() => Order)
-  order!: Order;
-
   @HasMany(() => OrderItemImage)
   images!: OrderItemImage[];
-
-  toJSON() {
-    const defaultJson = super.toJSON();
-    return defaultJson;
-  }
 }
 
 export default OrderItem;
