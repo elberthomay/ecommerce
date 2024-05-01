@@ -7,8 +7,8 @@ import {
   Index,
   Table,
 } from "sequelize-typescript";
-import Order from "../Order";
-import OrderItem from "../OrderItem";
+import Order from "./Order";
+import OrderItem from "./OrderItem";
 
 interface OrderOrderItemCreationAttribute {
   orderId: string;

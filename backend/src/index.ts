@@ -22,7 +22,7 @@ import agenda from "./agenda/agenda";
   else if (!process.env.JWT_SECRET) console.error("JWT secret value not set");
   else {
     try {
-      await sequelize.authenticate();
+      await sequelize.sync();
       console.log("Database connection established");
       await agenda.start();
       app.listen(3000, () => {

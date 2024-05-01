@@ -1,4 +1,4 @@
-require("dotenv").config({ path: "../../.env" });
+require("dotenv").config({ path: "./src/kysely/.env" });
 import * as path from "path";
 import { db } from "./database";
 import { promises as fs } from "fs";

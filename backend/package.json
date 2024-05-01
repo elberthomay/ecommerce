@@ -7,7 +7,8 @@
     "test": "jest --watch-all --no-cache --runInBand",
     "debug": "npx ts-node-dev src/index.ts",
     "populate": "npx ts-node-dev ./src/test/helpers/populateDb.ts",
-    "fetchKyselySchema": "npx kysely-codegen --out-file \"./src/kysely/schema.ts\""
+    "migrateToLatest": "npx ts-node ./src/kysely/migrator.ts",
+    "fetchKyselySchema": "npx kysely-codegen --out-file \"./src/kysely/schema.ts\" --env-file \"./src/kysely/.env\""
   },
   "keywords": [],
   "author": "",

@@ -26,7 +26,7 @@ import {
   DELIVERY_TIMEOUT_MINUTE,
 } from "../../var/constants";
 import { addMinutes } from "date-fns";
-import OrderOrderItem from "../temp/OrderOrderItem";
+import OrderOrderItem from "../OrderOrderItem";
 import {
   getOrderDetailQuery,
   getOrderItemQuery,

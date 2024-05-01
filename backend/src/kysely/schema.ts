@@ -156,25 +156,6 @@ export interface Tag {
   updatedAt: Date;
 }
 
-export interface TempOrderItem {
-  createdAt: Date;
-  description: string;
-  id: string;
-  name: string;
-  price: number;
-  updatedAt: Date;
-  version: Generated<number>;
-}
-
-export interface TempOrderItemImage {
-  createdAt: Date;
-  imageName: string;
-  itemId: string;
-  order: number;
-  updatedAt: Date;
-  version: number;
-}
-
 export interface User {
   avatar: string | null;
   createdAt: Date;
@@ -209,8 +190,6 @@ export interface DB {
   ShopAddresses: ShopAddresses;
   Subdistricts: Subdistricts;
   Tag: Tag;
-  TempOrderItem: TempOrderItem;
-  TempOrderItemImage: TempOrderItemImage;
   User: User;
   UserAddresses: UserAddresses;
 }
