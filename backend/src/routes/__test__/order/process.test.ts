@@ -22,7 +22,7 @@ import { AWAITING_CONFIRMATION_TIMEOUT_MINUTE } from "../../../var/constants";
 import Item from "../../../models/Item";
 import Order from "../../../models/Order";
 import OrderItem from "../../../models/OrderItem";
-import OrderOrderItem from "../../../models/temp/OrderOrderItem";
+import OrderOrderItem from "../../../models/OrderOrderItem";
 
 const url = "/api/order/process";
 const method = "post";

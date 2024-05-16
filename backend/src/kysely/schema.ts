@@ -63,6 +63,12 @@ export interface ItemImages {
   updatedAt: Date;
 }
 
+export interface ItemRatingAggregate {
+  itemId: string;
+  reviewAverage: number;
+  reviewCount: number;
+}
+
 export interface ItemTag {
   createdAt: Date;
   itemId: string;
@@ -118,6 +124,29 @@ export interface OrderOrderItem {
   quantity: Generated<number>;
   updatedAt: Date;
   version: number;
+}
+
+export interface Review {
+  anonymous: number;
+  createdAt: Date;
+  id: Generated<number>;
+  itemId: string;
+  orderId: string;
+  rating: number;
+  review: string | null;
+  updatedAt: Date;
+}
+
+export interface ReviewImage {
+  imageName: string;
+  order: number;
+  reviewId: number;
+}
+
+export interface ReviewLikes {
+  likes: number;
+  reviewId: number;
+  userId: string;
 }
 
 export interface Shop {
@@ -181,11 +210,15 @@ export interface DB {
   Cities: Cities;
   Item: Item;
   ItemImages: ItemImages;
+  ItemRatingAggregate: ItemRatingAggregate;
   ItemTag: ItemTag;
   Order: Order;
   OrderItem: OrderItem;
   OrderItemImage: OrderItemImage;
   OrderOrderItem: OrderOrderItem;
+  Review: Review;
+  ReviewImage: ReviewImage;
+  ReviewLikes: ReviewLikes;
   Shop: Shop;
   ShopAddresses: ShopAddresses;
   Subdistricts: Subdistricts;
