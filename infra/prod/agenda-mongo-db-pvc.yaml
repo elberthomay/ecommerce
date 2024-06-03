@@ -3,7 +3,7 @@ kind: PersistentVolumeClaim
 metadata:
   name: agenda-mongo-db-pvc
 spec:
-  storageClassName: managed-csi
+  storageClassName: standard
   accessModes:
     - ReadWriteOnce
   resources:
